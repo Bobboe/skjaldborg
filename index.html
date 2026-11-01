@@ -707,8 +707,9 @@ function drawWalker(img,g,x,y,h,flip,ph,amt,o={}){
   const sn=Math.sin(ph),cs=Math.cos(ph);const bob=(1-Math.abs(sn))*h*.05*amt;const land=Math.pow(Math.abs(sn),6)*amt;
   const lean=(.07*amt+(o.lean||0))*g.nd,sway=sn*.045*amt*g.nd;const br=o.breath||1;
   ctx.save();ctx.translate(x,y);ctx.scale(flip?-1:1,1);
-  P.feet.forEach((f,i)=>{const s2=i?-sn:sn,c2=i?-cs:cs;const dx=s2*h*.085*amt*g.nd,lift=Math.max(0,c2)*h*.065*amt;
-    const pvx=f.px*k-w/2,pvy=f.py*k-h;ctx.save();ctx.translate(pvx+dx,pvy-lift);ctx.rotate(-s2*.14*amt*g.nd);ctx.drawImage(f.c,-w/2-pvx,-h-pvy,w,h);ctx.restore()});
+  // fötterna rör sig längs den isometriska gångriktningen (snett fram/ner mot kameran), inte rakt i sidled
+  P.feet.forEach((f,i)=>{const s2=i?-sn:sn,c2=i?-cs:cs;const st=s2*h*.06*amt;const dx=st*g.nd*.85,dy=st*.45,lift=Math.max(0,c2)*h*.07*amt;
+    const pvx=f.px*k-w/2,pvy=f.py*k-h;ctx.save();ctx.translate(pvx+dx,pvy+dy-lift);ctx.rotate(-s2*.06*amt*g.nd);ctx.drawImage(f.c,-w/2-pvx,-h-pvy,w,h);ctx.restore()});
   const hip=P.hipY*k-h;ctx.translate(0,hip-bob+land*h*.012);ctx.rotate(lean+sway);ctx.scale(1+land*.04,(1-land*.05)*br);ctx.translate(0,-hip);
   ctx.drawImage(P.top,-w/2,-h,w,h);ctx.restore()}
 function stepPhase(o,dist,stride){const before=Math.floor((o.ph||0)/Math.PI);o.ph=(o.ph||0)+dist*2*Math.PI/stride;return Math.floor(o.ph/Math.PI)!==before}
