@@ -576,7 +576,7 @@ const META=[
 ];
 const metaCost=lv=>lv+1;
 // ---------- Konto (Supabase) ----------
-const SBCFG={"url":"","key":""};
+const SBCFG={"url":"https://tlskhfhwkrzcgnorvbxt.supabase.co","key":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsc2toZmh3a3J6Y2dub3J2Ynh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NTkyNTgsImV4cCI6MjEwOTEzNTI1OH0.wxA63qiu910CQPmvaVM9NNvE3LUt0fcS_xdZLiIAc3Y"};
 const CLOUD_={sb:null,user:null,name:"",ready:false,err:""};
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 async function cloudInit(){if(!SBCFG.url||!SBCFG.key){CLOUD_.err="Kontot är inte aktiverat än.";return}
