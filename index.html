@@ -82,6 +82,7 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 @keyframes glow{50%{box-shadow:0 3px 0 #120b06,0 0 18px rgba(227,179,76,.55),inset 0 1px 0 rgba(255,230,180,.15)}}
 
 /* Banner/hint */
+.wavebtn{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(12px + var(--sa-bottom));padding:10px 18px;font:900 14px var(--display);letter-spacing:.06em;color:var(--gold2);border-color:var(--gold);white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis;animation:glow 1.6s ease-in-out infinite}
 .hint{position:absolute;top:calc(56px + var(--sa-top));left:50%;transform:translateX(-50%);padding:8px 16px;font-weight:700;font-size:15px;max-width:min(560px,70vw);text-align:center;pointer-events:none;color:var(--bone);border-color:var(--gold)}
 .toast{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font:900 clamp(22px,5vw,40px)/1.1 var(--display);color:var(--gold2);letter-spacing:.08em;text-shadow:0 3px 0 #2a1606,0 0 24px rgba(0,0,0,.8);pointer-events:none;text-align:center;opacity:0;transition:opacity .3s}
 .toast.show{opacity:1}
@@ -173,6 +174,8 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 .lvl small{display:block;font-size:12px;color:var(--muted);line-height:1.3;margin-top:2px}
 .lvl .st{display:flex;gap:2px}
 .lvl:disabled{opacity:.45}
+.lvl.cur{border-color:var(--gold2);box-shadow:0 0 0 1px var(--gold2) inset}
+.levels .row{margin-top:4px}
 .lvl.win{border-color:var(--frost)}
 @media (max-height:520px){.lvl{padding:6px 12px}.lvl small{display:none}.lvl .no{font-size:18px}}
 .hallbtn{display:flex;align-items:center;gap:8px;justify-content:center;font:900 14px var(--display);letter-spacing:.08em;color:var(--gold2);background:rgba(0,0,0,.28);border:1px solid var(--gold);border-radius:10px;padding:9px 18px}
@@ -249,6 +252,7 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
   <div class="panel hint" id="hint" hidden></div>
   <div class="panel boss" id="bossBar" hidden><b id="bossName">SJÖVARGEN</b><div class="armor" id="armorSeg"><i><s></s></i><i><s></s></i><i><s></s></i></div><div class="hpbar"><i id="bossHp"></i></div></div>
   <div class="toast" id="toast"></div>
+  <button class="panel wavebtn" id="waveBtn" hidden></button>
 
   <div class="panel pop" id="buildPop" hidden>
     <button class="buildbtn" id="buildArcher"><img id="buildImg" alt=""><div><b>Bågskyttar</b><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#e3b34c" stroke="#7a5418" stroke-width="2"/></svg><em id="buildCost" style="font-style:normal">63</em></span><small>Snabba, många mål</small></div></button>
@@ -321,7 +325,7 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
   </div>
 
   <div class="ov" id="pauseOv" hidden>
-    <div class="panel card"><h2>Pausat</h2><div class="row"><button class="big" id="resumeBtn">Fortsätt</button><button class="ghost" id="restartBtn">Börja om</button></div></div>
+    <div class="panel card"><h2>Pausat</h2><div class="row"><button class="big" id="resumeBtn">Fortsätt</button><button class="ghost" id="restartBtn">Börja om kapitlet</button><button class="ghost" id="pauseMenu">Meny</button></div></div>
   </div>
 
   <div class="ov" id="endOv" hidden>
@@ -413,7 +417,7 @@ const SND={
 
 
 // ---------- Konstanter ----------
-const TW=128,TH=64,HW=64,HH=32,N=20,S=64,CLIFF=60,WAVES=14;
+const TW=128,TH=64,HW=64,HH=32,N=28,S=64,CLIFF=60,CHW=10;
 const BUILD_R=3.2;
 const iso=(gx,gy)=>({x:(gx-gy)*HW,y:(gx+gy)*HH});
 const toWorld=(ix,iy)=>({gx:(ix/HW+iy/HH)/2,gy:(iy/HH-ix/HW)/2});
@@ -423,38 +427,45 @@ function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.i
 
 // ---------- Banor ----------
 function inPoly(x,y,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const[xi,yi]=P[i],[xj,yj]=P[j];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c}return c}
+// Akt I: en karta, fyra kapitel. Vägar öppnas per kapitel, allt byggt står kvar.
+const ACT={key:"a1",name:"Akt I · Klankrig",vc:{gx:14,gy:17},jarl:[16.6,14.6],gold:220,
+  paths:{A:[[18,-1.4],[18,5],[24,5],[24,8.6],[6,8.6],[6,17],[12,17]],
+         S:[[18,-1.4],[18,5],[24,5],[24,8.6],[18,8.6],[18,15.6],[16,15.6]],
+         B:[[-1.4,21],[4,21],[4,24.6],[9.4,24.6],[9.4,19.6],[13.3,19.6],[13.3,18.95]],
+         D:[[29.4,20],[24.4,20],[24.4,24.4],[19,24.4],[19,18.1],[16,18.1]]},
+  pathCh:{A:0,B:1,S:2,D:3},
+  bridges:[{x0:5.25,x1:6.75,y0:10.2,y1:13.8},{x0:12.25,x1:13.05,y0:10.2,y1:13.8,foot:true}],
+  water(){const top=[],bot=[];for(let i=0;i<=56;i++){const gx=-0.6+i*29.2/56;top.push([gx,11.05+0.35*Math.sin(gx*.55)+0.15*Math.sin(gx*1.7+1)]);bot.push([gx,13.0+0.3*Math.sin(gx*.5+2)+0.14*Math.sin(gx*2.1)])}return{poly:top.concat(bot.slice().reverse()),shores:[top,bot]}},
+  rocks:[[1.4,2.4,1.6],[26.4,2.0,1.5],[2.2,15.6,1.3],[26.6,14.6,1.6],[11.6,3.0,1.2],[21.6,26.6,1.4],[3.0,27.0,1.3],[27,27,1.5],[14.2,25.8,1.1],[9.4,6.0,.9]],
+  spots:60};
 const LEVELS=[
- {key:"b1",name:"Gården vid fjorden",sub:"Akt I · Klankrig",desc:"Ulvklanen marscherar mot din by. Flytta jarlen, bygg torn inom hans räckhåll och håll ut i 14 vågor.",theme:"summer",
-  paths:[[[4,-1.4],[4,5],[10,5],[10,1.5],[16,1.5],[16,8],[7,8],[7,12],[19,12],[19,16.34],[15.9,16.34]]],
-  vc:{gx:14.5,gy:16},gate:{gx:15.9,gy:16.34},jarl:[17.4,14.3],horn:[4,0.9],spots:16,hpMul:1,boss:"boss",bossLine:"Sjövargen och hans folk anfaller",
-  water(){const W=[],S=[];for(let i=0;i<=26;i++){const t=i/26;const gy=-0.6+t*10;const gx=17.7+0.35*Math.sin(t*7.3)+0.2*Math.sin(t*15+1)+(t>0.82?(t-0.82)/0.18*1.1:0);W.push([gx,gy])}const sh=W.slice();W.push([19.3,10.25],[20.6,10.5],[20.6,-0.6]);return{poly:W,shores:[sh]}},
-  rocks:[[1.4,12.6,1.7],[2.4,16.8,1.3],[10.4,17.9,1.6],[13,4.3,1.1],[0.9,2.6,1.4],[6.2,17.4,0.9]]},
- {key:"b2",name:"Isfloden",sub:"Akt I · Klankrig",desc:"Vintern har kommit. Ulvklanen tar omvägen över bron, men när floden fryser får de en genväg rakt mot byn. Krossa isen med katapulter.",theme:"winter",
-  paths:[[[10,-1.4],[10,2.6],[16,2.6],[16,6],[2.5,6],[2.5,13.6],[15.2,13.6],[15.2,17.34],[9.9,17.34]],
-         [[10,-1.4],[10,2.6],[16,2.6],[16,6],[12,6],[12,13.6],[15.2,13.6],[15.2,17.34],[9.9,17.34]]],
-  vc:{gx:8.5,gy:17},gate:{gx:9.9,gy:17.34},jarl:[12.6,15.6],horn:[10,0.9],spots:18,hpMul:.92,gold:250,boss:"berserk",bossLine:"Bärsärkskungen leder ulvklanen över isen",catapult:true,
-  bridge:{x0:1.75,x1:3.25,y0:7.7,y1:11.3},
-  ice:{warn:6,freeze:7,refreeze:3,hp:230,zone:{x0:10.5,x1:13.5},center:[12,9.6]},
-  water(){const top=[],bot=[];for(let i=0;i<=40;i++){const gx=-0.6+i*21.2/40;top.push([gx,8.55+0.32*Math.sin(gx*.7)+0.15*Math.sin(gx*1.9+1)]);bot.push([gx,10.65+0.28*Math.sin(gx*.6+2)+0.14*Math.sin(gx*2.3)])}return{poly:top.concat(bot.slice().reverse()),shores:[top,bot]}},
-  rocks:[[0.9,1.4,1.3],[18.6,4.2,1.5],[5.2,16.6,1.2],[18.7,18.6,1.4],[6.4,1.6,1],[13.6,8.0,.8]]}
+ {key:"a1c1",name:"Sommar · Fjordvägen",theme:"summer",open:["A"],draw:["A"],boss:"boss",bossLine:"Sjövargen och hans folk anfaller",intro:"Ulvklanen kommer norrifrån över bron.",hp:1.3},
+ {key:"a1c2",name:"Höst · Skogsvägen",theme:"autumn",open:["A","B"],draw:["A","B"],boss:"rival",bossLine:"Rivaljarlen rider ut ur skogen",intro:"En väg har öppnats genom skogen i väster.",hp:1.75,catapult:true},
+ {key:"a1c3",name:"Vinter · Isfloden",theme:"winter",open:["A","B"],draw:["A","B","S"],boss:"berserk",bossLine:"Bärsärkskungen leder ulvklanen över isen",intro:"Floden fryser snart och öppnar en genväg mot byn.",hp:3.1,catapult:true,
+  ice:{warn:21,freeze:22,refreeze:3,hp:300,zone:{x0:16.7,x1:19.3},center:[18,12.1]}},
+ {key:"a1c4",name:"Vår · Bergspasset",theme:"spring",open:["A","B","D"],draw:["A","B","D"],boss:"wolfjarl",bossLine:"Ulvklanens jarl själv leder anfallet",intro:"Snön har smält i bergspasset i öster.",hp:4.8,catapult:true}
 ];
 function mkPath(pts){const seg=[];let len=0;for(let i=0;i<pts.length-1;i++){const[a,b]=[pts[i],pts[i+1]];const l=Math.hypot(b[0]-a[0],b[1]-a[1]);seg.push({ax:a[0],ay:a[1],bx:b[0],by:b[1],len:l,start:len});len+=l}return{pts,seg,len}}
-let LI=0,LV=LEVELS[0],PATHS=[],PLEN=0,VC={gx:0,gy:0},GATE={gx:0,gy:0},HORN=[0,0],WATER=[],SHORES=[],ROCKS=[],SPOTS=[],BRIDGE=null,ICEDEF=null,DJ=0,ICE_IN=0,ICE_OUT=0;
+let LI=0,LV=LEVELS[0],PO={},PATHS=[],PA=null,PS=null,VC=ACT.vc,GATE={gx:16.2,gy:17},WATER=[],SHORES=[],ROCKS=ACT.rocks,SPOTS=[],BRIDGES=ACT.bridges,ICEDEF=null,ICE_IN=0,ICE_OUT=0;
 const VN=3.4;
+const CH_START=()=>LI*CHW,CH_END=()=>LI*CHW+CHW,CW=()=>G.wave-LI*CHW;
 function pathAt(d,P=PATHS[0]){d=clamp(d,0,P.len);for(const s of P.seg){if(d<=s.start+s.len){const t=(d-s.start)/s.len;return{gx:s.ax+(s.bx-s.ax)*t,gy:s.ay+(s.by-s.ay)*t,dx:(s.bx-s.ax)/s.len,dy:(s.by-s.ay)/s.len}}}const s=P.seg[P.seg.length-1];return{gx:s.bx,gy:s.by,dx:0,dy:0}}
-function distToPath(gx,gy){let m=1e9;for(const P of PATHS)for(const s of P.seg){const vx=s.bx-s.ax,vy=s.by-s.ay;let t=((gx-s.ax)*vx+(gy-s.ay)*vy)/(s.len*s.len);t=clamp(t,0,1);m=Math.min(m,Math.hypot(gx-s.ax-vx*t,gy-s.ay-vy*t))}return m}
+function distTo(P,gx,gy){let m=1e9;for(const s of P.seg){const vx=s.bx-s.ax,vy=s.by-s.ay;let t=((gx-s.ax)*vx+(gy-s.ay)*vy)/(s.len*s.len);t=clamp(t,0,1);m=Math.min(m,Math.hypot(gx-s.ax-vx*t,gy-s.ay-vy*t))}return m}
+function distToPath(gx,gy){let m=1e9;for(const k in PO)m=Math.min(m,distTo(PO[k],gx,gy));return m}
 const inVillage=(gx,gy)=>Math.abs(gx-VC.gx)<VN/2+0.1&&Math.abs(gy-VC.gy)<VN/2+0.1;
 const isWater=(gx,gy)=>inPoly(gx,gy,WATER);
-const onBridge=(gx,gy)=>!!BRIDGE&&gx>BRIDGE.x0&&gx<BRIDGE.x1&&gy>BRIDGE.y0&&gy<BRIDGE.y1;
+const onBridge=(gx,gy)=>BRIDGES.some(b=>gx>b.x0&&gx<b.x1&&gy>b.y0&&gy<b.y1);
 const inIceZone=(gx,gy)=>!!ICEDEF&&gx>ICEDEF.zone.x0&&gx<ICEDEF.zone.x1&&isWater(gx,gy);
 const iceWalk=(gx,gy)=>!!ICEDEF&&G.ice&&G.ice.river>.5&&(G.ice.frozen||!inIceZone(gx,gy));
 const walkable=(gx,gy)=>gx>0.2&&gy>0.2&&gx<N-0.2&&gy<N-0.2&&(!isWater(gx,gy)||onBridge(gx,gy)||iceWalk(gx,gy))&&!inVillage(gx,gy);
-function makeSpots(){const c=[];for(let i=0;i<N;i++)for(let j=0;j<N;j++){const gx=i+.5,gy=j+.5;const d=distToPath(gx,gy);if(d<1.25||d>1.85)continue;if(gx<1||gy<1||gx>N-1||gy>N-1)continue;if(isWater(gx,gy)||isWater(gx+.6,gy)||isWater(gx,gy-.6)||isWater(gx-.6,gy)||isWater(gx,gy+.6))continue;if(Math.hypot(gx-VC.gx,gy-VC.gy)<2.9)continue;if(Math.hypot(gx-HORN[0],gy-HORN[1]-.6)<2.4)continue;c.push({gx,gy,score:Math.abs(d-1.5)})}
-  c.sort((a,b)=>a.score-b.score||a.gx-b.gx||a.gy-b.gy);const out=[];for(const p of c){if(out.every(o=>Math.hypot(o.gx-p.gx,o.gy-p.gy)>=2.35))out.push(p);if(out.length>=LV.spots)break}return out.map((p,i)=>({id:i,gx:p.gx,gy:p.gy,tower:null}))}
-function loadLevel(i){LI=i;LV=LEVELS[i];PATHS=LV.paths.map(mkPath);PLEN=PATHS[0].len;VC=LV.vc;GATE=LV.gate;HORN=LV.horn;const w=LV.water();WATER=w.poly;SHORES=w.shores;ROCKS=LV.rocks;BRIDGE=LV.bridge||null;ICEDEF=LV.ice||null;
-  if(PATHS[1]){const A=LV.paths[0],B=LV.paths[1];let k=0;while(k<A.length&&k<B.length&&A[k][0]===B[k][0]&&A[k][1]===B[k][1])k++;DJ=PATHS[1].seg[k-1]?PATHS[1].seg[k-1].start:0;// junktion = sista gemensamma punkt
-    DJ=0;for(let q=0;q<k-1;q++)DJ+=PATHS[1].seg[q].len;let d=0;ICE_IN=ICE_OUT=0;for(;d<PATHS[1].len;d+=.05){const p=pathAt(d,PATHS[1]);if(isWater(p.gx,p.gy)){if(!ICE_IN)ICE_IN=d;ICE_OUT=d}}}
-  SPOTS=makeSpots();if(IMG.grass)buildGround()}
+function makeSpots(){const c=[];for(let i=0;i<N;i++)for(let j=0;j<N;j++){const gx=i+.5,gy=j+.5;const d=distToPath(gx,gy);if(d<1.22||d>2.05)continue;if(gx<1||gy<1||gx>N-1||gy>N-1)continue;if(isWater(gx,gy)||isWater(gx+.6,gy)||isWater(gx,gy-.6)||isWater(gx-.6,gy)||isWater(gx,gy+.6)||onBridge(gx,gy))continue;if(Math.hypot(gx-VC.gx,gy-VC.gy)<3.2)continue;c.push({gx,gy,score:Math.abs(d-1.5)+(((gx*7+gy*13)%5)*.01)})}
+  c.sort((a,b)=>a.score-b.score||a.gx-b.gx||a.gy-b.gy);const out=[];for(const p of c){if(out.every(o=>Math.hypot(o.gx-p.gx,o.gy-p.gy)>=2.2))out.push(p);if(out.length>=ACT.spots)break}
+  return out.map((p,i)=>{let ch=9;for(const k in PO)if(distTo(PO[k],p.gx,p.gy)<=2.1)ch=Math.min(ch,ACT.pathCh[k]);return{id:i,gx:p.gx,gy:p.gy,ch,tower:null}})}
+function initAct(){for(const k in ACT.paths)PO[k]=mkPath(ACT.paths[k]);PA=PO.A;PS=PO.S;const w=ACT.water();WATER=w.poly;SHORES=w.shores;SPOTS=makeSpots();
+  let d=0;ICE_IN=ICE_OUT=0;for(;d<PS.len;d+=.05){const p=pathAt(d,PS);if(isWater(p.gx,p.gy)){if(!ICE_IN)ICE_IN=d;ICE_OUT=d}}}
+const spotOpen=s=>s.ch<=LI;
+function setChapter(i){LI=i;LV=LEVELS[i];PATHS=LV.open.map(k=>PO[k]);ICEDEF=LV.ice||null;if(IMG.grass)buildGround()}
+function loadLevel(i){setChapter(i)}
 // ---------- Bilder ----------
 const IMG={};
 function loadImages(){return Promise.all(Object.entries(ASSETS).map(([k,src])=>new Promise(res=>{const im=new Image();im.onload=()=>{IMG[k]=im;res()};im.onerror=()=>res();im.src=src})))}
@@ -470,7 +481,7 @@ function prepSprites(){
   SPR.hird=IMG.hird;SPR.hirdW=tinted(IMG.hird,"#fff",1);
   SPR.thrall=IMG.thrall;SPR.thrallW=tinted(IMG.thrall,"#fff",1);
   SPR.brute=IMG.brute;SPR.bruteW=tinted(IMG.brute,"#fff",1);
-  SPR.boss=IMG.boss;SPR.bossW=tinted(IMG.boss,"#fff",1);SPR.berserk=IMG.berserk||tinted(IMG.brute,"#7a1a10",.4);SPR.berserkW=tinted(SPR.berserk,"#fff",1);
+  SPR.boss=IMG.boss;SPR.bossW=tinted(IMG.boss,"#fff",1);SPR.rival=IMG.rival||tinted(IMG.jarl,"#1f2d6e",.45);SPR.rivalW=tinted(SPR.rival,"#fff",1);SPR.wolfjarl=IMG.wolfjarl||tinted(IMG.boss,"#0a0a12",.45);SPR.wolfjarlW=tinted(SPR.wolfjarl,"#fff",1);SPR.berserk=IMG.berserk||tinted(IMG.brute,"#7a1a10",.4);SPR.berserkW=tinted(SPR.berserk,"#fff",1);
   SPR.village=IMG.village;
 }
 
@@ -479,21 +490,23 @@ let GROUND=null,WATER_ISO=null,SHORE_ISO=null,WB=null,WBG=null,ICE_ISO=null,HOLE
 function pat(c,img,scale){const p=c.createPattern(img,"repeat");if(p.setTransform)p.setTransform(new DOMMatrix().scale(scale));return p}
 function blobMask(w,h,blobs,hard){const m=document.createElement("canvas");m.width=w;m.height=h;const x=m.getContext("2d");for(const[gx,gy,r]of blobs){const g=x.createRadialGradient(gx*S,gy*S,0,gx*S,gy*S,r*S);g.addColorStop(0,"rgba(0,0,0,1)");g.addColorStop(hard||0.35,"rgba(0,0,0,.9)");g.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=g;x.beginPath();x.arc(gx*S,gy*S,r*S,0,7);x.fill()}return m}
 function layer(w,h,fillFn,mask){const t=document.createElement("canvas");t.width=w;t.height=h;const x=t.getContext("2d");fillFn(x);x.globalCompositeOperation="destination-in";x.drawImage(mask,0,0);return t}
+const SEASON={};
 function buildGround(){
-  const WIN=LV.theme==="winter";const T={grass:WIN?IMG.snow:IMG.grass,flowers:WIN?IMG.snow:IMG.grass_flowers,road:WIN?IMG.road_snow:IMG.road,water:WIN?IMG.water_winter:IMG.water,rock:WIN?IMG.rock_snow:IMG.rock,paving:IMG.paving};
+  const WIN=LV.theme==="winter",AUT=LV.theme==="autumn",SPR_=LV.theme==="spring";if(AUT&&!SEASON.aut){SEASON.aut=tinted(IMG.grass,"#b0601c",.34);SEASON.autF=tinted(IMG.grass_flowers,"#c2481a",.42)}
+  const T={grass:WIN?IMG.snow:AUT?SEASON.aut:IMG.grass,flowers:WIN?IMG.snow:AUT?SEASON.autF:IMG.grass_flowers,road:WIN?IMG.road_snow:IMG.road,water:WIN?IMG.water_winter:IMG.water,rock:WIN?IMG.rock_snow:IMG.rock,paving:IMG.paving};
   const F=document.createElement("canvas");F.width=F.height=N*S;const f=F.getContext("2d");const R=rng(7+LI*13);
   f.fillStyle=pat(f,T.grass,0.42);f.fillRect(0,0,N*S,N*S);
   // ljus/mörk-variation
-  for(let i=0;i<70;i++){const gx=R()*N,gy=R()*N,r=1+R()*2.5;const g=f.createRadialGradient(gx*S,gy*S,0,gx*S,gy*S,r*S);const dark=R()<.55;g.addColorStop(0,WIN?(dark?"rgba(60,80,110,.10)":"rgba(255,255,255,.12)"):(dark?"rgba(20,40,10,.16)":"rgba(255,240,170,.10)"));g.addColorStop(1,"rgba(0,0,0,0)");f.fillStyle=g;f.fillRect(0,0,N*S,N*S)}
+  for(let i=0;i<110;i++){const gx=R()*N,gy=R()*N,r=1+R()*2.5;const g=f.createRadialGradient(gx*S,gy*S,0,gx*S,gy*S,r*S);const dark=R()<.55;g.addColorStop(0,AUT?(dark?"rgba(70,30,6,.16)":"rgba(255,200,120,.10)"):WIN?(dark?"rgba(60,80,110,.10)":"rgba(255,255,255,.12)"):(dark?"rgba(20,40,10,.16)":"rgba(255,240,170,.10)"));g.addColorStop(1,"rgba(0,0,0,0)");f.fillStyle=g;f.fillRect(0,0,N*S,N*S)}
   // blomgräs
-  const fb=[];for(let i=0;i<34;i++)fb.push([R()*N,R()*N,1+R()*1.8]);
+  const fb=[];for(let i=0;i<(SPR_?90:50);i++)fb.push([R()*N,R()*N,1+R()*1.8]);
   f.drawImage(layer(N*S,N*S,x=>{x.fillStyle=pat(x,T.flowers,0.4);x.fillRect(0,0,N*S,N*S)},blobMask(N*S,N*S,fb)),0,0);
   // berghällar
   f.drawImage(layer(N*S,N*S,x=>{x.fillStyle=pat(x,T.rock,0.34);x.fillRect(0,0,N*S,N*S)},blobMask(N*S,N*S,ROCKS,.65)),0,0);
   // byns jordplätt
   f.save();const vg=f.createRadialGradient(VC.gx*S,VC.gy*S,0,VC.gx*S,VC.gy*S,2.6*S);vg.addColorStop(0,"rgba(90,62,34,.85)");vg.addColorStop(.7,"rgba(90,62,34,.5)");vg.addColorStop(1,"rgba(90,62,34,0)");f.fillStyle=vg;f.fillRect(0,0,N*S,N*S);f.restore();
   // väg
-  f.save();f.lineJoin=f.lineCap="round";const pp=new Path2D();for(const P of PATHS)P.pts.forEach(([x,y],i)=>i?pp.lineTo(x*S,y*S):pp.moveTo(x*S,y*S));
+  f.save();f.lineJoin=f.lineCap="round";const pp=new Path2D();for(const P of LV.draw.map(k=>PO[k]))P.pts.forEach(([x,y],i)=>i?pp.lineTo(x*S,y*S):pp.moveTo(x*S,y*S));
   for(let i=7;i>0;i--){f.strokeStyle="rgba(58,40,20,.10)";f.lineWidth=1.25*S+i*6;f.stroke(pp)}
   f.strokeStyle=pat(f,T.road,0.34);f.lineWidth=1.25*S;f.stroke(pp);
   f.strokeStyle="rgba(40,26,12,.18)";f.lineWidth=1.25*S;f.globalCompositeOperation="multiply";f.setLineDash([]);f.restore();
@@ -505,14 +518,14 @@ function buildGround(){
   f.clip(wp);for(let i=0;i<8;i++){f.strokeStyle=`rgba(5,15,22,${0.07})`;f.lineWidth=(8-i)*14;f.stroke(wp)}
   f.restore();
   // bro
-  if(BRIDGE){const b=BRIDGE;f.save();f.fillStyle="rgba(20,14,8,.45)";f.fillRect(b.x0*S-6,b.y0*S+8,(b.x1-b.x0)*S+12,(b.y1-b.y0)*S);
+  for(const b of BRIDGES){f.save();f.fillStyle="rgba(20,14,8,.45)";f.fillRect(b.x0*S-6,b.y0*S+8,(b.x1-b.x0)*S+12,(b.y1-b.y0)*S);
     f.fillStyle="#6b4a2a";f.fillRect(b.x0*S,b.y0*S,(b.x1-b.x0)*S,(b.y1-b.y0)*S);
     for(let y=b.y0*S;y<b.y1*S;y+=14){f.fillStyle=((y/14)|0)%2?"#7d5732":"#734f2d";f.fillRect(b.x0*S+2,y+1,(b.x1-b.x0)*S-4,12)}
     f.fillStyle="#3e2a16";f.fillRect(b.x0*S-4,b.y0*S,8,(b.y1-b.y0)*S);f.fillRect(b.x1*S-4,b.y0*S,8,(b.y1-b.y0)*S);
     for(let y=b.y0*S;y<=b.y1*S;y+=S*.75){f.fillStyle="#2e1f10";f.beginPath();f.arc(b.x0*S,y,6,0,7);f.arc(b.x1*S,y,6,0,7);f.fill()}
     if(WIN){f.fillStyle="rgba(235,242,248,.55)";f.fillRect(b.x0*S-4,b.y0*S,5,(b.y1-b.y0)*S);f.fillRect(b.x1*S-1,b.y0*S,5,(b.y1-b.y0)*S)}f.restore()}
   // byggplatser
-  for(const s of SPOTS){const x=s.gx*S,y=s.gy*S,r=0.47*S;f.save();f.fillStyle="rgba(30,22,12,.45)";rr(f,x-r-4,y-r-4,2*r+8,2*r+8,14);f.fill();f.fillStyle=pat(f,IMG.paving,0.2);rr(f,x-r,y-r,2*r,2*r,12);f.fill();f.strokeStyle="rgba(255,240,200,.18)";f.lineWidth=2;f.stroke();f.restore()}
+  for(const s of SPOTS){if(!spotOpen(s))continue;const x=s.gx*S,y=s.gy*S,r=0.47*S;f.save();f.fillStyle="rgba(30,22,12,.45)";rr(f,x-r-4,y-r-4,2*r+8,2*r+8,14);f.fill();f.fillStyle=pat(f,IMG.paving,0.2);rr(f,x-r,y-r,2*r,2*r,12);f.fill();f.strokeStyle="rgba(255,240,200,.18)";f.lineWidth=2;f.stroke();f.restore()}
   // kantskugga
   const e=f.createLinearGradient(0,0,0,S*1.2);e.addColorStop(0,"rgba(0,0,0,.28)");e.addColorStop(1,"rgba(0,0,0,0)");
   for(let k=0;k<4;k++){f.save();f.translate(N*S/2,N*S/2);f.rotate(k*Math.PI/2);f.translate(-N*S/2,-N*S/2);f.fillStyle=e;f.fillRect(0,0,N*S,S*1.2);f.restore()}
@@ -534,7 +547,7 @@ function buildGround(){
   for(const sh of SHORES)sh.forEach(([x,y],i)=>{const p=iso(x,y);i?SHORE_ISO.lineTo(p.x,p.y):SHORE_ISO.moveTo(p.x,p.y)});
   WBG={x0:Math.min(...WATER.map(p=>p[0])),x1:Math.max(...WATER.map(p=>p[0])),y0:Math.min(...WATER.map(p=>p[1])),y1:Math.max(...WATER.map(p=>p[1]))};
   ICE_ISO=new Path2D();WATER.forEach(([x,y],i)=>{const p=iso(x,y);i?ICE_ISO.lineTo(p.x,p.y):ICE_ISO.moveTo(p.x,p.y)});ICE_ISO.closePath();
-  if(ICEDEF){HOLE_ISO=new Path2D();const z=ICEDEF.zone,pts=[];for(let k=0;k<=12;k++){const gx=z.x0+(z.x1-z.x0)*k/12;let y=8;while(y<12&&!isWater(gx,y))y+=.05;pts.push([gx,y+.12])}for(let k=12;k>=0;k--){const gx=z.x0+(z.x1-z.x0)*k/12;let y=12;while(y>8&&!isWater(gx,y))y-=.05;pts.push([gx,y-.12])}pts.forEach(([x,y],i)=>{const p=iso(x,y);i?HOLE_ISO.lineTo(p.x,p.y):HOLE_ISO.moveTo(p.x,p.y)});HOLE_ISO.closePath()}
+  if(ICEDEF){HOLE_ISO=new Path2D();const z=ICEDEF.zone,cy=ICEDEF.center[1],pts=[];for(let k=0;k<=12;k++){const gx=z.x0+(z.x1-z.x0)*k/12;let y=cy-4;while(y<cy+4&&!isWater(gx,y))y+=.05;pts.push([gx,y+.12])}for(let k=12;k>=0;k--){const gx=z.x0+(z.x1-z.x0)*k/12;let y=cy+4;while(y>cy-4&&!isWater(gx,y))y-=.05;pts.push([gx,y-.12])}pts.forEach(([x,y],i)=>{const p=iso(x,y);i?HOLE_ISO.lineTo(p.x,p.y):HOLE_ISO.moveTo(p.x,p.y)});HOLE_ISO.closePath()}
   const c=document.createElement("canvas");c.width=512;c.height=256;const x=c.getContext("2d");const cg=x.createRadialGradient(256,128,10,256,128,250);cg.addColorStop(0,"rgba(0,0,0,1)");cg.addColorStop(.5,"rgba(0,0,0,.6)");cg.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=cg;x.save();x.scale(1,.5);x.beginPath();x.arc(256,256,250,0,7);x.restore();x.fill();CLOUD=c;
 }
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
@@ -615,23 +628,25 @@ const ETYPES={
   thrall:{hp:26,speed:.95,atk:4,acd:1,bounty:5,vdmg:1,h:62,xp:1},
   brute:{hp:26*3.2,arm:.35,speed:.68,atk:10,acd:1.2,bounty:16,vdmg:3,h:88,xp:4},
   boss:{hp:520,armor:380,speed:.42,atk:22,acd:1.25,bounty:150,vdmg:30,h:128,xp:30,boss:true,name:"Sjövargen",intro:"Bryt hans rustning med tornen, fäll honom med jarlen"},
+  rival:{hp:560,armor:300,speed:.55,atk:20,acd:.9,bounty:160,vdmg:30,h:96,xp:30,boss:true,name:"Rivaljarlen",intro:"Han är snabb – bryt rustningen innan han når byn"},
+  wolfjarl:{hp:820,armor:520,speed:.4,atk:30,acd:1.3,bounty:220,vdmg:40,h:140,xp:40,boss:true,name:"Ulvklanens jarl",intro:"Ulvklanens hövding. Allt står på spel"},
   berserk:{hp:560,armor:220,speed:.5,atk:18,acd:1.1,bounty:160,vdmg:30,h:132,xp:30,boss:true,name:"Bärsärkskungen",intro:"Ju mer han blöder, desto vildare slåss han"}
 };
-function buildWave(w){const list=[];const hpMul=Math.pow(1.195,w-1)*LV.hpMul;let n=5+2*w;let br=w>=4?Math.floor((w-1)/3):0;const gap=Math.max(.6,1.15-.035*w);
-  if(w===WAVES){n=LI?16:20;br=LI?3:4}
+function buildWave(w){const c=w-LI*CHW,list=[];const hpMul=LV.hp*Math.pow(1.13,c-1);let n=6+Math.round(1.6*c)+LI*3;let br=c>=3?Math.floor(c/3)+LI:0;const gap=Math.max(.5,1.05-.03*c-.05*LI);
+  if(c===CHW){n=14+LI*3;br=3+LI}
   for(let i=0;i<n;i++)list.push({type:"thrall",hpMul,delay:gap});
   for(let k=0;k<br;k++){const pos=Math.floor((k+1)*list.length/(br+1));list.splice(pos,0,{type:"brute",hpMul,delay:gap*1.6})}
-  if(w===WAVES&&LV.boss)list.splice(Math.floor(list.length*.55),0,{type:LV.boss,hpMul:1,delay:3});
+  if(c===CHW&&LV.boss)list.splice(Math.floor(list.length*.55),0,{type:LV.boss,hpMul:LV.hp>1?Math.sqrt(LV.hp)*1.15:1,delay:3});
   return list}
 
 // ---------- Tillstånd ----------
 let G={};
 function resetGame(){
   for(const s of SPOTS)s.tower=null;
-  const JF=1+.15*ml("jarl");const j={kind:"jarl",gx:LV.jarl[0],gy:LV.jarl[1],ax:0,ay:0,hp:Math.round(240*JF),maxhp:Math.round(240*JF),base:Math.round(240*JF),cd:0,dead:0,cmd:false,face:false,t:0,blocks:[],lastHit:9,flash:0,xp:0,lvl:1,cap:2,dmg:13,acd:.85,speed:2.4,lunge:0};
+  const JF=1+.15*ml("jarl");const j={kind:"jarl",gx:ACT.jarl[0],gy:ACT.jarl[1],ax:0,ay:0,hp:Math.round(240*JF),maxhp:Math.round(240*JF),base:Math.round(240*JF),cd:0,dead:0,cmd:false,face:false,t:0,blocks:[],lastHit:9,flash:0,xp:0,lvl:1,cap:2,dmg:13,acd:.85,speed:2.4,lunge:0};
   j.ax=j.gx;j.ay=j.gy;
   applyMeta();
-  G={gold:(LV.gold||200)+30*ml("gold"),hp:100,wave:0,queue:[],spawnT:0,countdown:null,enemies:[],towers:[],units:[j],jarl:j,proj:[],parts:[],texts:[],time:0,speed:1,paused:false,over:false,started:false,
+  G={gold:ACT.gold+30*ml("gold"),hp:100,chHp:100,wave:LI*CHW,queue:[],spawnT:0,countdown:null,enemies:[],towers:[],units:[j],jarl:j,proj:[],parts:[],texts:[],time:0,speed:1,paused:false,over:false,started:false,
      cds:[0,0,0],cdMax:[30,45,60].map(v=>v*(1-.1*ml("cry"))),flags:{},selected:null,buildSpot:null,pendingBuild:null,marker:null,shake:0,rings:[],bossRef:null,bonusText:0,stats:{kills:0},dying:[],coins:[],bossIntro:0,fires:[],streaks:[],ice:ICEDEF?{frozen:false,broken:false,hp:0,max:ICEDEF.hp,river:0,hole:0,refreezeAt:null,flash:0}:null};
   for(let i=0;i<2+ml("hird");i++)G.units.push(makeHird(i,0));
   updateHUD(true);closePanels();
@@ -668,15 +683,13 @@ function endPtr(e){const p=ptrs.get(e.pointerId);ptrs.delete(e.pointerId);if(!p)
 cv.addEventListener("pointerup",endPtr);cv.addEventListener("pointercancel",e=>{ptrs.delete(e.pointerId);if(!ptrs.size)gesture=null});
 cv.addEventListener("wheel",e=>{e.preventDefault();const z=clamp(cam.z*Math.exp(-e.deltaY*.0015),fitZoom()*.9,1.5);const q=P(e);const wx=(q.x-W/2)/cam.z+cam.x,wy=(q.y-H/2)/cam.z+cam.y;cam.z=z;cam.x=wx-(q.x-W/2)/z;cam.y=wy-(q.y-H/2)/z;clampCam()},{passive:false});
 
-function hornPos(){return w2s(HORN[0],HORN[1])}
 function handleTap(sx,sy){
   if(!G.started||G.over)return;
   if(G.buildSpot||G.selected){closePanels();return}
-  const hp=hornPos();if(canCallWave()&&Math.hypot(sx-hp.x,sy-(hp.y-40*cam.z))<Math.max(30,46*cam.z)){startWave();return}
   // torn
   for(const t of G.towers){const p=w2s(t.gx,t.gy);const h=180*cam.z,w=140*cam.z;if(sx>p.x-w/2&&sx<p.x+w/2&&sy>p.y-h&&sy<p.y+18*cam.z){selectTower(t);return}}
   const w=s2w(sx,sy);
-  for(const s of SPOTS){if(!s.tower&&Math.hypot(w.gx-s.gx,w.gy-s.gy)<.62){if(dist(G.jarl,s)<=BUILD_R&&!G.jarl.dead){openBuild(s)}else{G.pendingBuild=s;const a=approach(s);moveJarl(a.gx,a.gy)}return}}
+  for(const s of SPOTS){if(!s.tower&&spotOpen(s)&&Math.hypot(w.gx-s.gx,w.gy-s.gy)<.62){if(dist(G.jarl,s)<=BUILD_R&&!G.jarl.dead){openBuild(s)}else{G.pendingBuild=s;const a=approach(s);moveJarl(a.gx,a.gy)}return}}
   if(walkable(w.gx,w.gy))moveJarl(w.gx,w.gy);
 }
 function approach(s){const j=G.jarl;const d=dist(j,s);if(d<=BUILD_R)return{gx:j.gx,gy:j.gy};const k=(d-BUILD_R+.4)/d;let gx=j.gx+(s.gx-j.gx)*k,gy=j.gy+(s.gy-j.gy)*k;if(!walkable(gx,gy)){gx=s.gx+.8;gy=s.gy+.8}return{gx,gy}}
@@ -684,7 +697,7 @@ function moveJarl(gx,gy){const j=G.jarl;if(j.dead)return;j.ax=gx;j.ay=gy;j.cmd=t
 function release(u){for(const e of u.blocks)if(e.engaged===u)e.engaged=null;u.blocks=[]}
 
 // ---------- Vågor ----------
-const canCallWave=()=>!G.over&&G.wave<WAVES&&G.queue.length===0&&(G.wave===0||G.countdown!==null);
+const canCallWave=()=>!G.over&&G.started&&G.wave<CH_END()&&G.queue.length===0&&(G.wave===CH_START()||G.countdown!==null);
 function payFarms(){let tot=0;for(const t of G.towers){if(t.type!=="farm")continue;const inc=FARM_INC[t.lv[0]];tot+=inc;G.gold+=inc;t.recoil=1;const p=iso(t.gx,t.gy);floatText(p,`+${inc}`,"#e3b34c",-110);
   if(G.coins.length<25){const sp=w2s(t.gx,t.gy);for(let k=0;k<3;k++)G.coins.push({x:sp.x+(k-1)*10,y:sp.y-60*cam.z,t:-k*.12})}}if(tot)SND.coin();G.stats.farmGold=(G.stats.farmGold||0)+tot}
 // ---------- Is ----------
@@ -692,24 +705,24 @@ function iceOnWave(){const I=G.ice;if(!I)return;const D=ICEDEF;
   if(G.wave===D.warn){toast("Frosten kommer","Floden fryser nästa våg och öppnar en genväg mot byn")}
   if(G.wave===D.freeze||(I.refreezeAt&&G.wave>=I.refreezeAt))freezeIce()}
 function freezeIce(){const I=G.ice;I.frozen=true;I.hp=I.max=ICEDEF.hp;I.refreezeAt=null;I.flash=1;toast(I.broken?"Isen har frusit igen":"Floden har frusit","Fienden tar genvägen över isen");
-  for(const e of G.enemies){if(e.P!==PATHS[0])continue;const n=nearestD(PATHS[1],e.gx,e.gy);if(n.dist<.4&&n.d<ICE_IN-.3){e.P=PATHS[1];e.d=n.d}}}
+  for(const e of G.enemies){if(e.P!==PA)continue;const n=nearestD(PS,e.gx,e.gy);if(n.dist<.4&&n.d<ICE_IN-.3){e.P=PS;e.d=n.d}}}
 function breakIce(){const I=G.ice;G.stats.iceBreaks=(G.stats.iceBreaks||0)+1;I.frozen=false;I.broken=true;I.refreezeAt=G.wave+ICEDEF.refreeze;G.shake=.5;SND.thump();toast("Isen brister!","Genvägen är stängd – fiender på isen drunknar");
   const c=ICEDEF.center;for(let k=0;k<26;k++){const p=iso(c[0]+(Math.random()-.5)*3,c[1]+(Math.random()-.5)*1.6);G.parts.push({x:p.x,y:p.y-4,vx:(Math.random()-.5)*90,vy:-60-Math.random()*90,g:260,life:.9,max:.9,size:3+Math.random()*4,type:"ice"})}
-  for(const e of G.enemies){if(e.P!==PATHS[1]||e.hp<=0)continue;if(e.d>=ICE_IN-.25&&e.d<=ICE_OUT+.25){drown(e)}else if(e.d<ICE_IN){const n=nearestD(PATHS[0],e.gx,e.gy);e.P=PATHS[0];e.d=n.d;if(e.engaged){release(e.engaged)}}}}
+  for(const e of G.enemies){if(e.P!==PS||e.hp<=0)continue;if(e.d>=ICE_IN-.25&&e.d<=ICE_OUT+.25){drown(e)}else if(e.d<ICE_IN){const n=nearestD(PA,e.gx,e.gy);e.P=PATHS[0];e.d=n.d;if(e.engaged){release(e.engaged)}}}}
 function drown(e){if(e.boss){e.armor=0;e.stun=2.2;const p=iso(e.gx,e.gy);for(let k=0;k<16;k++)G.parts.push({x:p.x+(Math.random()-.5)*30,y:p.y-6,vx:(Math.random()-.5)*70,vy:-50-Math.random()*80,g:240,life:.8,max:.8,size:2+Math.random()*3,type:"splash"});toast("För tung för att drunkna","Han vadar ur vattnet – utan rustning");return}const p=iso(e.gx,e.gy);for(let k=0;k<12;k++)G.parts.push({x:p.x+(Math.random()-.5)*20,y:p.y-6,vx:(Math.random()-.5)*60,vy:-50-Math.random()*70,g:240,life:.7,max:.7,size:2+Math.random()*3,type:"splash"});e.drown=true;if(e.boss){e.armor=0}hitEnemy(e,1e9,false,false,true);floatText(p,"Drunknade","#a9cbd4",-e.h-6)}
 function updateIce(dt){const I=G.ice;if(!I)return;I.river=Math.min(1,I.river+(I.broken||I.frozen?dt*.6:0));I.hole+=((I.frozen?0:I.broken?1:0)-I.hole)*Math.min(1,dt*2.5);I.flash=Math.max(0,(I.flash||0)-dt)}
-function startWave(){if(!canCallWave())return;if(G.countdown!==null&&G.countdown>0){const b=Math.round(G.countdown*1.5);if(b>0){G.gold+=b;floatText(iso(HORN[0],HORN[1]+.6),`+${b} tidig start`,"#f6d98a")}}
-  SND.waveHorn();payFarms();G.wave++;G.queue=buildWave(G.wave);G.spawnT=.4;G.countdown=null;toast(G.wave===WAVES?"Sista vågen":`Våg ${G.wave}`,G.wave===WAVES?(LV.bossLine||"Ulvklanens hela styrka anfaller"):"");iceOnWave();}
-const curPath=()=>(ICEDEF&&G.ice&&G.ice.frozen&&PATHS[1])?PATHS[1]:PATHS[0];
+function startWave(){if(!canCallWave())return;if(G.countdown!==null&&G.countdown>0){const b=Math.round(G.countdown*1.5);if(b>0){G.gold+=b;floatText(iso(VC.gx,VC.gy-2),`+${b} tidig start`,"#f6d98a")}}
+  SND.waveHorn();payFarms();G.wave++;G.queue=buildWave(G.wave);G.spawnT=.4;G.countdown=null;toast(G.wave===CH_END()?"Sista vågen i kapitlet":`Våg ${CW()}`,G.wave===CH_END()?(LV.bossLine||"Ulvklanens hela styrka anfaller"):"");iceOnWave();}
+const curPath=()=>{const P=PATHS[(Math.random()*PATHS.length)|0];return(P===PA&&ICEDEF&&G.ice&&G.ice.frozen)?PS:P};
 function nearestD(P,gx,gy){let best={d:0,dist:1e9};for(const s of P.seg){const vx=s.bx-s.ax,vy=s.by-s.ay;let t=((gx-s.ax)*vx+(gy-s.ay)*vy)/(s.len*s.len);t=clamp(t,0,1);const dd=Math.hypot(gx-s.ax-vx*t,gy-s.ay-vy*t);if(dd<best.dist)best={d:s.start+t*s.len,dist:dd}}return best}
-function spawn(def){const T=ETYPES[def.type];const P0=curPath();const p=pathAt(0,P0);const e={P:P0,boss:!!T.boss,type:def.type,gx:p.gx,gy:p.gy,d:0,hp:T.hp*def.hpMul,maxhp:T.hp*def.hpMul,armor:T.armor||0,arm:T.arm||0,maxArmor:T.armor||0,speed:T.speed*(0.92+Math.random()*.16),atk:T.atk*(def.type==="boss"?1:Math.sqrt(def.hpMul)),acd:T.acd,cd:0,bounty:T.bounty,vdmg:T.vdmg,h:T.h,xp:T.xp,engaged:null,stun:0,burn:0,burnT:0,flash:0,t:Math.random()*5,face:false,off:(Math.random()-.5)*.5};
+function spawn(def){const T=ETYPES[def.type];const P0=curPath();const p=pathAt(0,P0);const e={P:P0,boss:!!T.boss,type:def.type,gx:p.gx,gy:p.gy,d:0,hp:T.hp*def.hpMul,maxhp:T.hp*def.hpMul,armor:T.armor||0,arm:T.arm||0,maxArmor:T.armor||0,speed:T.speed*(0.92+Math.random()*.16),atk:T.atk*(def.type==="boss"?1:Math.sqrt(def.hpMul)),acd:T.acd,cd:0,bounty:Math.round(T.bounty*(1+.45*LI)),vdmg:T.vdmg,h:T.h,xp:T.xp,engaged:null,stun:0,burn:0,burnT:0,flash:0,t:Math.random()*5,face:false,off:(Math.random()-.5)*.5};
   G.enemies.push(e);if(e.boss){G.bossRef=e;G.bossIntro=2.5;G.shake=.7;$("bossName").textContent=T.name.toUpperCase();toast(T.name,T.intro)}}
 
 // ---------- Uppdatering ----------
 function update(dt){
   G.time+=dt;updateIce(dt);updateFires(dt);
   // vågor
-  if(G.queue.length){G.spawnT-=dt;if(G.spawnT<=0){const d=G.queue.shift();spawn(d);G.spawnT=G.queue.length?G.queue[0].delay:0;if(!G.queue.length&&G.wave<WAVES)G.countdown=22}}
+  if(G.queue.length){G.spawnT-=dt;if(G.spawnT<=0){const d=G.queue.shift();spawn(d);G.spawnT=G.queue.length?G.queue[0].delay:0;if(!G.queue.length&&G.wave<CH_END())G.countdown=22}}
   if(G.countdown!==null){G.countdown-=dt;if(G.countdown<=0){G.countdown=0;startWave()}}
   for(let i=0;i<3;i++)G.cds[i]=Math.max(0,G.cds[i]-dt);
   updateUnits(dt);updateEnemies(dt);updateTowers(dt);updateProj(dt);
@@ -722,7 +735,7 @@ function update(dt){
   if(G.hp<65&&Math.random()<dt*(G.hp<35?9:4)){const p=iso(VC.gx-.6+Math.random()*1.4,VC.gy-.6+Math.random()*1.2);G.parts.push({x:p.x,y:p.y-70,vx:(Math.random()-.5)*8,vy:-22-Math.random()*14,life:3,max:3,size:10+Math.random()*10,type:"smoke"})}
   if(G.hp<35&&Math.random()<dt*10){const p=iso(VC.gx-.5+Math.random(),VC.gy-.5+Math.random());G.parts.push({x:p.x,y:p.y-60-Math.random()*40,vx:0,vy:-30,life:.6,max:.6,size:5,type:"fire"})}
   // seger
-  if(G.wave===WAVES&&!G.queue.length&&!G.enemies.length&&!G.over)endGame(true);
+  if(G.wave===CH_END()&&!G.queue.length&&!G.enemies.length&&!G.over)endGame(true);
 }
 
 function friendlies(){return G.units.filter(u=>!u.dead)}
@@ -843,7 +856,7 @@ function draw(){
   // byggradie & platser
   const j=G.jarl;
   if(G.started&&!j.dead){ellipse(j.gx,j.gy,BUILD_R,"rgba(246,217,138,.10)","rgba(246,217,138,.28)",[10,8])}
-  for(const s of SPOTS){if(s.tower)continue;const inR=G.started&&!j.dead&&dist(j,s)<=BUILD_R;const p=iso(s.gx,s.gy);ctx.save();ctx.translate(p.x,p.y);
+  for(const s of SPOTS){if(s.tower||!spotOpen(s))continue;const inR=G.started&&!j.dead&&dist(j,s)<=BUILD_R;const p=iso(s.gx,s.gy);ctx.save();ctx.translate(p.x,p.y);
     const a=inR?.55+.35*Math.sin(tm*4):.0;if(inR){ctx.strokeStyle=`rgba(246,217,138,${a})`;ctx.lineWidth=3;diamond(.5);ctx.stroke()}
     if(G.buildSpot===s){ctx.fillStyle="rgba(246,217,138,.25)";diamond(.5);ctx.fill()}ctx.restore()}
   if(G.selected&&G.selected.type!=="farm")ellipse(G.selected.gx,G.selected.gy,towerStats(G.selected).range,"rgba(169,203,212,.10)","rgba(169,203,212,.5)");
@@ -869,13 +882,14 @@ function draw(){
   // partiklar
   for(const p of G.parts){const a=p.life/p.max;if(p.type==="smoke"){ctx.fillStyle=`rgba(60,58,56,${a*.45})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size*(1.6-a),0,7);ctx.fill()}else if(p.type==="fire"){ctx.fillStyle=`rgba(255,${120+Math.random()*80|0},40,${a})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size*a+1,0,7);ctx.fill()}else if(p.type==="ice"){ctx.fillStyle=`rgba(225,240,248,${a})`;ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size*.7)}else if(p.type==="splash"){ctx.fillStyle=`rgba(190,220,232,${a*.8})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill()}else if(p.type==="spark"){ctx.fillStyle=`rgba(255,240,200,${a})`;ctx.fillRect(p.x,p.y,2.5,2.5)}else{ctx.fillStyle=`rgba(120,98,70,${a*.6})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill()}}
   // horn
-  if(G.started&&canCallWave()){const p=iso(HORN[0],HORN[1]);drawHorn(p.x,p.y-40,tm)}
+  if(G.started)for(const k of LV.open){const P=PO[k];const q=pathAt(1.6,P),p=iso(q.gx,q.gy);const hot=G.queue.length>0||canCallWave();ctx.save();ctx.translate(p.x+30,p.y);ctx.strokeStyle="#2e1f10";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-70);ctx.stroke();const fl=Math.sin(tm*4)*4;ctx.fillStyle=hot?"#3a4fa0":"#2a3260";ctx.beginPath();ctx.moveTo(0,-70);ctx.quadraticCurveTo(22,-66+fl,40,-62);ctx.lineTo(0,-46);ctx.closePath();ctx.fill();ctx.fillStyle="#0e0e18";ctx.beginPath();ctx.arc(14,-60,4,0,7);ctx.fill();ctx.restore()}
   // texter
   ctx.textAlign="center";ctx.font="800 18px 'Alegreya Sans',sans-serif";
   for(const t of G.texts){ctx.globalAlpha=Math.min(1,t.life*2);ctx.lineWidth=4;ctx.strokeStyle="rgba(20,10,4,.85)";ctx.strokeText(t.txt,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x,t.y)}ctx.globalAlpha=1;
   ctx.setTransform(DPR,0,0,DPR,0,0);
   const vg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(4,6,8,.42)");ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
   const lt=ctx.createLinearGradient(0,0,W,H);lt.addColorStop(0,"rgba(255,226,160,.06)");lt.addColorStop(.6,"rgba(255,226,160,0)");ctx.fillStyle=lt;ctx.fillRect(0,0,W,H);
+  if(LV.theme==="autumn"){for(let i=0;i<34;i++){const r=rng(i*53+9);const sp=22+r()*26;const x=((r()*W*1.3+tm*(20+r()*18)+Math.sin(tm*1.3+i)*20)%(W*1.3))-W*.15,y=((r()*H+tm*sp)%(H+20))-10;ctx.save();ctx.translate(x,y);ctx.rotate(tm*2+i);ctx.globalAlpha=.55+r()*.35;ctx.fillStyle=["#c4531c","#d98a24","#a3341a"][i%3];ctx.beginPath();ctx.ellipse(0,0,4,2,0,0,7);ctx.fill();ctx.restore()}ctx.globalAlpha=1}
   if(LV.theme==="winter"){ctx.fillStyle="rgba(150,180,215,.07)";ctx.fillRect(0,0,W,H);ctx.fillStyle="#fff";for(let i=0;i<90;i++){const r=rng(i*97+5);const sp=18+r()*30,sz=1+r()*2.2;const x=((r()*W*1.3+tm*(8+r()*10)+Math.sin(tm*.7+i)*14)%(W*1.3))-W*.15,y=((r()*H+tm*sp)%(H+20))-10;ctx.globalAlpha=.35+r()*.45;ctx.beginPath();ctx.arc(x,y,sz,0,7);ctx.fill()}ctx.globalAlpha=1}
   if(G.bossIntro>0){ctx.fillStyle=`rgba(30,4,2,${.3*Math.min(1,G.bossIntro)})`;ctx.fillRect(0,0,W,H)}
   if(G.coins.length){const gt=goldTarget();for(const c of G.coins){if(c.t<0)continue;const k=Math.min(1,c.t),e=k*k;const x=c.x+(gt.x-c.x)*e,y=c.y+(gt.y-c.y)*e-Math.sin(k*Math.PI)*60;const r=6*(1-k*.4);ctx.fillStyle="#e3b34c";ctx.strokeStyle="#7a5418";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.stroke();ctx.fillStyle="rgba(255,248,220,.8)";ctx.beginPath();ctx.arc(x-r*.3,y-r*.3,r*.3,0,7);ctx.fill()}}
@@ -893,6 +907,8 @@ const GAIT={
   thrall:{stride:.55,nd:-1,feet:[[.24,.53,.8],[.6,.86,.79]]},
   brute:{stride:.6,nd:-1,frames:true,feet:[[.3,.5,.79],[.5,.72,.85]]},
   boss:{stride:.55,nd:-1,frames:true,feet:[[.29,.52,.8],[.58,.8,.8]]},
+  rival:{stride:1.0,nd:-1,frames:true,feet:[[.27,.49,.8],[.54,.83,.82]]},
+  wolfjarl:{stride:.55,nd:-1,frames:true,feet:[[.29,.52,.8],[.58,.8,.8]]},
   berserk:{stride:.6,nd:-1,frames:true,feet:[[.3,.52,.8],[.56,.8,.8]]}};
 const PARTS=new Map();
 function getParts(img,g){let p=PARTS.get(img);if(p)return p;const W=img.width,H=img.height,F=Math.ceil(H*.05);
@@ -1026,10 +1042,12 @@ function closePanels(){G.buildSpot=null;G.selected=null;$("buildPop").hidden=tru
 for(let i=0;i<3;i++)$("ab"+i).addEventListener("click",()=>useAbility(i));
 $("speedBtn").addEventListener("click",()=>{G.speed=G.speed===1?2:1;$("speedBtn").textContent=G.speed+"×";$("speedBtn").classList.toggle("on",G.speed===2)});
 $("pauseBtn").addEventListener("click",()=>{if(!G.started||G.over)return;G.paused=true;SND.pause(true);$("pauseOv").hidden=false});
+$("pauseMenu").addEventListener("click",()=>{$("pauseOv").hidden=true;SND.pause(false);G.paused=false;showLevels()});
 $("resumeBtn").addEventListener("click",()=>{G.paused=false;SND.pause(false);$("pauseOv").hidden=true});
-$("restartBtn").addEventListener("click",()=>{$("pauseOv").hidden=true;SND.pause(false);newGame()});
-$("againBtn").addEventListener("click",()=>{$("endOv").hidden=true;newGame()});
-$("nextBtn").addEventListener("click",()=>{$("endOv").hidden=true;startLevel(LI+1)});
+$("restartBtn").addEventListener("click",()=>{$("pauseOv").hidden=true;SND.pause(false);G.paused=false;continueAct()});
+$("againBtn").addEventListener("click",()=>{$("endOv").hidden=true;continueAct()});
+$("nextBtn").addEventListener("click",()=>{$("endOv").hidden=true;nextChapter()});
+$("waveBtn").addEventListener("click",()=>{startWave();updateHUD()});
 $("menuBtn").addEventListener("click",()=>{$("endOv").hidden=true;showLevels()});
 const starsOf=i=>{try{return +localStorage.getItem("skj_"+LEVELS[i].key)||0}catch(e){return 0}};
 const STAR=(on,s=16)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="${on?"#e3b34c":"#2a1f16"}" stroke="${on?"#7a5418":"#5a4630"}" stroke-width="1.2"/></svg>`;
@@ -1061,22 +1079,27 @@ $("topBtn").addEventListener("click",()=>showTop(topLvl));
 $("topBack").addEventListener("click",()=>{$("topOv").hidden=true;showLevels()});
 $("hallBack").addEventListener("click",()=>{$("hallOv").hidden=true;showLevels()});
 $("hallReset").addEventListener("click",()=>{M={};metaSave(M);showHall()});
-function showLevels(){renderHallBtn();const box=$("levelList");box.innerHTML="";LEVELS.forEach((L,i)=>{const st=starsOf(i),open=i===0||starsOf(i-1)>0;const b=document.createElement("button");b.className="lvl"+(L.theme==="winter"?" win":"");b.disabled=!open;
-    b.innerHTML=`<span class="no">${i+1}</span><span><b>${L.name}</b><small>${open?L.desc:"Klara bana "+i+" för att låsa upp."}</small></span><span class="st">${[0,1,2].map(k=>STAR(k<st)).join("")}</span>`;
-    b.addEventListener("click",()=>startLevel(i));box.appendChild(b)});G.started=false;$("startOv").hidden=false}
-function startLevel(i){SND.init();renderSnd();loadLevel(i);resetGame();centerCam();$("startOv").hidden=true;G.started=true}
+function showLevels(){renderHallBtn();const sv=loadSave(),box=$("levelList");box.innerHTML="";const cur=sv?sv.ch:0;
+  LEVELS.forEach((L,i)=>{const st=starsOf(i),done=st>0;const d=document.createElement("div");d.className="lvl"+(L.theme==="winter"?" win":"")+(sv&&i===cur?" cur":"");
+    d.innerHTML=`<span class="no">${i+1}</span><span><b>${L.name}</b><small>${sv&&i===cur?"Här är du nu. "+L.intro:done?"Avklarat.":i===0||sv&&i<cur?L.intro:"Nås genom att klara kapitel "+i+"."}</small></span><span class="st">${[0,1,2].map(k=>STAR(k<st)).join("")}</span>`;box.appendChild(d)});
+  const row=document.createElement("div");row.className="row";
+  const go=document.createElement("button");go.className="big";go.textContent=sv?`Fortsätt · Kapitel ${cur+1}`:"Börja akt I";go.addEventListener("click",()=>sv?continueAct():newAct());row.appendChild(go);
+  if(sv){const r=document.createElement("button");r.className="ghost";r.textContent="Börja om akten";let armed=false;r.addEventListener("click",()=>{if(!armed){armed=true;r.textContent="Tryck igen – basen nollställs";return}newAct()});row.appendChild(r)}
+  box.appendChild(row);G.started=false;$("startOv").hidden=false}
+function startLevel(i){newAct()}
 $("portrait").addEventListener("click",()=>{const p=iso(G.jarl.gx,G.jarl.gy);cam.x=p.x;cam.y=p.y;clampCam()});
-function newGame(){resetGame();G.started=true;centerCam()}
-function centerCam(){cam.z=fitZoom()*1.3;const p=iso(10,10);cam.x=p.x;cam.y=p.y+20;clampCam()}
+function newGame(){continueAct()}
+function migrateStars(){try{if(localStorage.getItem("skj_mig1"))return;const a=+localStorage.getItem("skj_b1")||0,b=+localStorage.getItem("skj_b2")||0;if(a)localStorage.setItem("skj_a1c1",Math.max(a,+localStorage.getItem("skj_a1c1")||0));if(b)localStorage.setItem("skj_a1c3",Math.max(b,+localStorage.getItem("skj_a1c3")||0));localStorage.setItem("skj_mig1","1")}catch(e){}}
+function centerCam(){cam.z=fitZoom()*1.55;const p=iso(VC.gx-2.5,VC.gy-4);cam.x=p.x;cam.y=p.y;clampCam()}
 
 const HINTS_B2=[
-  {t:"Floden fryser vid våg 7 och ger fienden en genväg rakt mot byn.",when:()=>G.wave>=1&&G.wave<6,done:()=>G.towers.some(t=>t.type==="catapult")},
-  {t:"Bygg en katapult nära floden och välj spåret Isbrytare för att krossa isen.",when:()=>G.wave>=5,done:()=>G.towers.some(t=>t.type==="catapult"&&t.lv[2]>0)}
+  {t:"Floden fryser vid våg 2 och ger fienden en genväg rakt mot byn.",when:()=>CW()<2,done:()=>G.towers.some(t=>t.type==="catapult")},
+  {t:"Bygg en katapult nära floden och välj spåret Isbrytare för att krossa isen.",when:()=>CW()>=1,done:()=>G.towers.some(t=>t.type==="catapult"&&t.lv[2]>0)}
 ];
 const HINTS=[
   {t:"Tryck på marken för att flytta jarlen.",done:()=>G.flags.moved},
   {t:"Tryck på en stenplatta nära jarlen för att bygga ett torn.",done:()=>G.towers.length>0},
-  {t:"Tryck på hornet vid vägens början för att starta första vågen.",done:()=>G.wave>0},
+  {t:"Tryck på Starta våg nere i mitten när du är redo.",done:()=>G.wave>0},
   {t:"Stridsrop ger närliggande torn snabbare attacker. Förmågorna finns nere till höger.",when:()=>G.wave>=2,done:()=>G.flags.ability},
   {t:"Tryck på ett torn för att uppgradera det i ett av tre spår.",when:()=>G.wave>=3&&G.gold>=40,done:()=>G.flags.upgraded},
   {t:"Bygg en gård: den ger guld varje gång en ny våg startar.",when:()=>G.wave>=2&&G.gold>=60,done:()=>G.towers.some(t=>t.type==="farm")},
@@ -1087,19 +1110,41 @@ function updateHUD(force){
   const set=(k,v,fn)=>{if(force||lastHud[k]!==v){lastHud[k]=v;fn(v)}};
   set("hp",G.hp,v=>{$("hpTxt").textContent=Math.ceil(v);$("hpBar").style.width=v+"%"});
   set("gold",G.gold,v=>{$("goldTxt").textContent=v;if(G.buildSpot){$("buildArcher").disabled=v<TOWER_COST;$("buildSpear").disabled=v<SPEAR_COST;$("buildFarm").disabled=v<FARM_COST;$("buildCat").disabled=v<CAT_COST}if(G.selected)renderTPanel()});
-  set("wave",G.wave,v=>$("waveTxt").textContent=`Våg ${v}/${WAVES}`);
+  set("wave",G.wave+"|"+LI,v=>$("waveTxt").textContent=`Kap ${LI+1} · Våg ${CW()}/${CHW}`);
+  const wb=$("waveBtn"),cw=canCallWave()&&!G.paused;wb.hidden=!cw;if(cw){const t=G.countdown===null?`Starta våg ${CW()+1}`:`Våg ${CW()+1} om ${Math.ceil(G.countdown)} s · starta nu +${Math.round(G.countdown*1.5)}`;set("wbt",t,v=>wb.textContent=v)}
   const j=G.jarl;$("jHp").style.width=(j.dead?0:j.hp/j.maxhp*100)+"%";set("lvl",j.lvl,v=>$("lvTxt").textContent=v);
   const need=[0,45,120,120];$("jXp").style.width=(j.lvl>=3?100:clamp((j.xp-need[j.lvl-1])/(need[j.lvl]-need[j.lvl-1]),0,1)*100)+"%";
   for(let i=0;i<3;i++){const el=$("ab"+i);const c=G.cds[i];el.querySelector(".cd").style.setProperty("--p",j.dead?1:c/G.cdMax[i]);el.querySelector(".t").textContent=c>0?Math.ceil(c):"";el.classList.toggle("ready",c<=0&&!j.dead&&G.started)}
-  const h=(LI===0?HINTS:HINTS_B2).find(h=>!h.done()&&(!h.when||h.when()));const ht=G.started&&!G.over&&h?h.t:"";set("hint",ht,v=>{$("hint").textContent=v});$("hint").hidden=!ht||!!G.bossRef||!!G.selected;
+  const h=(LI===0?HINTS:LI===2?HINTS_B2:[]).find(h=>!h.done()&&(!h.when||h.when()));const ht=G.started&&!G.over&&h?h.t:"";set("hint",ht,v=>{$("hint").textContent=v});$("hint").hidden=!ht||!!G.bossRef||!!G.selected;
   const b=G.bossRef;$("bossBar").hidden=!b;if(b){$("bossHp").style.width=b.hp/b.maxhp*100+"%";const seg=b.maxArmor/3;[...$("armorSeg").children].forEach((el,i)=>el.firstChild.style.transform=`scaleX(${clamp((b.armor-seg*i)/seg,0,1)})`)}
 }
-function endGame(win){if(G.over)return;G.over=true;closePanels();win?SND.win():SND.lose();const stars=win?(G.hp>=80?3:G.hp>=40?2:1):0;
-  $("endTitle").textContent=win?"Byn står kvar":"Byn har fallit";$("endSub").textContent=`Bana ${LI+1} · ${LV.name}`;$("nextBtn").hidden=!(win&&LI+1<LEVELS.length);
+// ---------- Akt: sparning och kapitelbyten ----------
+const SAVEK="skj_act1";
+function saveAct(){try{localStorage.setItem(SAVEK,JSON.stringify({ch:LI,gold:G.gold,hp:G.hp,kills:G.stats.kills,jl:G.jarl.lvl,jx:G.jarl.xp,towers:G.towers.map(t=>({s:t.spot.id,type:t.type,lv:t.lv,spent:t.spent}))}))}catch(e){}}
+function loadSave(){try{return JSON.parse(localStorage.getItem(SAVEK)||"null")}catch(e){return null}}
+function clearSave(){try{localStorage.removeItem(SAVEK)}catch(e){}}
+function newIce(){return ICEDEF?{frozen:false,broken:false,hp:0,max:ICEDEF.hp,river:0,hole:0,refreezeAt:null,flash:0}:null}
+function beginPlay(){$("startOv").hidden=true;$("endOv").hidden=true;G.started=true;centerCam();setTimeout(()=>toast(`Kapitel ${LI+1}`,LV.name+" – "+LV.intro),400)}
+function newAct(){SND.init();renderSnd();clearSave();setChapter(0);resetGame();G.chHp=G.hp;saveAct();beginPlay()}
+function continueAct(){const sv=loadSave();if(!sv)return newAct();SND.init();renderSnd();setChapter(sv.ch);resetGame();
+  G.gold=sv.gold;G.hp=sv.hp;G.chHp=sv.hp;G.stats.kills=sv.kills||0;const j=G.jarl;j.lvl=sv.jl||1;j.xp=sv.jx||0;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f);j.hp=j.maxhp;
+  for(const t of sv.towers){const sp=SPOTS[t.s];if(!sp)continue;const tw={type:t.type,gx:sp.gx,gy:sp.gy,spot:sp,lv:t.lv,cd:.3,spent:t.spent,buff:0,born:9};sp.tower=tw;G.towers.push(tw)}
+  updateHUD(true);beginPlay()}
+function nextChapter(){const from=LI;setChapter(from+1);G.ice=newIce();G.over=false;G.countdown=null;G.queue=[];G.wave=LI*CHW;G.fires=[];G.bossRef=null;
+  G.hp=100;G.chHp=G.hp;for(const u of G.units)if(!u.dead)u.hp=u.maxhp;saveAct();updateHUD(true);beginPlay()}
+function endGame(win){if(G.over)return;G.over=true;closePanels();win?SND.win():SND.lose();
+  const lost=Math.max(0,G.chHp-G.hp),stars=win?(lost<=15?3:lost<=45?2:1):0,last=LI===LEVELS.length-1;
+  $("endSub").textContent=`${ACT.name} · Kapitel ${LI+1}`;
+  $("endTitle").textContent=win?(last?"Akten är vunnen!":"Kapitlet är klart"):"Byn har fallit";
+  $("nextBtn").hidden=!(win&&!last);$("nextBtn").textContent=win&&!last?`Kapitel ${LI+2}: ${LEVELS[LI+1].name.split(" · ")[0]}`:"";
+  $("againBtn").hidden=win;$("againBtn").textContent="Försök igen";
   $("endStars").innerHTML=[0,1,2].map(i=>`<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="${i<stars?"#e3b34c":"#2a1f16"}" stroke="${i<stars?"#7a5418":"#5a4630"}" stroke-width="1.2"/></svg>`).join("");
-  $("endTxt").textContent=win?`Byns styrka: ${Math.ceil(G.hp)}/100 · ${G.stats.kills} fiender fällda${G.stats.farmGold?` · ${G.stats.farmGold} guld från gårdar`:""}. ${stars<3?"Försvara med minst 80 kvar för tre stjärnor.":"Full pott."}${starsTotal()-starsSpent()>0?" Du har stjärnor att spendera i Hallen.":""}`:`Ulvklanen nådde våg ${G.wave}. Bygg fler torn tidigt och använd jarlens förmågor när det trycker på.`;
+  let bonus=0;if(win&&!last){bonus=150+60*LI;G.gold+=bonus}
+  $("endTxt").textContent=win?`Byn förlorade ${Math.round(lost)} i styrka det här kapitlet · ${G.stats.kills} fiender fällda totalt. ${stars<3?"Förlora högst 15 för tre stjärnor.":"Full pott."}${bonus?` Kapitelbonus: +${bonus} guld, och byn byggs upp igen till full styrka.`:""}${starsTotal()-starsSpent()>0?" Du har stjärnor att spendera i Hallen.":""}`
+    :`Ulvklanen tog sig in i byn under våg ${CW()} av ${CHW}. Kapitlet börjar om med basen du hade när det startade.`;
   try{if(win){const k="skj_"+LV.key,best=+localStorage.getItem(k)||0;if(stars>best)localStorage.setItem(k,stars)}}catch(e){}
-  const score=win?Math.round(G.hp*100+G.stats.kills*10+G.gold):0;const et=$("endTop");et.hidden=true;
+  if(win&&last)clearSave();
+  const score=win?Math.round((100-lost)*100+G.stats.kills*10+G.gold):0;const et=$("endTop");et.hidden=true;
   if(win){$("endTxt").textContent+=` Poäng: ${score}.`;cloudPush();if(CLOUD_.user){const lk=LV.key;submitScore(lk,score,Math.ceil(G.hp),stars).then(()=>fetchTop(lk,5)).then(r=>{et.innerHTML=topHTML(r);et.hidden=false})}else{$("endTxt").textContent+=" Logga in under Konto för att hamna på topplistan."}}
   setTimeout(()=>$("endOv").hidden=false,win?1200:700)}
 
@@ -1133,7 +1178,7 @@ const fsOk=!standalone&&(document.fullscreenEnabled||document.webkitFullscreenEn
 $("fsBtn").hidden=!fsOk;
 $("fsBtn").addEventListener("click",()=>{const d=document,el=d.documentElement;const on=d.fullscreenElement||d.webkitFullscreenElement;
   try{const p=on?(d.exitFullscreen||d.webkitExitFullscreen).call(d):(el.requestFullscreen||el.webkitRequestFullscreen).call(el);if(p&&p.catch)p.catch(()=>{$("fsBtn").hidden=true});if(!on&&screen.orientation&&screen.orientation.lock)screen.orientation.lock("landscape").catch(()=>{})}catch(e){$("fsBtn").hidden=true}});
-loadImages().then(()=>{prepSprites();loadLevel(0);$("buildImg").src=ASSETS.tower_archer;$("buildImgSpear").src=ASSETS.tower_spear;$("buildImgFarm").src=ASSETS.farm_1||farmIcon();$("buildImgCat").src=ASSETS.tower_catapult||SPR.cat.toDataURL();$("portraitImg").src=ASSETS.jarl;resize();resetGame();centerCam();showLevels();renderAccBtn();cloudInit();requestAnimationFrame(frame)});
+loadImages().then(()=>{prepSprites();initAct();migrateStars();setChapter((loadSave()||{ch:0}).ch);$("buildImg").src=ASSETS.tower_archer;$("buildImgSpear").src=ASSETS.tower_spear;$("buildImgFarm").src=ASSETS.farm_1||farmIcon();$("buildImgCat").src=ASSETS.tower_catapult||SPR.cat.toDataURL();$("portraitImg").src=ASSETS.jarl;resize();resetGame();centerCam();showLevels();renderAccBtn();cloudInit();requestAnimationFrame(frame)});
 </script>
 
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
