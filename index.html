@@ -53,8 +53,8 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 .stat svg{width:20px;height:20px;flex:none}
 .hpbar{width:64px;height:8px;background:#1a0f0a;border-radius:4px;overflow:hidden;border:1px solid #000}
 .hpbar>i{display:block;height:100%;background:linear-gradient(90deg,#c9443a,#e87a52);width:100%;transition:width .2s}
-.stat.pop{animation:pop .22s ease-out}
-@keyframes pop{50%{transform:scale(1.12)}}
+.stat.bump{animation:bump .22s ease-out}
+@keyframes bump{50%{transform:scale(1.12)}}
 .wavelbl{font-family:var(--display);font-size:14px;letter-spacing:.06em}
 .hud-tr{position:absolute;top:calc(8px + var(--sa-top));right:calc(10px + var(--sa-right));display:flex;gap:8px}
 .ibtn{width:44px;height:40px;display:grid;place-items:center;color:var(--bone);font-weight:800;font-size:15px;padding:0}
@@ -785,7 +785,7 @@ function frame(now){let dt=Math.min(.1,(now-last)/1000);last=now;
   if(G.started&&!G.paused&&!G.over){let gdt=dt*G.speed;while(gdt>0){const s=Math.min(gdt,1/30);update(s);gdt-=s}}
   else if(G.over){for(const p of G.parts){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt}G.parts=G.parts.filter(p=>p.life>0)}
   G.shake=Math.max(0,G.shake-dt*2.5);if(G.bossIntro)G.bossIntro=Math.max(0,G.bossIntro-dt);
-  if(G.coins&&G.coins.length){let hit=false;for(const c of G.coins){c.t+=dt/.65;if(c.t>=1)hit=true}G.coins=G.coins.filter(c=>c.t<1);if(hit){const el=$("goldTxt").parentElement;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}}
+  if(G.coins&&G.coins.length){let hit=false;for(const c of G.coins){c.t+=dt/.65;if(c.t>=1)hit=true}G.coins=G.coins.filter(c=>c.t<1);if(hit){const el=$("goldTxt").parentElement;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}}
   if(toastT>0){toastT-=dt;if(toastT<=0)$("toast").classList.remove("show")}
   draw();posPop();updateHUD();
   if(G.started){const inW=G.queue.length>0||G.enemies.length>0;SND.setState(G.over?0:inW?clamp(.6+G.enemies.length/40,.6,1):0,!!G.bossRef&&!G.over)}
