@@ -546,7 +546,7 @@ function friendlies(){return G.units.filter(u=>!u.dead)}
 function updateUnits(dt){
   const j=G.jarl;
   for(const u of G.units){
-    u.t+=dt;u.flash=Math.max(0,u.flash-dt);u.lunge=Math.max(0,u.lunge-dt*4);u.swing=Math.max(0,(u.swing||0)-dt*4);if(u.moving>0&&!u.dead&&Math.random()<dt*3)dust(u);
+    u.t+=dt;u.flash=Math.max(0,u.flash-dt);u.lunge=Math.max(0,u.lunge-dt*4);u.swing=Math.max(0,(u.swing||0)-dt*4);u.walk=(u.walk||0)+(((u.moving||0)>0?1:0)-(u.walk||0))*Math.min(1,dt*10);
     if(u.dead>0){u.dead-=dt;if(u.dead<=0){u.dead=0;u.hp=u.maxhp;if(u.kind==="jarl"){u.gx=GATE.gx+.8;u.gy=GATE.gy-1;u.ax=u.gx;u.ay=u.gy;u.cmd=false}else{const o=HIRD_OFF[u.slot];u.gx=j.gx+o[0];u.gy=j.gy+o[1]}}continue}
     if(u.temp&&G.time>u.temp){u.remove=true;release(u);puff(u);continue}
     u.lastHit+=dt;if(u.lastHit>3)u.hp=Math.min(u.maxhp,u.hp+(u.kind==="jarl"?9:5)*dt);
@@ -571,20 +571,20 @@ function updateUnits(dt){
   // nivå
   const need=[0,45,120];if(j.lvl<3&&j.xp>=need[j.lvl]){j.lvl++;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f);j.hp=j.maxhp;toast(`Jarlen nivå ${j.lvl}`,"Mer skada och mer liv");G.rings.push({gx:j.gx,gy:j.gy,t:0,max:.9,r:2,c:"246,217,138"})}
 }
-function moveTo(u,x,y,sp,dt,stop=0){const dx=x-u.gx,dy=y-u.gy;const d=Math.hypot(dx,dy);if(d<=stop+.02)return d;const s=Math.min(d-stop,sp*dt);const nx=u.gx+dx/d*s,ny=u.gy+dy/d*s;
+function moveTo(u,x,y,sp,dt,stop=0){const dx=x-u.gx,dy=y-u.gy;const d=Math.hypot(dx,dy);if(d<=stop+.02)return d;const s=Math.min(d-stop,sp*dt);const nx=u.gx+dx/d*s,ny=u.gy+dy/d*s;if(stepPhase(u,s,GAIT[u.kind].stride))dust(u,2,18);
   if(walkable(nx,ny)||!walkable(u.gx,u.gy)){u.gx=nx;u.gy=ny}else if(walkable(nx,u.gy))u.gx=nx;else if(walkable(u.gx,ny))u.gy=ny;
   if(Math.abs(dx-dy)>.02)u.face=(dx-dy)<0;u.moving=.15;return d}
 
 function updateEnemies(dt){
   for(const e of G.enemies){
-    e.t+=dt;e.age=(e.age||0)+dt;e.flash=Math.max(0,e.flash-dt);e.swing=Math.max(0,(e.swing||0)-dt*4);e.moving=0;
+    e.walk=(e.walk||0)+(((e.moving&&!e.stun&&!e.engaged)?1:0)-(e.walk||0))*Math.min(1,dt*8);e.t+=dt;e.age=(e.age||0)+dt;e.flash=Math.max(0,e.flash-dt);e.swing=Math.max(0,(e.swing||0)-dt*4);e.moving=0;
     if(e.burnT>0){e.burnT-=dt;hitEnemy(e,e.burn*dt,true,false,true);if(Math.random()<dt*6){const p=iso(e.gx,e.gy);G.parts.push({x:p.x+(Math.random()-.5)*14,y:p.y-e.h*.5,vx:0,vy:-30,life:.5,max:.5,size:4,type:"fire"})}}
     if(e.hp<=0)continue;
     if(e.stun>0){e.stun-=dt;continue}
     if(e.engaged){const u=e.engaged;if(u.dead||u.remove||!u.blocks.includes(e)){e.engaged=null}else{e.face=iso(u.gx,u.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;if(e.cd<=0){e.cd=e.acd;e.lunge=1;e.swing=1;u.hp-=e.atk;u.lastHit=0;u.flash=.12;if(u.hp<=0)killUnit(u)}e.lunge=Math.max(0,(e.lunge||0)-dt*4);continue}}
-    e.slowT=Math.max(0,(e.slowT||0)-dt);e.d+=e.speed*(e.slowT>0?e.slowF:1)*dt;
+    e.slowT=Math.max(0,(e.slowT||0)-dt);const stepD=e.speed*(e.slowT>0?e.slowF:1)*dt;e.d+=stepD;e.footfall=stepPhase(e,stepD,GAIT[e.type].stride);
     if(e.d>=PLEN){e.hp=0;e.reached=true;G.hp=Math.max(0,G.hp-e.vdmg);G.shake=Math.min(1,.25+e.vdmg/30);SND.thump();const p=iso(GATE.gx,GATE.gy);floatText(p,`−${e.vdmg}`,"#ff8a7a");if(G.hp<=0)endGame(false);continue}
-    const p=pathAt(e.d);const nx=-p.dy,ny=p.dx;e.gx=p.gx+nx*e.off;e.gy=p.gy+ny*e.off;e.face=(p.dx-p.dy)>0;e.moving=1;if(Math.random()<dt*1.1)dust(e);if(e.type==="boss"){e.step=(e.step||0)+dt;if(e.step>.75){e.step=0;G.shake=Math.max(G.shake,.14);dust(e,6,40)}}
+    const p=pathAt(e.d);const nx=-p.dy,ny=p.dx;e.gx=p.gx+nx*e.off;e.gy=p.gy+ny*e.off;e.face=(p.dx-p.dy)>0;e.moving=1;if(e.footfall){if(e.type==="boss"){G.shake=Math.max(G.shake,.16);dust(e,7,44)}else if(e.type==="brute"){dust(e,3,26)}else if(Math.random()<.5)dust(e,1)}
   }
   G.enemies=G.enemies.filter(e=>{if(e.hp>0)return true;if(!e.reached)G.dying.push({e,t:0});if(e.engaged){const u=e.engaged;u.blocks=u.blocks.filter(x=>x!==e)}if(e===G.bossRef)G.bossRef=null;return false});
 }
@@ -677,6 +677,24 @@ function diamond(r){ctx.beginPath();ctx.moveTo(0,-r*TH);ctx.lineTo(r*TW,0);ctx.l
 function ellipse(gx,gy,r,fill,stroke,dash){const p=iso(gx,gy);ctx.save();ctx.beginPath();ctx.ellipse(p.x,p.y,HW*Math.SQRT2*r,HH*Math.SQRT2*r,0,0,7);if(fill&&fill!=="transparent"){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2.5;if(dash)ctx.setLineDash(dash);ctx.stroke()}ctx.restore()}
 function shadow(x,y,w){ctx.fillStyle="rgba(10,8,4,.32)";ctx.beginPath();ctx.ellipse(x,y,w,w*.45,0,0,7);ctx.fill()}
 function sprite(img,x,y,h,flip,rot=0,alpha=1,sx=1,sy=1){const w=img.width*h/img.height;ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);ctx.scale((flip?-1:1)*sx,sy);if(alpha!==1)ctx.globalAlpha*=Math.min(1,alpha);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore()}
+// Stegcykel: figuren delas vid höften, fötterna kliver växelvis, kroppen lutar och gungar.
+const GAIT={jarl:{split:.83,stride:1.0,nd:1},hird:{split:.84,stride:1.0,nd:1},thrall:{split:.74,stride:.55,nd:-1},brute:{split:.82,stride:.6,nd:-1},boss:{split:.8,stride:.55,nd:-1}};
+const PARTS=new Map();
+function getParts(img,split){let p=PARTS.get(img);if(p)return p;const W=img.width,H=img.height,ys=Math.floor(H*split),ov=Math.ceil(H*.07);
+  const top=document.createElement("canvas");top.width=W;top.height=ys+ov;let x=top.getContext("2d");x.drawImage(img,0,0);x.globalCompositeOperation="destination-in";const g=x.createLinearGradient(0,ys-ov*.3,0,ys+ov);g.addColorStop(0,"#000");g.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=g;x.fillRect(0,0,W,ys+ov);
+  const y0=ys-ov,lh=H-y0,legs=[0,1].map(i=>{const c=document.createElement("canvas");c.width=W;c.height=lh;const q=c.getContext("2d");q.drawImage(img,0,y0,W,lh,0,0,W,lh);q.globalCompositeOperation="destination-in";
+    const gx=q.createLinearGradient(W/2-4,0,W/2+4,0);if(i===0){gx.addColorStop(0,"#000");gx.addColorStop(1,"rgba(0,0,0,0)")}else{gx.addColorStop(0,"rgba(0,0,0,0)");gx.addColorStop(1,"#000")}q.fillStyle=gx;q.fillRect(0,0,W,lh);return c});
+  p={top,legs,W,H,ys,y0,lh};PARTS.set(img,p);return p}
+// ph = stegfas (radianer, drivs av tillryggalagd sträcka), amt = 0..1 hur mycket den går
+function drawWalker(img,g,x,y,h,flip,ph,amt,o={}){const P=getParts(img,g.split),k=h/P.H,w=P.W*k;
+  const sn=Math.sin(ph),cs=Math.cos(ph);const bob=(1-Math.abs(sn))*h*.055*amt;const land=Math.pow(Math.abs(sn),6)*amt;
+  const lean=(.07*amt+(o.lean||0))*g.nd,sway=sn*.05*amt*g.nd;const br=o.breath||1;
+  ctx.save();ctx.translate(x,y);ctx.scale(flip?-1:1,1);
+  for(const i of[0,1]){const s2=i?-sn:sn,c2=i?-cs:cs;const dx=s2*h*.09*amt*g.nd,lift=Math.max(0,c2)*h*.07*amt;
+    ctx.save();ctx.translate((i?.18:-.18)*w,-(P.H-P.ys)*k);ctx.rotate(-s2*.16*amt*g.nd);ctx.drawImage(P.legs[i],-w/2-(i?.18:-.18)*w+dx,(P.y0-P.ys)*k-lift,w,P.lh*k);ctx.restore()}
+  const hip=-(P.H-P.ys)*k;ctx.translate(0,hip-bob+land*h*.012);ctx.rotate(lean+sway);ctx.scale(1+land*.04,(1-land*.05)*br);
+  ctx.drawImage(P.top,-w/2,-P.ys*k,w,P.top.height*k);ctx.restore()}
+function stepPhase(o,dist,stride){const before=Math.floor((o.ph||0)/Math.PI);o.ph=(o.ph||0)+dist*2*Math.PI/stride;return Math.floor(o.ph/Math.PI)!==before}
 const easeBack=x=>1+2.70158*Math.pow(x-1,3)+1.70158*Math.pow(x-1,2);
 function swing(x,y,r,dir,k,col){const a0=-1.35,a1=.75,t=1-k,end=a0+(a1-a0)*Math.min(1,t*1.7);ctx.save();ctx.translate(x,y);ctx.scale(dir,1);ctx.lineCap="round";for(let i=0;i<3;i++){ctx.strokeStyle=`rgba(${col},${k*.85*(1-i*.3)})`;ctx.lineWidth=5-i*1.5;ctx.beginPath();ctx.arc(0,0,r-i*3,Math.max(a0,end-1.1),end);ctx.stroke()}ctx.restore()}
 function dust(o,n=1,spread=14){const p=iso(o.gx,o.gy);for(let i=0;i<n;i++)G.parts.push({x:p.x+(Math.random()-.5)*spread,y:p.y-2,vx:(Math.random()-.5)*16,vy:-6-Math.random()*8,life:.5,max:.5,size:2.5+Math.random()*2.5,type:"dust"})}
@@ -689,25 +707,27 @@ function drawTower(t){const p=iso(t.gx,t.gy);const lvl=Math.max(...t.lv);const s
   if(t===G.selected){ctx.globalAlpha=.18+.1*Math.sin(performance.now()/180);sprite(IMW,p.x,by,h,false);ctx.globalAlpha=1}
   if(b<1)return;
   let ox=p.x-((t.lv.filter(v=>v>0).length-1)*9);for(let i=0;i<3;i++){if(!t.lv[i])continue;ctx.fillStyle=TT(t)[i].c;ctx.strokeStyle="#1a0f08";ctx.lineWidth=2;ctx.beginPath();ctx.arc(ox,by+6,7,0,7);ctx.fill();ctx.stroke();ctx.fillStyle="#1a0f08";ctx.font="900 10px Cinzel,serif";ctx.textAlign="center";ctx.fillText(t.lv[i],ox,by+9.5);ox+=18}}
-function drawUnit(u){const p=iso(u.gx,u.gy);const isJ=u.kind==="jarl";const h=isJ?80:62;const mv=(u.moving||0)>0;u.moving=Math.max(0,(u.moving||0)-.016);
-  const bob=mv?Math.abs(Math.sin(u.t*9))*4:0;const rot=mv?Math.sin(u.t*9)*.05:0;const lx=u.lunge*(u.face?-6:6);const br=mv?1:1+.018*Math.sin(u.t*2.6);
+function drawUnit(u){const p=iso(u.gx,u.gy);const isJ=u.kind==="jarl";const h=isJ?80:62;u.moving=Math.max(0,(u.moving||0)-.016);
+  const amt=u.walk||0;const lx=u.lunge*(u.face?-6:6);const br=1+.02*Math.sin(u.t*2.6)*(1-amt);const g=GAIT[u.kind];
   if(isJ){const pu=.5+.5*Math.sin(performance.now()/400);ctx.beginPath();ctx.ellipse(p.x,p.y,27,13,0,0,7);ctx.strokeStyle=`rgba(246,217,138,${.4+.3*pu})`;ctx.lineWidth=2.5;ctx.stroke()}
-  shadow(p.x,p.y,isJ?20:15);
+  shadow(p.x,p.y,(isJ?20:15)*(1-.08*amt*(1-Math.abs(Math.sin(u.ph||0)))));
   ctx.save();if(u.temp)ctx.globalAlpha=clamp((u.temp-G.time)/1.5,0,1);
-  sprite(isJ?SPR.jarl:SPR.hird,p.x+lx,p.y-bob,h,u.face,rot,1,1,br);
-  if(u.flash>0)sprite(isJ?SPR.jarlW:SPR.hirdW,p.x+lx,p.y-bob,h,u.face,rot,u.flash*5,1,br);
+  const o={breath:br,lean:u.lunge*.12};
+  drawWalker(isJ?SPR.jarl:SPR.hird,g,p.x+lx,p.y,h,u.face,u.ph||0,amt,o);
+  if(u.flash>0){ctx.globalAlpha*=Math.min(1,u.flash*5);drawWalker(isJ?SPR.jarlW:SPR.hirdW,g,p.x+lx,p.y,h,u.face,u.ph||0,amt,o)}
   ctx.restore();
   if(u.swing>0)swing(p.x+(u.face?-10:10),p.y-h*.45,h*.48,u.face?-1:1,u.swing,"255,246,220");
   if(u.hp<u.maxhp)bar(p.x,p.y-h-10,isJ?40:30,u.hp/u.maxhp,isJ?"#8fd06a":"#6fae5a");
   if(isJ){ctx.fillStyle="#e3b34c";ctx.beginPath();ctx.moveTo(p.x,p.y-h-18);ctx.lineTo(p.x-5,p.y-h-26);ctx.lineTo(p.x+5,p.y-h-26);ctx.fill()}}
 const enemyImg=e=>e.type==="boss"?SPR.boss:e.type==="brute"?SPR.brute:SPR.thrall;
 function drawEnemy(e){const p=iso(e.gx,e.gy);const img=enemyImg(e);const mv=e.moving&&!e.stun;
-  const bob=mv?Math.abs(Math.sin(e.t*8))*3.5:0;const rot=mv?Math.sin(e.t*8)*.06:0;const lx=(e.lunge||0)*(e.face?6:-6);
-  const fade=Math.min(1,(e.age||0)/.6);const sq=e.flash>0?1.08:1;
+  const amt=e.walk||0;const lx=(e.lunge||0)*(e.face?6:-6);const g=GAIT[e.type];
+  const fade=Math.min(1,(e.age||0)/.6);const hit=e.flash>0?.06:0;
   shadow(p.x,p.y,e.h*.26*fade);
   ctx.save();ctx.globalAlpha=fade*(e.stun>0?.85:1);
-  sprite(img,p.x+lx,p.y-bob,e.h,e.face,rot,1,sq,1/sq);
-  if(e.flash>0)sprite(e.type==="brute"?SPR.bruteW:e.type==="boss"?SPR.bossW:SPR.thrallW,p.x+lx,p.y-bob,e.h,e.face,rot,e.flash*7,sq,1/sq);
+  const o={lean:(e.type==="thrall"?.06:0)+(e.lunge||0)*.12-hit,breath:1+.02*Math.sin(e.t*2.4)*(1-amt)};
+  drawWalker(img,g,p.x+lx,p.y,e.h,e.face,e.ph||0,amt,o);
+  if(e.flash>0){ctx.globalAlpha*=Math.min(1,e.flash*7);drawWalker(e.type==="brute"?SPR.bruteW:e.type==="boss"?SPR.bossW:SPR.thrallW,g,p.x+lx,p.y,e.h,e.face,e.ph||0,amt,o)}
   ctx.restore();
   if(e.swing>0)swing(p.x+(e.face?8:-8),p.y-e.h*.45,e.h*.45,e.face?1:-1,e.swing,"255,214,196");
   if(e.slowT>0){ctx.strokeStyle="rgba(150,110,60,.85)";ctx.lineWidth=2.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.ellipse(p.x,p.y,e.h*.28,e.h*.12,0,0,7);ctx.stroke();ctx.setLineDash([])}
