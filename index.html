@@ -191,6 +191,25 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 .mup button:disabled{opacity:.4}
 @media (max-width:640px){.hallgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-height:520px){.mup p{font-size:11px}.hall{padding:10px 14px;gap:6px}}
+.acc{max-width:min(460px,92vw)}
+.form{display:grid;gap:6px;width:100%;text-align:left}
+.acc label{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.04em;text-align:left;width:100%}
+.acc input{width:100%;box-sizing:border-box;font:700 16px var(--body);color:var(--bone);background:rgba(0,0,0,.35);border:1px solid var(--edge);border-radius:8px;padding:9px 10px;-webkit-user-select:text;user-select:text}
+.acc input:focus{outline:2px solid var(--gold2);outline-offset:1px}
+.accmsg{min-height:1.2em;font-size:13px!important;color:var(--gold2)!important}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.tabs button{font:800 13px var(--body);color:var(--muted);background:rgba(0,0,0,.25);border:1px solid rgba(227,179,76,.35);border-radius:7px;padding:5px 12px}
+.tabs button.on{color:var(--gold2);border-color:var(--gold)}
+.toplist{margin:0;padding:0;list-style:none;display:grid;gap:4px;width:100%;max-height:46vh;overflow:auto;counter-reset:r}
+.toplist li{display:grid;grid-template-columns:28px 1fr auto auto;gap:8px;align-items:center;background:rgba(0,0,0,.25);border-radius:7px;padding:6px 10px;font-size:14px;counter-increment:r;font-variant-numeric:tabular-nums}
+.toplist li::before{content:counter(r);font:900 14px var(--display);color:var(--gold2)}
+.toplist li.me{outline:1px solid var(--gold)}
+.toplist li b{color:var(--bone);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toplist li span{color:var(--muted);font-size:12px}
+.toplist li em{font-style:normal;font-weight:800;color:var(--gold2)}
+.toplist.mini{max-height:22vh}
+.toplist .empty{display:block;color:var(--muted);text-align:center}
+.toplist .empty::before{content:none}
 @media (prefers-reduced-motion:reduce){.ab.ready{animation:none}}
 </style>
 
@@ -249,7 +268,7 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
       <span class="sub">Akt I · Klankrig</span>
       <h1>Skjaldborg</h1>
       <div class="levels" id="levelList"></div>
-      <button class="hallbtn" id="hallBtn"></button>
+      <div class="row"><button class="hallbtn" id="hallBtn"></button><button class="hallbtn" id="topBtn">Topplista</button><button class="hallbtn" id="accBtn">Konto</button></div>
       <ul>
         <li><b>Tryck</b> på marken för att gå</li>
         <li><b>Tryck</b> på en stenplatta nära jarlen för att bygga</li>
@@ -268,12 +287,45 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
     </div>
   </div>
 
+  <div class="ov" id="accOv" hidden>
+    <div class="panel card acc">
+      <span class="sub">Spara stjärnor och uppgraderingar</span>
+      <h2>Konto</h2>
+      <div id="accOut">
+        <p>Med konto sparas dina framsteg säkert och följer med till andra enheter. Ditt vikinganamn visas i topplistan.</p>
+        <form id="accForm" class="form">
+          <label for="accEmail">E-post</label><input id="accEmail" type="email" autocomplete="email" required>
+          <label for="accPass">Lösenord</label><input id="accPass" type="password" autocomplete="current-password" minlength="6" required>
+          <label for="accName">Vikinganamn (bara vid nytt konto)</label><input id="accName" type="text" maxlength="20" placeholder="t.ex. Tobias Järnhand">
+          <div class="row"><button class="big" type="submit" id="accLogin">Logga in</button><button class="ghost" type="button" id="accSignup">Skapa konto</button></div>
+        </form>
+      </div>
+      <div id="accIn" hidden>
+        <p>Inloggad som <b id="accWho"></b>. Dina framsteg sparas automatiskt.</p>
+        <label for="accName2">Vikinganamn</label><input id="accName2" type="text" maxlength="20">
+        <div class="row"><button class="ghost" id="accSaveName">Spara namn</button><button class="ghost" id="accLogout">Logga ut</button></div>
+      </div>
+      <p class="accmsg" id="accMsg"></p>
+      <button class="big" id="accBack">Tillbaka</button>
+    </div>
+  </div>
+
+  <div class="ov" id="topOv" hidden>
+    <div class="panel card acc">
+      <span class="sub">Bästa resultat per bana</span>
+      <h2>Topplista</h2>
+      <div class="tabs" id="topTabs"></div>
+      <ol class="toplist" id="topList"></ol>
+      <button class="big" id="topBack">Tillbaka</button>
+    </div>
+  </div>
+
   <div class="ov" id="pauseOv" hidden>
     <div class="panel card"><h2>Pausat</h2><div class="row"><button class="big" id="resumeBtn">Fortsätt</button><button class="ghost" id="restartBtn">Börja om</button></div></div>
   </div>
 
   <div class="ov" id="endOv" hidden>
-    <div class="panel card"><span class="sub" id="endSub">Bana 1</span><h1 id="endTitle" style="font-size:clamp(28px,6vw,48px)">Seger</h1><div class="stars" id="endStars"></div><p id="endTxt"></p><div class="row"><button class="big" id="nextBtn" hidden>Nästa bana</button><button class="big" id="againBtn">Spela igen</button><button class="ghost" id="menuBtn">Banor</button></div></div>
+    <div class="panel card"><span class="sub" id="endSub">Bana 1</span><h1 id="endTitle" style="font-size:clamp(28px,6vw,48px)">Seger</h1><div class="stars" id="endStars"></div><p id="endTxt"></p><ol class="toplist mini" id="endTop" hidden></ol><div class="row"><button class="big" id="nextBtn" hidden>Nästa bana</button><button class="big" id="againBtn">Spela igen</button><button class="ghost" id="menuBtn">Banor</button></div></div>
   </div>
 
 </div>
@@ -523,8 +575,34 @@ const META=[
   {id:"gold",cat:"By",name:"Skattkammare",desc:"+30 startguld per nivå.",max:3}
 ];
 const metaCost=lv=>lv+1;
+// ---------- Konto (Supabase) ----------
+const SBCFG={"url":"","key":""};
+const CLOUD_={sb:null,user:null,name:"",ready:false,err:""};
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+async function cloudInit(){if(!SBCFG.url||!SBCFG.key){CLOUD_.err="Kontot är inte aktiverat än.";return}
+  try{if(!window.supabase)await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js");
+    CLOUD_.sb=window.supabase.createClient(SBCFG.url,SBCFG.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"skj_auth"}});
+    const{data}=await CLOUD_.sb.auth.getSession();CLOUD_.user=data.session?data.session.user:null;CLOUD_.ready=true;if(CLOUD_.user)await cloudPull();renderAccBtn()}
+  catch(e){CLOUD_.err="Kunde inte nå servern. Spelet sparar lokalt så länge.";renderAccBtn()}}
+function localStars(){const o={};LEVELS.forEach((L,i)=>{const v=starsOf(i);if(v)o[L.key]=v});return o}
+async function cloudPull(){const sb=CLOUD_.sb,u=CLOUD_.user;if(!sb||!u)return;
+  const{data,error}=await sb.from("progress").select("*").eq("user_id",u.id).maybeSingle();if(error)return;
+  const ls=localStars(),lm=metaLoad();
+  if(data){CLOUD_.name=data.name||"";const rs=data.stars||{};const merged={...rs};for(const k in ls)merged[k]=Math.max(merged[k]||0,ls[k]);
+    for(const k in merged){try{localStorage.setItem("skj_"+k,merged[k])}catch(e){}}
+    const rm=data.meta||{};const useRemote=Object.keys(rm).length>0;if(useRemote){metaSave(rm);M=rm}
+    await sb.from("progress").update({stars:merged,meta:useRemote?rm:lm,updated_at:new Date().toISOString()}).eq("user_id",u.id)}
+  else{CLOUD_.name=(u.user_metadata&&u.user_metadata.name)||u.email.split("@")[0];await sb.from("progress").insert({user_id:u.id,name:CLOUD_.name,stars:ls,meta:lm})}
+  if(!$("startOv").hidden)showLevels()}
+let pushT=0;function cloudPush(){if(!CLOUD_.sb||!CLOUD_.user)return;clearTimeout(pushT);pushT=setTimeout(()=>{CLOUD_.sb.from("progress").update({stars:localStars(),meta:metaLoad(),updated_at:new Date().toISOString()}).eq("user_id",CLOUD_.user.id).then(()=>{},()=>{})},400)}
+async function submitScore(level,score,hp,stars){if(!CLOUD_.sb||!CLOUD_.user)return;try{await CLOUD_.sb.from("scores").insert({level,name:CLOUD_.name||"Okänd viking",score,hp,stars})}catch(e){}}
+async function fetchTop(level,n=10){if(!CLOUD_.sb)return null;const{data,error}=await CLOUD_.sb.from("scores").select("user_id,name,score,stars,created_at").eq("level",level).order("score",{ascending:false}).limit(80);if(error)return null;
+  const seen=new Set(),out=[];for(const r of data){if(seen.has(r.user_id))continue;seen.add(r.user_id);out.push(r);if(out.length>=n)break}return out}
+function topHTML(rows){if(rows===null)return`<li class="empty">${CLOUD_.err||"Topplistan kräver konto och nätverk."}</li>`;if(!rows.length)return`<li class="empty">Inga resultat än. Bli först!</li>`;
+  return rows.map(r=>`<li class="${CLOUD_.user&&r.user_id===CLOUD_.user.id?"me":""}"><b>${esc(r.name)}</b><span>${"★".repeat(r.stars||0)}</span><em>${r.score}</em></li>`).join("")}
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function metaLoad(){try{return JSON.parse(localStorage.getItem("skj_meta")||"{}")}catch(e){return{}}}
-function metaSave(m){try{localStorage.setItem("skj_meta",JSON.stringify(m))}catch(e){}}
+function metaSave(m){try{localStorage.setItem("skj_meta",JSON.stringify(m))}catch(e){}cloudPush()}
 let M=metaLoad();const ml=id=>M[id]||0;
 const starsTotal=()=>LEVELS.reduce((a,L,i)=>a+starsOf(i),0);
 const starsSpent=()=>META.reduce((a,u)=>{let c=0;for(let l=0;l<ml(u.id);l++)c+=metaCost(l);return a+c},0);
@@ -962,6 +1040,25 @@ function showHall(){M=metaLoad();const free=starsTotal()-starsSpent();$("hallSta
     d.querySelector("button").addEventListener("click",()=>{if(max||metaCost(ml(u.id))>starsTotal()-starsSpent())return;M[u.id]=ml(u.id)+1;metaSave(M);SND.init();SND.build();showHall()});g.appendChild(d)}
   $("startOv").hidden=true;$("hallOv").hidden=false}
 $("hallBtn").addEventListener("click",showHall);
+function renderAccBtn(){$("accBtn").textContent=CLOUD_.user?(CLOUD_.name||"Konto"):"Logga in"}
+function accMsg(t){$("accMsg").textContent=t||""}
+function showAcc(){const inn=!!CLOUD_.user;$("accIn").hidden=!inn;$("accOut").hidden=inn;if(inn){$("accWho").textContent=CLOUD_.user.email;$("accName2").value=CLOUD_.name}accMsg(CLOUD_.ready?"":CLOUD_.err);$("startOv").hidden=true;$("accOv").hidden=false}
+async function doAuth(signup){if(!CLOUD_.sb){accMsg(CLOUD_.err||"Ansluter…");return}const email=$("accEmail").value.trim(),password=$("accPass").value,name=$("accName").value.trim().slice(0,20);
+  if(!email||password.length<6){accMsg("Fyll i e-post och ett lösenord på minst 6 tecken.");return}accMsg(signup?"Skapar konto…":"Loggar in…");
+  const r=signup?await CLOUD_.sb.auth.signUp({email,password,options:{data:{name:name||email.split("@")[0]}}}):await CLOUD_.sb.auth.signInWithPassword({email,password});
+  if(r.error){accMsg(r.error.message.includes("Invalid login")?"Fel e-post eller lösenord.":r.error.message.includes("already registered")?"Det finns redan ett konto med den e-posten. Logga in i stället.":r.error.message);return}
+  if(!r.data.session){accMsg("Kontot är skapat. Bekräfta din e-post och logga sedan in.");return}
+  CLOUD_.user=r.data.session.user;await cloudPull();if(signup&&name){CLOUD_.name=name;await CLOUD_.sb.from("progress").update({name}).eq("user_id",CLOUD_.user.id)}renderAccBtn();accMsg("Klart! Dina framsteg sparas nu i ditt konto.");showAcc()}
+$("accForm").addEventListener("submit",e=>{e.preventDefault();doAuth(false)});
+$("accSignup").addEventListener("click",()=>doAuth(true));
+$("accLogout").addEventListener("click",async()=>{if(CLOUD_.sb)await CLOUD_.sb.auth.signOut();CLOUD_.user=null;CLOUD_.name="";renderAccBtn();showAcc();accMsg("Utloggad. Framstegen finns kvar lokalt och i kontot.")});
+$("accSaveName").addEventListener("click",async()=>{const n=$("accName2").value.trim().slice(0,20);if(!n||!CLOUD_.user)return;CLOUD_.name=n;await CLOUD_.sb.from("progress").update({name:n}).eq("user_id",CLOUD_.user.id);renderAccBtn();accMsg("Namnet är sparat.")});
+$("accBtn").addEventListener("click",showAcc);
+$("accBack").addEventListener("click",()=>{$("accOv").hidden=true;showLevels()});
+let topLvl=0;async function showTop(i){topLvl=i;$("topTabs").innerHTML=LEVELS.map((L,k)=>`<button class="${k===i?"on":""}" data-k="${k}">${L.name}</button>`).join("");$("topTabs").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>showTop(+b.dataset.k)));
+  $("topList").innerHTML=`<li class="empty">Hämtar…</li>`;$("startOv").hidden=true;$("topOv").hidden=false;$("topList").innerHTML=topHTML(await fetchTop(LEVELS[i].key,20))}
+$("topBtn").addEventListener("click",()=>showTop(topLvl));
+$("topBack").addEventListener("click",()=>{$("topOv").hidden=true;showLevels()});
 $("hallBack").addEventListener("click",()=>{$("hallOv").hidden=true;showLevels()});
 $("hallReset").addEventListener("click",()=>{M={};metaSave(M);showHall()});
 function showLevels(){renderHallBtn();const box=$("levelList");box.innerHTML="";LEVELS.forEach((L,i)=>{const st=starsOf(i),open=i===0||starsOf(i-1)>0;const b=document.createElement("button");b.className="lvl"+(L.theme==="winter"?" win":"");b.disabled=!open;
@@ -1002,6 +1099,8 @@ function endGame(win){if(G.over)return;G.over=true;closePanels();win?SND.win():S
   $("endStars").innerHTML=[0,1,2].map(i=>`<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="${i<stars?"#e3b34c":"#2a1f16"}" stroke="${i<stars?"#7a5418":"#5a4630"}" stroke-width="1.2"/></svg>`).join("");
   $("endTxt").textContent=win?`Byns styrka: ${Math.ceil(G.hp)}/100 · ${G.stats.kills} fiender fällda${G.stats.farmGold?` · ${G.stats.farmGold} guld från gårdar`:""}. ${stars<3?"Försvara med minst 80 kvar för tre stjärnor.":"Full pott."}${starsTotal()-starsSpent()>0?" Du har stjärnor att spendera i Hallen.":""}`:`Ulvklanen nådde våg ${G.wave}. Bygg fler torn tidigt och använd jarlens förmågor när det trycker på.`;
   try{if(win){const k="skj_"+LV.key,best=+localStorage.getItem(k)||0;if(stars>best)localStorage.setItem(k,stars)}}catch(e){}
+  const score=win?Math.round(G.hp*100+G.stats.kills*10+G.gold):0;const et=$("endTop");et.hidden=true;
+  if(win){$("endTxt").textContent+=` Poäng: ${score}.`;cloudPush();if(CLOUD_.user){const lk=LV.key;submitScore(lk,score,Math.ceil(G.hp),stars).then(()=>fetchTop(lk,5)).then(r=>{et.innerHTML=topHTML(r);et.hidden=false})}else{$("endTxt").textContent+=" Logga in under Konto för att hamna på topplistan."}}
   setTimeout(()=>$("endOv").hidden=false,win?1200:700)}
 
 // ---------- Loop ----------
@@ -1034,7 +1133,7 @@ const fsOk=!standalone&&(document.fullscreenEnabled||document.webkitFullscreenEn
 $("fsBtn").hidden=!fsOk;
 $("fsBtn").addEventListener("click",()=>{const d=document,el=d.documentElement;const on=d.fullscreenElement||d.webkitFullscreenElement;
   try{const p=on?(d.exitFullscreen||d.webkitExitFullscreen).call(d):(el.requestFullscreen||el.webkitRequestFullscreen).call(el);if(p&&p.catch)p.catch(()=>{$("fsBtn").hidden=true});if(!on&&screen.orientation&&screen.orientation.lock)screen.orientation.lock("landscape").catch(()=>{})}catch(e){$("fsBtn").hidden=true}});
-loadImages().then(()=>{prepSprites();loadLevel(0);$("buildImg").src=ASSETS.tower_archer;$("buildImgSpear").src=ASSETS.tower_spear;$("buildImgFarm").src=ASSETS.farm_1||farmIcon();$("buildImgCat").src=ASSETS.tower_catapult||SPR.cat.toDataURL();$("portraitImg").src=ASSETS.jarl;resize();resetGame();centerCam();showLevels();requestAnimationFrame(frame)});
+loadImages().then(()=>{prepSprites();loadLevel(0);$("buildImg").src=ASSETS.tower_archer;$("buildImgSpear").src=ASSETS.tower_spear;$("buildImgFarm").src=ASSETS.farm_1||farmIcon();$("buildImgCat").src=ASSETS.tower_catapult||SPR.cat.toDataURL();$("portraitImg").src=ASSETS.jarl;resize();resetGame();centerCam();showLevels();renderAccBtn();cloudInit();requestAnimationFrame(frame)});
 </script>
 
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
