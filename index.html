@@ -360,7 +360,7 @@ c.sort((a,b)=>a.score-b.score||a.gx-b.gx||a.gy-b.gy);const out=[];for(const p of
 // ---------- Bilder ----------
 const IMG={};
 function loadImages(){return Promise.all(Object.entries(ASSETS).map(([k,src])=>new Promise(res=>{const im=new Image();im.onload=()=>{IMG[k]=im;res()};im.onerror=()=>res();im.src=src})))}
-function tinted(img,color,alpha){const c=document.createElement("canvas");c.width=img.width;c.height=img.height;const x=c.getContext("2d");x.drawImage(img,0,0);x.globalCompositeOperation="source-atop";x.globalAlpha=alpha;x.fillStyle=color;x.fillRect(0,0,c.width,c.height);return c}
+function tinted(img,color,alpha){if(!img)return null;const c=document.createElement("canvas");c.width=img.width;c.height=img.height;const x=c.getContext("2d");x.drawImage(img,0,0);x.globalCompositeOperation="source-atop";x.globalAlpha=alpha;x.fillStyle=color;x.fillRect(0,0,c.width,c.height);return c}
 const SPR={};
 function prepSprites(){
   // gångblad: IMG.<namn>_w0..wN -> SPR.<namn>_w (+ vita blixtversioner)
@@ -369,7 +369,7 @@ function prepSprites(){
   SPR.jarl=IMG.jarl;SPR.jarlW=tinted(IMG.jarl,"#fff",1);
   SPR.hird=IMG.hird;SPR.hirdW=tinted(IMG.hird,"#fff",1);
   SPR.thrall=IMG.thrall;SPR.thrallW=tinted(IMG.thrall,"#fff",1);
-  SPR.brute=IMG.brute;SPR.bruteW=tinted(IMG.brute,"#fff",1);SPR.brute_b=IMG.brute_b;SPR.brute_bW=tinted(IMG.brute_b,"#fff",1);
+  SPR.brute=IMG.brute;SPR.bruteW=tinted(IMG.brute,"#fff",1);
   SPR.boss=IMG.boss;SPR.bossW=tinted(IMG.boss,"#fff",1);SPR.boss_b=IMG.boss_b;SPR.boss_bW=tinted(IMG.boss_b,"#fff",1);
   SPR.village=IMG.village;
 }
