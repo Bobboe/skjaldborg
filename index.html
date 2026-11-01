@@ -228,7 +228,7 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
   </div>
 
   <div class="panel hint" id="hint" hidden></div>
-  <div class="panel boss" id="bossBar" hidden><b>SJÖVARGEN</b><div class="armor" id="armorSeg"><i><s></s></i><i><s></s></i><i><s></s></i></div><div class="hpbar"><i id="bossHp"></i></div></div>
+  <div class="panel boss" id="bossBar" hidden><b id="bossName">SJÖVARGEN</b><div class="armor" id="armorSeg"><i><s></s></i><i><s></s></i><i><s></s></i></div><div class="hpbar"><i id="bossHp"></i></div></div>
   <div class="toast" id="toast"></div>
 
   <div class="panel pop" id="buildPop" hidden>
@@ -374,13 +374,13 @@ function inPoly(x,y,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){co
 const LEVELS=[
  {key:"b1",name:"Gården vid fjorden",sub:"Akt I · Klankrig",desc:"Ulvklanen marscherar mot din by. Flytta jarlen, bygg torn inom hans räckhåll och håll ut i 14 vågor.",theme:"summer",
   paths:[[[4,-1.4],[4,5],[10,5],[10,1.5],[16,1.5],[16,8],[7,8],[7,12],[19,12],[19,16.34],[15.9,16.34]]],
-  vc:{gx:14.5,gy:16},gate:{gx:15.9,gy:16.34},jarl:[17.4,14.3],horn:[4,0.9],spots:16,hpMul:1,boss:true,
+  vc:{gx:14.5,gy:16},gate:{gx:15.9,gy:16.34},jarl:[17.4,14.3],horn:[4,0.9],spots:16,hpMul:1,boss:"boss",bossLine:"Sjövargen och hans folk anfaller",
   water(){const W=[],S=[];for(let i=0;i<=26;i++){const t=i/26;const gy=-0.6+t*10;const gx=17.7+0.35*Math.sin(t*7.3)+0.2*Math.sin(t*15+1)+(t>0.82?(t-0.82)/0.18*1.1:0);W.push([gx,gy])}const sh=W.slice();W.push([19.3,10.25],[20.6,10.5],[20.6,-0.6]);return{poly:W,shores:[sh]}},
   rocks:[[1.4,12.6,1.7],[2.4,16.8,1.3],[10.4,17.9,1.6],[13,4.3,1.1],[0.9,2.6,1.4],[6.2,17.4,0.9]]},
  {key:"b2",name:"Isfloden",sub:"Akt I · Klankrig",desc:"Vintern har kommit. Ulvklanen tar omvägen över bron, men när floden fryser får de en genväg rakt mot byn. Krossa isen med katapulter.",theme:"winter",
   paths:[[[10,-1.4],[10,2.6],[16,2.6],[16,6],[2.5,6],[2.5,13.6],[15.2,13.6],[15.2,17.34],[9.9,17.34]],
          [[10,-1.4],[10,2.6],[16,2.6],[16,6],[12,6],[12,13.6],[15.2,13.6],[15.2,17.34],[9.9,17.34]]],
-  vc:{gx:8.5,gy:17},gate:{gx:9.9,gy:17.34},jarl:[12.6,15.6],horn:[10,0.9],spots:18,hpMul:.92,gold:250,boss:false,catapult:true,
+  vc:{gx:8.5,gy:17},gate:{gx:9.9,gy:17.34},jarl:[12.6,15.6],horn:[10,0.9],spots:18,hpMul:.92,gold:250,boss:"berserk",bossLine:"Bärsärkskungen leder ulvklanen över isen",catapult:true,
   bridge:{x0:1.75,x1:3.25,y0:7.7,y1:11.3},
   ice:{warn:6,freeze:7,refreeze:3,hp:230,zone:{x0:10.5,x1:13.5},center:[12,9.6]},
   water(){const top=[],bot=[];for(let i=0;i<=40;i++){const gx=-0.6+i*21.2/40;top.push([gx,8.55+0.32*Math.sin(gx*.7)+0.15*Math.sin(gx*1.9+1)]);bot.push([gx,10.65+0.28*Math.sin(gx*.6+2)+0.14*Math.sin(gx*2.3)])}return{poly:top.concat(bot.slice().reverse()),shores:[top,bot]}},
@@ -418,7 +418,7 @@ function prepSprites(){
   SPR.hird=IMG.hird;SPR.hirdW=tinted(IMG.hird,"#fff",1);
   SPR.thrall=IMG.thrall;SPR.thrallW=tinted(IMG.thrall,"#fff",1);
   SPR.brute=IMG.brute;SPR.bruteW=tinted(IMG.brute,"#fff",1);
-  SPR.boss=IMG.boss;SPR.bossW=tinted(IMG.boss,"#fff",1);
+  SPR.boss=IMG.boss;SPR.bossW=tinted(IMG.boss,"#fff",1);SPR.berserk=IMG.berserk||tinted(IMG.brute,"#7a1a10",.4);SPR.berserkW=tinted(SPR.berserk,"#fff",1);
   SPR.village=IMG.village;
 }
 
@@ -536,13 +536,14 @@ function canUpgrade(t,i){const lv=t.lv;if(lv[i]>=5)return false;const next=lv.ma
 const ETYPES={
   thrall:{hp:26,speed:.95,atk:4,acd:1,bounty:5,vdmg:1,h:62,xp:1},
   brute:{hp:26*3.2,arm:.35,speed:.68,atk:10,acd:1.2,bounty:16,vdmg:3,h:88,xp:4},
-  boss:{hp:520,armor:380,speed:.42,atk:22,acd:1.25,bounty:150,vdmg:30,h:128,xp:30}
+  boss:{hp:520,armor:380,speed:.42,atk:22,acd:1.25,bounty:150,vdmg:30,h:128,xp:30,boss:true,name:"Sjövargen",intro:"Bryt hans rustning med tornen, fäll honom med jarlen"},
+  berserk:{hp:560,armor:220,speed:.5,atk:18,acd:1.1,bounty:160,vdmg:30,h:132,xp:30,boss:true,name:"Bärsärkskungen",intro:"Ju mer han blöder, desto vildare slåss han"}
 };
 function buildWave(w){const list=[];const hpMul=Math.pow(1.195,w-1)*LV.hpMul;let n=5+2*w;let br=w>=4?Math.floor((w-1)/3):0;const gap=Math.max(.6,1.15-.035*w);
-  if(w===WAVES){n=20;br=4}
+  if(w===WAVES){n=LI?16:20;br=LI?3:4}
   for(let i=0;i<n;i++)list.push({type:"thrall",hpMul,delay:gap});
   for(let k=0;k<br;k++){const pos=Math.floor((k+1)*list.length/(br+1));list.splice(pos,0,{type:"brute",hpMul,delay:gap*1.6})}
-  if(w===WAVES&&LV.boss)list.splice(Math.floor(list.length*.55),0,{type:"boss",hpMul:1,delay:3});
+  if(w===WAVES&&LV.boss)list.splice(Math.floor(list.length*.55),0,{type:LV.boss,hpMul:1,delay:3});
   return list}
 
 // ---------- Tillstånd ----------
@@ -617,14 +618,14 @@ function freezeIce(){const I=G.ice;I.frozen=true;I.hp=I.max=ICEDEF.hp;I.refreeze
 function breakIce(){const I=G.ice;G.stats.iceBreaks=(G.stats.iceBreaks||0)+1;I.frozen=false;I.broken=true;I.refreezeAt=G.wave+ICEDEF.refreeze;G.shake=.5;SND.thump();toast("Isen brister!","Genvägen är stängd – fiender på isen drunknar");
   const c=ICEDEF.center;for(let k=0;k<26;k++){const p=iso(c[0]+(Math.random()-.5)*3,c[1]+(Math.random()-.5)*1.6);G.parts.push({x:p.x,y:p.y-4,vx:(Math.random()-.5)*90,vy:-60-Math.random()*90,g:260,life:.9,max:.9,size:3+Math.random()*4,type:"ice"})}
   for(const e of G.enemies){if(e.P!==PATHS[1]||e.hp<=0)continue;if(e.d>=ICE_IN-.25&&e.d<=ICE_OUT+.25){drown(e)}else if(e.d<ICE_IN){const n=nearestD(PATHS[0],e.gx,e.gy);e.P=PATHS[0];e.d=n.d;if(e.engaged){release(e.engaged)}}}}
-function drown(e){const p=iso(e.gx,e.gy);for(let k=0;k<12;k++)G.parts.push({x:p.x+(Math.random()-.5)*20,y:p.y-6,vx:(Math.random()-.5)*60,vy:-50-Math.random()*70,g:240,life:.7,max:.7,size:2+Math.random()*3,type:"splash"});e.drown=true;if(e.type==="boss"){e.armor=0}hitEnemy(e,1e9,false,false,true);floatText(p,"Drunknade","#a9cbd4",-e.h-6)}
+function drown(e){if(e.boss){e.armor=0;e.stun=2.2;const p=iso(e.gx,e.gy);for(let k=0;k<16;k++)G.parts.push({x:p.x+(Math.random()-.5)*30,y:p.y-6,vx:(Math.random()-.5)*70,vy:-50-Math.random()*80,g:240,life:.8,max:.8,size:2+Math.random()*3,type:"splash"});toast("För tung för att drunkna","Han vadar ur vattnet – utan rustning");return}const p=iso(e.gx,e.gy);for(let k=0;k<12;k++)G.parts.push({x:p.x+(Math.random()-.5)*20,y:p.y-6,vx:(Math.random()-.5)*60,vy:-50-Math.random()*70,g:240,life:.7,max:.7,size:2+Math.random()*3,type:"splash"});e.drown=true;if(e.boss){e.armor=0}hitEnemy(e,1e9,false,false,true);floatText(p,"Drunknade","#a9cbd4",-e.h-6)}
 function updateIce(dt){const I=G.ice;if(!I)return;I.river=Math.min(1,I.river+(I.broken||I.frozen?dt*.6:0));I.hole+=((I.frozen?0:I.broken?1:0)-I.hole)*Math.min(1,dt*2.5);I.flash=Math.max(0,(I.flash||0)-dt)}
 function startWave(){if(!canCallWave())return;if(G.countdown!==null&&G.countdown>0){const b=Math.round(G.countdown*1.5);if(b>0){G.gold+=b;floatText(iso(HORN[0],HORN[1]+.6),`+${b} tidig start`,"#f6d98a")}}
-  SND.waveHorn();payFarms();G.wave++;G.queue=buildWave(G.wave);G.spawnT=.4;G.countdown=null;toast(G.wave===WAVES?"Sista vågen":`Våg ${G.wave}`,G.wave===WAVES?(LV.boss?"Sjövargen och hans folk anfaller":"Ulvklanens hela styrka anfaller"):"");iceOnWave();}
+  SND.waveHorn();payFarms();G.wave++;G.queue=buildWave(G.wave);G.spawnT=.4;G.countdown=null;toast(G.wave===WAVES?"Sista vågen":`Våg ${G.wave}`,G.wave===WAVES?(LV.bossLine||"Ulvklanens hela styrka anfaller"):"");iceOnWave();}
 const curPath=()=>(ICEDEF&&G.ice&&G.ice.frozen&&PATHS[1])?PATHS[1]:PATHS[0];
 function nearestD(P,gx,gy){let best={d:0,dist:1e9};for(const s of P.seg){const vx=s.bx-s.ax,vy=s.by-s.ay;let t=((gx-s.ax)*vx+(gy-s.ay)*vy)/(s.len*s.len);t=clamp(t,0,1);const dd=Math.hypot(gx-s.ax-vx*t,gy-s.ay-vy*t);if(dd<best.dist)best={d:s.start+t*s.len,dist:dd}}return best}
-function spawn(def){const T=ETYPES[def.type];const P0=curPath();const p=pathAt(0,P0);const e={P:P0,type:def.type,gx:p.gx,gy:p.gy,d:0,hp:T.hp*def.hpMul,maxhp:T.hp*def.hpMul,armor:T.armor||0,arm:T.arm||0,maxArmor:T.armor||0,speed:T.speed*(0.92+Math.random()*.16),atk:T.atk*(def.type==="boss"?1:Math.sqrt(def.hpMul)),acd:T.acd,cd:0,bounty:T.bounty,vdmg:T.vdmg,h:T.h,xp:T.xp,engaged:null,stun:0,burn:0,burnT:0,flash:0,t:Math.random()*5,face:false,off:(Math.random()-.5)*.5};
-  G.enemies.push(e);if(e.type==="boss"){G.bossRef=e;G.bossIntro=2.5;G.shake=.7;toast("Sjövargen","Bryt hans rustning med tornen, fäll honom med jarlen")}}
+function spawn(def){const T=ETYPES[def.type];const P0=curPath();const p=pathAt(0,P0);const e={P:P0,boss:!!T.boss,type:def.type,gx:p.gx,gy:p.gy,d:0,hp:T.hp*def.hpMul,maxhp:T.hp*def.hpMul,armor:T.armor||0,arm:T.arm||0,maxArmor:T.armor||0,speed:T.speed*(0.92+Math.random()*.16),atk:T.atk*(def.type==="boss"?1:Math.sqrt(def.hpMul)),acd:T.acd,cd:0,bounty:T.bounty,vdmg:T.vdmg,h:T.h,xp:T.xp,engaged:null,stun:0,burn:0,burnT:0,flash:0,t:Math.random()*5,face:false,off:(Math.random()-.5)*.5};
+  G.enemies.push(e);if(e.boss){G.bossRef=e;G.bossIntro=2.5;G.shake=.7;$("bossName").textContent=T.name.toUpperCase();toast(T.name,T.intro)}}
 
 // ---------- Uppdatering ----------
 function update(dt){
@@ -662,7 +663,7 @@ function updateUnits(dt){
     u.blocks=u.blocks.filter(e=>e.hp>0&&e.engaged===u);
     let tgt=u.blocks[0]||null;
     if(!tgt){const aggro=u.kind==="jarl"?1.8:2.1;const anc=u.kind==="jarl"?{gx:ax,gy:ay}:{gx:j.ax,gy:j.ay};let best=null,bd=1e9;
-      for(const e of G.enemies){if(e.hp<=0||(e.engaged&&e.engaged!==u))continue;if(e.type==="boss"&&e.armor>0)continue;const da=dist(e,anc);if(da>aggro)continue;const d=dist(e,u);if(d<bd){bd=d;best=e}}tgt=best}
+      for(const e of G.enemies){if(e.hp<=0||(e.engaged&&e.engaged!==u))continue;if(e.boss&&e.armor>0)continue;const da=dist(e,anc);if(da>aggro)continue;const d=dist(e,u);if(d<bd){bd=d;best=e}}tgt=best}
     if(tgt){const d=dist(u,tgt);if(d>.48)moveTo(u,tgt.gx,tgt.gy,u.speed,dt,.45);u.face=iso(tgt.gx,tgt.gy).x<iso(u.gx,u.gy).x;
       u.cd-=dt;u.fight=d<.8;if(d<.8&&u.cd<=0){u.cd=u.acd;u.lunge=1;u.swing=1;const mul=u.kind==="jarl"?(1+.25*(u.lvl-1))*(1+.15*ml("jarl")):1;hitEnemy(tgt,u.dmg*mul,false,false);sparks(tgt);SND.hit()}}
     else moveTo(u,ax,ay,u.speed*.8,dt);
@@ -670,7 +671,7 @@ function updateUnits(dt){
   G.units=G.units.filter(u=>!u.remove);
   // engagemang
   const fr=friendlies().filter(u=>!(u.kind==="jarl"&&u.cmd)&&!u.following);
-  for(const e of G.enemies){if(e.engaged||e.hp<=0)continue;if(e.type==="boss"&&e.armor>0)continue;
+  for(const e of G.enemies){if(e.engaged||e.hp<=0)continue;if(e.boss&&e.armor>0)continue;
     for(const u of fr){if(u.blocks.length<u.cap&&dist(u,e)<.62){e.engaged=u;u.blocks.push(e);break}}}
   // nivå
   const need=[0,45,120];if(j.lvl<3&&j.xp>=need[j.lvl]){j.lvl++;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f);j.hp=j.maxhp;toast(`Jarlen nivå ${j.lvl}`,"Mer skada och mer liv");G.rings.push({gx:j.gx,gy:j.gy,t:0,max:.9,r:2,c:"246,217,138"})}
@@ -684,21 +685,22 @@ function updateEnemies(dt){
     e.walk=(e.walk||0)+(((e.moving&&!e.stun&&!e.engaged)?1:0)-(e.walk||0))*Math.min(1,dt*8);e.t+=dt;e.age=(e.age||0)+dt;e.flash=Math.max(0,e.flash-dt);e.swing=Math.max(0,(e.swing||0)-dt*4);e.moving=0;
     if(e.burnT>0){e.burnT-=dt;hitEnemy(e,e.burn*dt,true,false,true);if(Math.random()<dt*6){const p=iso(e.gx,e.gy);G.parts.push({x:p.x+(Math.random()-.5)*14,y:p.y-e.h*.5,vx:0,vy:-30,life:.5,max:.5,size:4,type:"fire"})}}
     if(e.hp<=0)continue;
+    if(e.type==="berserk"&&e.armor<=0){e.rage=clamp(1-e.hp/e.maxhp,0,1);if(!e.roared&&e.hp<e.maxhp*.5){e.roared=true;G.shake=.7;SND.waveHorn();toast("Bärsärkagång!","Han slår undan allt runt sig");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:.8,r:2.4,c:"220,60,40"});for(const u of G.units){if(u.dead||dist(u,e)>2.4)continue;u.hp-=35;u.flash=.2;u.lastHit=0;const dx=u.gx-e.gx,dy=u.gy-e.gy,l=Math.hypot(dx,dy)||1;const nx=u.gx+dx/l*.9,ny=u.gy+dy/l*.9;if(walkable(nx,ny)){u.gx=nx;u.gy=ny}release(u);if(u.hp<=0)killUnit(u)}}}
     if(e.stun>0){e.stun-=dt;continue}
-    if(e.engaged){const u=e.engaged;if(u.dead||u.remove||!u.blocks.includes(e)){e.engaged=null}else{e.face=iso(u.gx,u.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;if(e.cd<=0){e.cd=e.acd;e.lunge=1;e.swing=1;u.hp-=e.atk;u.lastHit=0;u.flash=.12;if(u.hp<=0)killUnit(u)}e.lunge=Math.max(0,(e.lunge||0)-dt*4);continue}}
-    e.slowT=Math.max(0,(e.slowT||0)-dt);const stepD=e.speed*(e.slowT>0?e.slowF:1)*dt;e.d+=stepD;e.footfall=stepPhase(e,stepD,GAIT[e.type].stride);
+    if(e.engaged){const u=e.engaged;if(u.dead||u.remove||!u.blocks.includes(e)){e.engaged=null}else{e.face=iso(u.gx,u.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;if(e.cd<=0){e.cd=e.acd*(1-.4*(e.rage||0));e.lunge=1;e.swing=1;u.hp-=e.atk*(1+(e.rage||0));u.lastHit=0;u.flash=.12;if(u.hp<=0)killUnit(u)}e.lunge=Math.max(0,(e.lunge||0)-dt*4);continue}}
+    e.slowT=Math.max(0,(e.slowT||0)-dt);const stepD=e.speed*(e.slowT>0?e.slowF:1)*(1+.8*(e.rage||0))*dt;e.d+=stepD;e.footfall=stepPhase(e,stepD,GAIT[e.type].stride);
     if(e.d>=e.P.len){e.hp=0;e.reached=true;const vd=e.vdmg*(1-.15*ml("wall"));G.hp=Math.max(0,Math.round((G.hp-vd)*10)/10);G.shake=Math.min(1,.25+e.vdmg/30);SND.thump();const p=iso(GATE.gx,GATE.gy);floatText(p,`−${Math.round(vd*10)/10}`,"#ff8a7a");if(G.hp<=0)endGame(false);continue}
-    const p=pathAt(e.d,e.P);const nx=-p.dy,ny=p.dx;e.gx=p.gx+nx*e.off;e.gy=p.gy+ny*e.off;e.face=(p.dx-p.dy)>0;e.moving=1;if(e.footfall){if(e.type==="boss"){G.shake=Math.max(G.shake,.16);dust(e,7,44)}else if(e.type==="brute"){dust(e,3,26)}else if(Math.random()<.5)dust(e,1)}
+    const p=pathAt(e.d,e.P);const nx=-p.dy,ny=p.dx;e.gx=p.gx+nx*e.off;e.gy=p.gy+ny*e.off;e.face=(p.dx-p.dy)>0;e.moving=1;if(e.footfall){if(e.boss){G.shake=Math.max(G.shake,.16);dust(e,7,44)}else if(e.type==="brute"){dust(e,3,26)}else if(Math.random()<.5)dust(e,1)}
   }
   G.enemies=G.enemies.filter(e=>{if(e.hp>0)return true;if(!e.reached)G.dying.push({e,t:0});if(e.engaged){const u=e.engaged;u.blocks=u.blocks.filter(x=>x!==e)}if(e===G.bossRef)G.bossRef=null;return false});
 }
 function killUnit(u){u.hp=0;release(u);puff(u);if(u.temp){u.remove=true;return}u.dead=u.kind==="jarl"?10:12;if(u.kind==="jarl"){toast("Jarlen har fallit","Han återvänder till byn om 10 s");u.cmd=false}}
 function hitEnemy(e,amt,fromTower,crit,silent,opt){if(e.hp<=0)return;opt=opt||{};
   if(e.arm)amt*=1-e.arm*(1-(opt.pierce||0));
-  if(e.type==="boss"){if(e.armor>0){if(fromTower){e.armor=Math.max(0,e.armor-amt*(opt.armorMul||1));e.flash=.08;if(e.armor===0){toast("Rustningen är bruten","Skicka in jarlen!");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:1,r:1.8,c:"220,230,235"})}}return}if(fromTower)amt*=.08}
+  if(e.boss){if(e.armor>0){if(fromTower){e.armor=Math.max(0,e.armor-amt*(opt.armorMul||1));e.flash=.08;if(e.armor===0){toast("Rustningen är bruten","Skicka in jarlen!");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:1,r:1.8,c:"220,230,235"})}}return}if(fromTower)amt*=.08}
   e.hp-=amt;if(!silent)e.flash=.1;
   if(crit){floatText(iso(e.gx,e.gy),`${Math.round(amt)}!`,"#f6d98a",-e.h)}
-  if(e.hp<=0){G.gold+=e.bounty;G.stats.kills++;SND.coin();if(G.coins.length<25){const sp=w2s(e.gx,e.gy);G.coins.push({x:sp.x,y:sp.y-e.h*cam.z*.6,t:0})}G.jarl.xp+=e.xp;floatText(iso(e.gx,e.gy),`+${e.bounty}`,"#e3b34c",-e.h*.6);puff(e,e.type==="boss"?26:10);if(e.type==="boss")toast("Sjövargen har fallit","")}}
+  if(e.hp<=0){G.gold+=e.bounty;G.stats.kills++;SND.coin();if(G.coins.length<25){const sp=w2s(e.gx,e.gy);G.coins.push({x:sp.x,y:sp.y-e.h*cam.z*.6,t:0})}G.jarl.xp+=e.xp;floatText(iso(e.gx,e.gy),`+${e.bounty}`,"#e3b34c",-e.h*.6);puff(e,e.boss?26:10);if(e.boss)toast(ETYPES[e.type].name+" har fallit","")}}
 function updateTowers(dt){
   for(const t of G.towers){t.born=(t.born||0)+dt;if(t.type==="farm"){t.recoil=Math.max(0,(t.recoil||0)-dt*3);continue}const st=towerStats(t);t.buff=Math.max(0,(t.buff||0)-dt);t.cd-=dt*(t.buff>0?1.4:1);t.recoil=Math.max(0,(t.recoil||0)-dt*3);
     if(t.type!=="spear"&&t.lv[2]>0&&Math.random()<dt*2.5){const p=iso(t.gx,t.gy);G.parts.push({x:p.x+(Math.random()-.5)*30,y:p.y-150,vx:0,vy:-24,life:.7,max:.7,size:3,type:"fire"})}
@@ -736,7 +738,7 @@ function floatText(p,txt,col,dy=-40){G.texts.push({x:p.x,y:p.y+dy,txt,col,life:1
 const AB=[
   ()=>{const j=G.jarl;let n=0;for(const t of G.towers)if(dist(t,j)<=3.6){t.buff=6;n++}G.rings.push({gx:j.gx,gy:j.gy,t:0,max:.8,r:3.6,c:"246,217,138"});if(!n)floatText(iso(j.gx,j.gy),"Inga torn nära","#b9a88a",-90)},
   ()=>{const j=G.jarl;for(const slot of[4,5].map(x=>x+Math.max(0,ml("hird")-2)).map(x=>Math.min(x,7))){const h=makeHird(slot,G.time+15);h.gx=j.gx+HIRD_OFF[slot][0]*.5;h.gy=j.gy+HIRD_OFF[slot][1]*.5;G.units.push(h);puff(h,6)}},
-  ()=>{const j=G.jarl;for(const e of G.enemies)if(dist(e,j)<=2.5)e.stun=e.type==="boss"?2.5:5;G.rings.push({gx:j.gx,gy:j.gy,t:0,max:5,r:2.5,c:"169,203,212",wall:true})}
+  ()=>{const j=G.jarl;for(const e of G.enemies)if(dist(e,j)<=2.5)e.stun=e.boss?2.5:5;G.rings.push({gx:j.gx,gy:j.gy,t:0,max:5,r:2.5,c:"169,203,212",wall:true})}
 ];
 function useAbility(i){if(!G.started||G.over||G.paused||G.cds[i]>0||G.jarl.dead)return;SND.ability();AB[i]();G.cds[i]=G.cdMax[i];G.flags.ability=true}
 
@@ -812,7 +814,8 @@ const GAIT={
   hird:{stride:1.0,nd:1,feet:[[.26,.47,.8],[.53,.82,.84]]},
   thrall:{stride:.55,nd:-1,feet:[[.24,.53,.8],[.6,.86,.79]]},
   brute:{stride:.6,nd:-1,frames:true,feet:[[.3,.5,.79],[.5,.72,.85]]},
-  boss:{stride:.55,nd:-1,frames:true,feet:[[.29,.52,.8],[.58,.8,.8]]}};
+  boss:{stride:.55,nd:-1,frames:true,feet:[[.29,.52,.8],[.58,.8,.8]]},
+  berserk:{stride:.6,nd:-1,frames:true,feet:[[.3,.52,.8],[.56,.8,.8]]}};
 const PARTS=new Map();
 function getParts(img,g){let p=PARTS.get(img);if(p)return p;const W=img.width,H=img.height,F=Math.ceil(H*.05);
   const top=document.createElement("canvas");top.width=W;top.height=H;const t=top.getContext("2d");t.drawImage(img,0,0);t.globalCompositeOperation="destination-out";
@@ -893,7 +896,7 @@ function drawUnit(u){const p=iso(u.gx,u.gy);const isJ=u.kind==="jarl";const h=is
   if(u.swing>0&&!AF)swing(p.x+(u.face?-10:10),p.y-h*.45,h*.48,u.face?-1:1,u.swing,"255,246,220");
   if(u.hp<u.maxhp)bar(p.x,p.y-h-10,isJ?40:30,u.hp/u.maxhp,isJ?"#8fd06a":"#6fae5a");
   if(isJ){ctx.fillStyle="#e3b34c";ctx.beginPath();ctx.moveTo(p.x,p.y-h-18);ctx.lineTo(p.x-5,p.y-h-26);ctx.lineTo(p.x+5,p.y-h-26);ctx.fill()}}
-const enemyImg=e=>{const w=SPR[e.type+"_w"];if(w)return w[1];return e.type==="boss"?SPR.boss:e.type==="brute"?SPR.brute:SPR.thrall};
+const enemyImg=e=>{const w=SPR[e.type+"_w"];if(w)return w[1];return SPR[e.type]||SPR.thrall};
 function drawEnemy(e){const p=iso(e.gx,e.gy);const img=enemyImg(e);const mv=e.moving&&!e.stun;
   const amt=e.walk||0;const lx=(e.lunge||0)*(e.face?6:-6);const g=GAIT[e.type];
   const fade=Math.min(1,(e.age||0)/.6);const hit=e.flash>0?.06:0;
@@ -903,13 +906,14 @@ function drawEnemy(e){const p=iso(e.gx,e.gy);const img=enemyImg(e);const mv=e.mo
   const AF=SPR[e.type+"_a"],WS=SPR[e.type+"_w"],ai=AF&&WS&&!e.stun?atkFrame(e,!!e.engaged):-1;
   if(ai>=0){drawAtk(AF[ai],WS[1],p.x,p.y,e.h,e.face);if(e.flash>0){ctx.globalAlpha*=Math.min(1,e.flash*7);drawAtk(SPR[e.type+"_aW"][ai],WS[1],p.x,p.y,e.h,e.face)}}
   else{drawWalker(img,g,p.x+lx,p.y,e.h,e.face,e.ph||0,amt,o);
-  if(e.flash>0){ctx.globalAlpha*=Math.min(1,e.flash*7);drawWalker(e.type==="brute"?SPR.bruteW:e.type==="boss"?SPR.bossW:SPR.thrallW,g,p.x+lx,p.y,e.h,e.face,e.ph||0,amt,{...o,alt:SPR[e.type+"_bW"],frames:SPR[e.type+"_wW"]})}}
+  if(e.flash>0){ctx.globalAlpha*=Math.min(1,e.flash*7);drawWalker(SPR[e.type+"W"]||SPR.thrallW,g,p.x+lx,p.y,e.h,e.face,e.ph||0,amt,{...o,alt:SPR[e.type+"_bW"],frames:SPR[e.type+"_wW"]})}}
   ctx.restore();
   if(e.swing>0&&!AF)swing(p.x+(e.face?8:-8),p.y-e.h*.45,e.h*.45,e.face?1:-1,e.swing,"255,214,196");
+  if(e.rage>0){const a=.15+.35*e.rage*(.7+.3*Math.sin(performance.now()/90));ctx.fillStyle=`rgba(220,40,20,${a})`;ctx.beginPath();ctx.ellipse(p.x,p.y-e.h*.45,e.h*.42,e.h*.55,0,0,7);ctx.fill()}
   if(e.slowT>0){ctx.strokeStyle="rgba(150,110,60,.85)";ctx.lineWidth=2.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.ellipse(p.x,p.y,e.h*.28,e.h*.12,0,0,7);ctx.stroke();ctx.setLineDash([])}
   if(e.burnT>0){ctx.fillStyle="rgba(255,120,40,.22)";ctx.beginPath();ctx.ellipse(p.x,p.y-e.h*.45,e.h*.3,e.h*.45,0,0,7);ctx.fill()}
   if(e.stun>0){ctx.strokeStyle="rgba(169,203,212,.9)";ctx.lineWidth=2;for(let i=0;i<3;i++){const a=performance.now()/300+i*2.1;ctx.beginPath();ctx.arc(p.x+Math.cos(a)*12,p.y-e.h-6+Math.sin(a)*4,2.5,0,7);ctx.stroke()}}
-  if(e.type==="boss"){if(e.armor>0)bar(p.x,p.y-e.h-18,60,e.armor/e.maxArmor,"#c8d6dc");bar(p.x,p.y-e.h-10,60,e.hp/e.maxhp,"#d9473c")}
+  if(e.boss){if(e.armor>0)bar(p.x,p.y-e.h-18,60,e.armor/e.maxArmor,"#c8d6dc");bar(p.x,p.y-e.h-10,60,e.hp/e.maxhp,"#d9473c")}
   else if(e.hp<e.maxhp)bar(p.x,p.y-e.h-8,e.type==="brute"?36:28,e.hp/e.maxhp,"#d9473c")}
 function drawDying(d){const e=d.e,p=iso(e.gx,e.gy),k=Math.min(1,d.t/.32),fall=(1-Math.pow(1-k,2))*1.45*(e.face?-1:1);const a=d.t<.6?1:Math.max(0,1-(d.t-.6)/.7);
   ctx.save();ctx.globalAlpha=a;shadow(p.x,p.y,e.h*.22*a);sprite(enemyImg(e),p.x,p.y+d.t*5,e.h,e.face,fall);ctx.restore()}
