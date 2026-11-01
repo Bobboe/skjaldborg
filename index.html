@@ -175,6 +175,22 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 .lvl:disabled{opacity:.45}
 .lvl.win{border-color:var(--frost)}
 @media (max-height:520px){.lvl{padding:6px 12px}.lvl small{display:none}.lvl .no{font-size:18px}}
+.hallbtn{display:flex;align-items:center;gap:8px;justify-content:center;font:900 14px var(--display);letter-spacing:.08em;color:var(--gold2);background:rgba(0,0,0,.28);border:1px solid var(--gold);border-radius:10px;padding:9px 18px}
+.hallbtn svg{width:16px;height:16px}
+.hall{max-width:min(720px,94vw)}
+.hallstars{display:flex;align-items:center;gap:6px;font:900 18px var(--display);color:var(--gold2)}
+.hallgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+.mup{display:grid;gap:4px;text-align:left;background:rgba(0,0,0,.28);border:1px solid rgba(227,179,76,.35);border-radius:9px;padding:8px 10px}
+.mup .cat{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--frost)}
+.mup b{font:900 13px var(--display);color:var(--bone);letter-spacing:.03em}
+.mup p{margin:0;font-size:12px;line-height:1.3;color:var(--muted)}
+.mup .ft{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.mup .pips{display:flex;gap:3px}.mup .pips i{width:14px;height:5px;border-radius:2px;background:#1a120c;border:1px solid #000}.mup .pips i.on{background:var(--gold)}
+.mup button{display:flex;align-items:center;gap:3px;font:800 13px var(--body);color:var(--gold2);background:linear-gradient(180deg,#6b4a26,#3c2716);border:1px solid var(--edge);border-radius:7px;padding:4px 9px}
+.mup button svg{width:13px;height:13px}
+.mup button:disabled{opacity:.4}
+@media (max-width:640px){.hallgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-height:520px){.mup p{font-size:11px}.hall{padding:10px 14px;gap:6px}}
 @media (prefers-reduced-motion:reduce){.ab.ready{animation:none}}
 </style>
 
@@ -233,11 +249,22 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
       <span class="sub">Akt I · Klankrig</span>
       <h1>Skjaldborg</h1>
       <div class="levels" id="levelList"></div>
+      <button class="hallbtn" id="hallBtn"></button>
       <ul>
         <li><b>Tryck</b> på marken för att gå</li>
         <li><b>Tryck</b> på en stenplatta nära jarlen för att bygga</li>
         <li><b>Dra</b> för att panorera, <b>nyp</b> för att zooma</li>
       </ul>
+    </div>
+  </div>
+
+  <div class="ov" id="hallOv" hidden>
+    <div class="panel card hall">
+      <span class="sub">Stjärnor köper permanenta förbättringar</span>
+      <h2>Hallen</h2>
+      <div class="hallstars" id="hallStars"></div>
+      <div class="hallgrid" id="hallGrid"></div>
+      <div class="row"><button class="big" id="hallBack">Tillbaka</button><button class="ghost" id="hallReset">Återställ</button></div>
     </div>
   </div>
 
@@ -479,11 +506,31 @@ const TRACKS_CAT=[
 const TT=t=>t.type==="spear"?TRACKS_SPEAR:t.type==="catapult"?TRACKS_CAT:TRACKS;
 const TNAME={archer:"Bågskyttar",spear:"Spjutkastare",farm:"Gård",catapult:"Katapult"};
 const UPG_COST=[40,65,100,150,220];
-const TOWER_COST=Math.round(70*0.9),SPEAR_COST=Math.round(85*0.9);
-const FARM_COST=60,FARM_UP=90,FARM_INC=[12,24];
-const CAT_COST=Math.round(90*0.9);
-const COST={archer:TOWER_COST,spear:SPEAR_COST,farm:FARM_COST,catapult:CAT_COST};
-function towerStats(t){const[a,b,c]=t.lv;if(t.type==="catapult")return{range:3.7+.2*a,dmg:24*(1+.3*a),radius:.85+.12*a,cd:2.9*(1-.05*a),fire:b?5+3*b:0,fireT:b?2+.45*b:0,iceDmg:c?40*(1+.5*(c-1)):0,armorMul:1+.35*c,pierce:c?.3+.05*c:0,crit:0,targets:1,burn:0,burnT:0,line:0,slowT:0,pull:0};if(t.type==="spear")return{range:2.7+.15*a,dmg:22*(1+.28*a),crit:0,targets:1,cd:1.7*(1-.04*b),burn:0,burnT:0,pierce:Math.min(1,.6+.08*a),armorMul:2+.5*a,line:b?0.9+.35*b:0,lineDmg:.55+.05*b,slowF:c?.55-.04*c:1,slowT:c?1+.35*c:0,pull:c>=3?.2*(c-2):0};return{pierce:0,armorMul:1,line:0,slowT:0,pull:0,range:3+0.35*a,dmg:8*(1+0.3*a),crit:0.08*a,targets:1+(b>=1)+(b>=3)+(b>=5),cd:0.85*(1-0.06*b),burn:2.6*c,burnT:3}}
+let TOWER_COST=Math.round(70*0.9),SPEAR_COST=Math.round(85*0.9);
+let FARM_COST=60;const FARM_UP=90,FARM_INC=[12,24];
+let CAT_COST=Math.round(90*0.9);
+let COST={archer:TOWER_COST,spear:SPEAR_COST,farm:FARM_COST,catapult:CAT_COST};
+// ---------- Hallen (permanenta uppgraderingar för stjärnor) ----------
+const META=[
+  {id:"arrow",cat:"Torn",name:"Vassare pilar",desc:"Bågskyttar gör +10 % skada per nivå.",max:3},
+  {id:"spear",cat:"Torn",name:"Tunga spjut",desc:"Spjutkastare gör +10 % skada per nivå.",max:3},
+  {id:"stone",cat:"Torn",name:"Stenhuggare",desc:"Katapulter gör +10 % skada och får 8 % större nedslag per nivå.",max:3},
+  {id:"carp",cat:"Torn",name:"Timmermän",desc:"Alla byggen kostar 6 % mindre per nivå.",max:2},
+  {id:"jarl",cat:"Jarl",name:"Jarlens styrka",desc:"Jarlen får +15 % liv och skada per nivå.",max:3},
+  {id:"hird",cat:"Jarl",name:"Större hird",desc:"+1 hirdman som följer jarlen per nivå.",max:3},
+  {id:"cry",cat:"Jarl",name:"Krigsvana",desc:"Förmågorna laddas 10 % snabbare per nivå.",max:2},
+  {id:"wall",cat:"By",name:"Starkare palissad",desc:"Fiender som når byn gör 15 % mindre skada per nivå.",max:2},
+  {id:"gold",cat:"By",name:"Skattkammare",desc:"+30 startguld per nivå.",max:3}
+];
+const metaCost=lv=>lv+1;
+function metaLoad(){try{return JSON.parse(localStorage.getItem("skj_meta")||"{}")}catch(e){return{}}}
+function metaSave(m){try{localStorage.setItem("skj_meta",JSON.stringify(m))}catch(e){}}
+let M=metaLoad();const ml=id=>M[id]||0;
+const starsTotal=()=>LEVELS.reduce((a,L,i)=>a+starsOf(i),0);
+const starsSpent=()=>META.reduce((a,u)=>{let c=0;for(let l=0;l<ml(u.id);l++)c+=metaCost(l);return a+c},0);
+function applyMeta(){const d=1-.06*ml("carp");TOWER_COST=Math.round(70*.9*d);SPEAR_COST=Math.round(85*.9*d);FARM_COST=Math.round(60*d);CAT_COST=Math.round(90*.9*d);COST={archer:TOWER_COST,spear:SPEAR_COST,farm:FARM_COST,catapult:CAT_COST}}
+function towerStats(t){const s=baseStats(t);const k=t.type==="spear"?ml("spear"):t.type==="catapult"?ml("stone"):t.type==="archer"||!t.type?ml("arrow"):0;s.dmg*=1+.1*k;if(t.type==="catapult")s.radius*=1+.08*ml("stone");return s}
+function baseStats(t){const[a,b,c]=t.lv;if(t.type==="catapult")return{range:3.7+.2*a,dmg:24*(1+.3*a),radius:.85+.12*a,cd:2.9*(1-.05*a),fire:b?5+3*b:0,fireT:b?2+.45*b:0,iceDmg:c?40*(1+.5*(c-1)):0,armorMul:1+.35*c,pierce:c?.3+.05*c:0,crit:0,targets:1,burn:0,burnT:0,line:0,slowT:0,pull:0};if(t.type==="spear")return{range:2.7+.15*a,dmg:22*(1+.28*a),crit:0,targets:1,cd:1.7*(1-.04*b),burn:0,burnT:0,pierce:Math.min(1,.6+.08*a),armorMul:2+.5*a,line:b?0.9+.35*b:0,lineDmg:.55+.05*b,slowF:c?.55-.04*c:1,slowT:c?1+.35*c:0,pull:c>=3?.2*(c-2):0};return{pierce:0,armorMul:1,line:0,slowT:0,pull:0,range:3+0.35*a,dmg:8*(1+0.3*a),crit:0.08*a,targets:1+(b>=1)+(b>=3)+(b>=5),cd:0.85*(1-0.06*b),burn:2.6*c,burnT:3}}
 function canUpgrade(t,i){const lv=t.lv;if(lv[i]>=5)return false;const next=lv.map((v,k)=>k===i?v+1:v);if(next.filter(v=>v>0).length>2)return false;if(next.filter(v=>v>2).length>1)return false;return true}
 
 const ETYPES={
@@ -502,14 +549,15 @@ function buildWave(w){const list=[];const hpMul=Math.pow(1.195,w-1)*LV.hpMul;let
 let G={};
 function resetGame(){
   for(const s of SPOTS)s.tower=null;
-  const j={kind:"jarl",gx:LV.jarl[0],gy:LV.jarl[1],ax:0,ay:0,hp:240,maxhp:240,base:240,cd:0,dead:0,cmd:false,face:false,t:0,blocks:[],lastHit:9,flash:0,xp:0,lvl:1,cap:2,dmg:13,acd:.85,speed:2.4,lunge:0};
+  const JF=1+.15*ml("jarl");const j={kind:"jarl",gx:LV.jarl[0],gy:LV.jarl[1],ax:0,ay:0,hp:Math.round(240*JF),maxhp:Math.round(240*JF),base:Math.round(240*JF),cd:0,dead:0,cmd:false,face:false,t:0,blocks:[],lastHit:9,flash:0,xp:0,lvl:1,cap:2,dmg:13,acd:.85,speed:2.4,lunge:0};
   j.ax=j.gx;j.ay=j.gy;
-  G={gold:LV.gold||200,hp:100,wave:0,queue:[],spawnT:0,countdown:null,enemies:[],towers:[],units:[j],jarl:j,proj:[],parts:[],texts:[],time:0,speed:1,paused:false,over:false,started:false,
-     cds:[0,0,0],cdMax:[30,45,60],flags:{},selected:null,buildSpot:null,pendingBuild:null,marker:null,shake:0,rings:[],bossRef:null,bonusText:0,stats:{kills:0},dying:[],coins:[],bossIntro:0,fires:[],streaks:[],ice:ICEDEF?{frozen:false,broken:false,hp:0,max:ICEDEF.hp,river:0,hole:0,refreezeAt:null,flash:0}:null};
-  for(let i=0;i<2;i++)G.units.push(makeHird(i,0));
+  applyMeta();
+  G={gold:(LV.gold||200)+30*ml("gold"),hp:100,wave:0,queue:[],spawnT:0,countdown:null,enemies:[],towers:[],units:[j],jarl:j,proj:[],parts:[],texts:[],time:0,speed:1,paused:false,over:false,started:false,
+     cds:[0,0,0],cdMax:[30,45,60].map(v=>v*(1-.1*ml("cry"))),flags:{},selected:null,buildSpot:null,pendingBuild:null,marker:null,shake:0,rings:[],bossRef:null,bonusText:0,stats:{kills:0},dying:[],coins:[],bossIntro:0,fires:[],streaks:[],ice:ICEDEF?{frozen:false,broken:false,hp:0,max:ICEDEF.hp,river:0,hole:0,refreezeAt:null,flash:0}:null};
+  for(let i=0;i<2+ml("hird");i++)G.units.push(makeHird(i,0));
   updateHUD(true);closePanels();
 }
-const HIRD_OFF=[[-.75,.55],[.55,-.75],[.85,.6],[-.6,-.85]];
+const HIRD_OFF=[[-.75,.55],[.55,-.75],[.85,.6],[-.6,-.85],[.1,1.05],[1.05,-.1],[-1.05,.1],[-.1,-1.05]];
 function makeHird(slot,temp){const j=G.jarl;const o=HIRD_OFF[slot];return{kind:"hird",slot,temp,gx:j.gx+o[0],gy:j.gy+o[1],hp:90,maxhp:90,cd:0,dead:0,face:false,t:Math.random()*3,blocks:[],lastHit:9,flash:0,cap:1,dmg:6,acd:.9,speed:2.6,lunge:0}}
 
 // ---------- Kamera & canvas ----------
@@ -616,7 +664,7 @@ function updateUnits(dt){
     if(!tgt){const aggro=u.kind==="jarl"?1.8:2.1;const anc=u.kind==="jarl"?{gx:ax,gy:ay}:{gx:j.ax,gy:j.ay};let best=null,bd=1e9;
       for(const e of G.enemies){if(e.hp<=0||(e.engaged&&e.engaged!==u))continue;if(e.type==="boss"&&e.armor>0)continue;const da=dist(e,anc);if(da>aggro)continue;const d=dist(e,u);if(d<bd){bd=d;best=e}}tgt=best}
     if(tgt){const d=dist(u,tgt);if(d>.48)moveTo(u,tgt.gx,tgt.gy,u.speed,dt,.45);u.face=iso(tgt.gx,tgt.gy).x<iso(u.gx,u.gy).x;
-      u.cd-=dt;u.fight=d<.8;if(d<.8&&u.cd<=0){u.cd=u.acd;u.lunge=1;u.swing=1;const mul=u.kind==="jarl"?1+.25*(u.lvl-1):1;hitEnemy(tgt,u.dmg*mul,false,false);sparks(tgt);SND.hit()}}
+      u.cd-=dt;u.fight=d<.8;if(d<.8&&u.cd<=0){u.cd=u.acd;u.lunge=1;u.swing=1;const mul=u.kind==="jarl"?(1+.25*(u.lvl-1))*(1+.15*ml("jarl")):1;hitEnemy(tgt,u.dmg*mul,false,false);sparks(tgt);SND.hit()}}
     else moveTo(u,ax,ay,u.speed*.8,dt);
   }
   G.units=G.units.filter(u=>!u.remove);
@@ -639,7 +687,7 @@ function updateEnemies(dt){
     if(e.stun>0){e.stun-=dt;continue}
     if(e.engaged){const u=e.engaged;if(u.dead||u.remove||!u.blocks.includes(e)){e.engaged=null}else{e.face=iso(u.gx,u.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;if(e.cd<=0){e.cd=e.acd;e.lunge=1;e.swing=1;u.hp-=e.atk;u.lastHit=0;u.flash=.12;if(u.hp<=0)killUnit(u)}e.lunge=Math.max(0,(e.lunge||0)-dt*4);continue}}
     e.slowT=Math.max(0,(e.slowT||0)-dt);const stepD=e.speed*(e.slowT>0?e.slowF:1)*dt;e.d+=stepD;e.footfall=stepPhase(e,stepD,GAIT[e.type].stride);
-    if(e.d>=e.P.len){e.hp=0;e.reached=true;G.hp=Math.max(0,G.hp-e.vdmg);G.shake=Math.min(1,.25+e.vdmg/30);SND.thump();const p=iso(GATE.gx,GATE.gy);floatText(p,`−${e.vdmg}`,"#ff8a7a");if(G.hp<=0)endGame(false);continue}
+    if(e.d>=e.P.len){e.hp=0;e.reached=true;const vd=e.vdmg*(1-.15*ml("wall"));G.hp=Math.max(0,Math.round((G.hp-vd)*10)/10);G.shake=Math.min(1,.25+e.vdmg/30);SND.thump();const p=iso(GATE.gx,GATE.gy);floatText(p,`−${Math.round(vd*10)/10}`,"#ff8a7a");if(G.hp<=0)endGame(false);continue}
     const p=pathAt(e.d,e.P);const nx=-p.dy,ny=p.dx;e.gx=p.gx+nx*e.off;e.gy=p.gy+ny*e.off;e.face=(p.dx-p.dy)>0;e.moving=1;if(e.footfall){if(e.type==="boss"){G.shake=Math.max(G.shake,.16);dust(e,7,44)}else if(e.type==="brute"){dust(e,3,26)}else if(Math.random()<.5)dust(e,1)}
   }
   G.enemies=G.enemies.filter(e=>{if(e.hp>0)return true;if(!e.reached)G.dying.push({e,t:0});if(e.engaged){const u=e.engaged;u.blocks=u.blocks.filter(x=>x!==e)}if(e===G.bossRef)G.bossRef=null;return false});
@@ -687,7 +735,7 @@ function floatText(p,txt,col,dy=-40){G.texts.push({x:p.x,y:p.y+dy,txt,col,life:1
 // ---------- Förmågor ----------
 const AB=[
   ()=>{const j=G.jarl;let n=0;for(const t of G.towers)if(dist(t,j)<=3.6){t.buff=6;n++}G.rings.push({gx:j.gx,gy:j.gy,t:0,max:.8,r:3.6,c:"246,217,138"});if(!n)floatText(iso(j.gx,j.gy),"Inga torn nära","#b9a88a",-90)},
-  ()=>{const j=G.jarl;for(const slot of[2,3]){const h=makeHird(slot,G.time+15);h.gx=j.gx+HIRD_OFF[slot][0]*.5;h.gy=j.gy+HIRD_OFF[slot][1]*.5;G.units.push(h);puff(h,6)}},
+  ()=>{const j=G.jarl;for(const slot of[4,5].map(x=>x+Math.max(0,ml("hird")-2)).map(x=>Math.min(x,7))){const h=makeHird(slot,G.time+15);h.gx=j.gx+HIRD_OFF[slot][0]*.5;h.gy=j.gy+HIRD_OFF[slot][1]*.5;G.units.push(h);puff(h,6)}},
   ()=>{const j=G.jarl;for(const e of G.enemies)if(dist(e,j)<=2.5)e.stun=e.type==="boss"?2.5:5;G.rings.push({gx:j.gx,gy:j.gy,t:0,max:5,r:2.5,c:"169,203,212",wall:true})}
 ];
 function useAbility(i){if(!G.started||G.over||G.paused||G.cds[i]>0||G.jarl.dead)return;SND.ability();AB[i]();G.cds[i]=G.cdMax[i];G.flags.ability=true}
@@ -903,7 +951,16 @@ $("nextBtn").addEventListener("click",()=>{$("endOv").hidden=true;startLevel(LI+
 $("menuBtn").addEventListener("click",()=>{$("endOv").hidden=true;showLevels()});
 const starsOf=i=>{try{return +localStorage.getItem("skj_"+LEVELS[i].key)||0}catch(e){return 0}};
 const STAR=(on,s=16)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="${on?"#e3b34c":"#2a1f16"}" stroke="${on?"#7a5418":"#5a4630"}" stroke-width="1.2"/></svg>`;
-function showLevels(){const box=$("levelList");box.innerHTML="";LEVELS.forEach((L,i)=>{const st=starsOf(i),open=i===0||starsOf(i-1)>0;const b=document.createElement("button");b.className="lvl"+(L.theme==="winter"?" win":"");b.disabled=!open;
+function renderHallBtn(){const free=starsTotal()-starsSpent();$("hallBtn").innerHTML=`Hallen ${STAR(true)} ${free} att spendera`}
+function showHall(){M=metaLoad();const free=starsTotal()-starsSpent();$("hallStars").innerHTML=`${STAR(true,22)} ${free} <small style="font:700 13px var(--body);color:var(--muted)">av ${starsTotal()} tillgängliga</small>`;
+  const g=$("hallGrid");g.innerHTML="";for(const u of META){const lv=ml(u.id),c=metaCost(lv),max=lv>=u.max;const d=document.createElement("div");d.className="mup";
+    d.innerHTML=`<span class="cat">${u.cat}</span><b>${u.name}</b><p>${u.desc}</p><div class="ft"><span class="pips">${Array.from({length:u.max},(_,k)=>`<i class="${k<lv?"on":""}"></i>`).join("")}</span><button ${(max||c>free)?"disabled":""}>${max?"Max":STAR(true)+c}</button></div>`;
+    d.querySelector("button").addEventListener("click",()=>{if(max||metaCost(ml(u.id))>starsTotal()-starsSpent())return;M[u.id]=ml(u.id)+1;metaSave(M);SND.init();SND.build();showHall()});g.appendChild(d)}
+  $("startOv").hidden=true;$("hallOv").hidden=false}
+$("hallBtn").addEventListener("click",showHall);
+$("hallBack").addEventListener("click",()=>{$("hallOv").hidden=true;showLevels()});
+$("hallReset").addEventListener("click",()=>{M={};metaSave(M);showHall()});
+function showLevels(){renderHallBtn();const box=$("levelList");box.innerHTML="";LEVELS.forEach((L,i)=>{const st=starsOf(i),open=i===0||starsOf(i-1)>0;const b=document.createElement("button");b.className="lvl"+(L.theme==="winter"?" win":"");b.disabled=!open;
     b.innerHTML=`<span class="no">${i+1}</span><span><b>${L.name}</b><small>${open?L.desc:"Klara bana "+i+" för att låsa upp."}</small></span><span class="st">${[0,1,2].map(k=>STAR(k<st)).join("")}</span>`;
     b.addEventListener("click",()=>startLevel(i));box.appendChild(b)});G.started=false;$("startOv").hidden=false}
 function startLevel(i){SND.init();renderSnd();loadLevel(i);resetGame();centerCam();$("startOv").hidden=true;G.started=true}
@@ -927,7 +984,7 @@ const HINTS=[
 let lastHud={};
 function updateHUD(force){
   const set=(k,v,fn)=>{if(force||lastHud[k]!==v){lastHud[k]=v;fn(v)}};
-  set("hp",G.hp,v=>{$("hpTxt").textContent=v;$("hpBar").style.width=v+"%"});
+  set("hp",G.hp,v=>{$("hpTxt").textContent=Math.ceil(v);$("hpBar").style.width=v+"%"});
   set("gold",G.gold,v=>{$("goldTxt").textContent=v;if(G.buildSpot){$("buildArcher").disabled=v<TOWER_COST;$("buildSpear").disabled=v<SPEAR_COST;$("buildFarm").disabled=v<FARM_COST;$("buildCat").disabled=v<CAT_COST}if(G.selected)renderTPanel()});
   set("wave",G.wave,v=>$("waveTxt").textContent=`Våg ${v}/${WAVES}`);
   const j=G.jarl;$("jHp").style.width=(j.dead?0:j.hp/j.maxhp*100)+"%";set("lvl",j.lvl,v=>$("lvTxt").textContent=v);
@@ -939,7 +996,7 @@ function updateHUD(force){
 function endGame(win){if(G.over)return;G.over=true;closePanels();win?SND.win():SND.lose();const stars=win?(G.hp>=80?3:G.hp>=40?2:1):0;
   $("endTitle").textContent=win?"Byn står kvar":"Byn har fallit";$("endSub").textContent=`Bana ${LI+1} · ${LV.name}`;$("nextBtn").hidden=!(win&&LI+1<LEVELS.length);
   $("endStars").innerHTML=[0,1,2].map(i=>`<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="${i<stars?"#e3b34c":"#2a1f16"}" stroke="${i<stars?"#7a5418":"#5a4630"}" stroke-width="1.2"/></svg>`).join("");
-  $("endTxt").textContent=win?`Byns styrka: ${G.hp}/100 · ${G.stats.kills} fiender fällda${G.stats.farmGold?` · ${G.stats.farmGold} guld från gårdar`:""}. ${stars<3?"Försvara med minst 80 kvar för tre stjärnor.":"Full pott."}`:`Ulvklanen nådde våg ${G.wave}. Bygg fler torn tidigt och använd jarlens förmågor när det trycker på.`;
+  $("endTxt").textContent=win?`Byns styrka: ${Math.ceil(G.hp)}/100 · ${G.stats.kills} fiender fällda${G.stats.farmGold?` · ${G.stats.farmGold} guld från gårdar`:""}. ${stars<3?"Försvara med minst 80 kvar för tre stjärnor.":"Full pott."}${starsTotal()-starsSpent()>0?" Du har stjärnor att spendera i Hallen.":""}`:`Ulvklanen nådde våg ${G.wave}. Bygg fler torn tidigt och använd jarlens förmågor när det trycker på.`;
   try{if(win){const k="skj_"+LV.key,best=+localStorage.getItem(k)||0;if(stars>best)localStorage.setItem(k,stars)}}catch(e){}
   setTimeout(()=>$("endOv").hidden=false,win?1200:700)}
 
