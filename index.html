@@ -743,9 +743,9 @@ function drawEnemy(e){const p=iso(e.gx,e.gy);const img=enemyImg(e);const mv=e.mo
   const fade=Math.min(1,(e.age||0)/.6);const hit=e.flash>0?.06:0;
   shadow(p.x,p.y,e.h*.26*fade);
   ctx.save();ctx.globalAlpha=fade*(e.stun>0?.85:1);
-  const o={lean:(e.type==="thrall"?.06:0)+(e.lunge||0)*.12-hit,breath:1+.02*Math.sin(e.t*2.4)*(1-amt),alt:SPR[e.type+"_b"]};
+  const o={lean:(e.type==="thrall"?.06:0)+(e.lunge||0)*.12-hit,breath:1+.02*Math.sin(e.t*2.4)*(1-amt),alt:e.type==="brute"?img:SPR[e.type+"_b"]};
   drawWalker(img,g,p.x+lx,p.y,e.h,e.face,e.ph||0,amt,o);
-  if(e.flash>0){ctx.globalAlpha*=Math.min(1,e.flash*7);drawWalker(e.type==="brute"?SPR.bruteW:e.type==="boss"?SPR.bossW:SPR.thrallW,g,p.x+lx,p.y,e.h,e.face,e.ph||0,amt,{...o,alt:SPR[e.type+"_bW"]})}
+  if(e.flash>0){ctx.globalAlpha*=Math.min(1,e.flash*7);drawWalker(e.type==="brute"?SPR.bruteW:e.type==="boss"?SPR.bossW:SPR.thrallW,g,p.x+lx,p.y,e.h,e.face,e.ph||0,amt,{...o,alt:e.type==="brute"?SPR.bruteW:SPR[e.type+"_bW"]})}
   ctx.restore();
   if(e.swing>0)swing(p.x+(e.face?8:-8),p.y-e.h*.45,e.h*.45,e.face?1:-1,e.swing,"255,214,196");
   if(e.slowT>0){ctx.strokeStyle="rgba(150,110,60,.85)";ctx.lineWidth=2.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.ellipse(p.x,p.y,e.h*.28,e.h*.12,0,0,7);ctx.stroke();ctx.setLineDash([])}
