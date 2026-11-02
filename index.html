@@ -487,7 +487,7 @@ function prepSprites(){
   SPR.thrall=IMG.thrall;SPR.thrallW=tinted(IMG.thrall,"#fff",1);
   SPR.brute=IMG.brute;SPR.bruteW=tinted(IMG.brute,"#fff",1);
   SPR.boss=IMG.boss;SPR.bossW=tinted(IMG.boss,"#fff",1);SPR.rival=IMG.rival||tinted(IMG.jarl,"#1f2d6e",.45);SPR.rivalW=tinted(SPR.rival,"#fff",1);SPR.wolfjarl=IMG.wolfjarl||tinted(IMG.boss,"#0a0a12",.45);SPR.wolfjarlW=tinted(SPR.wolfjarl,"#fff",1);SPR.berserk=IMG.berserk||tinted(IMG.brute,"#7a1a10",.4);SPR.berserkW=tinted(SPR.berserk,"#fff",1);
-  SPR.village=IMG.village;
+  SPR.village=IMG.village;prepFlag("tower",IMG.tower_archer);prepFlag("village",IMG.village);
 }
 
 // ---------- Markrendering (förberäknas en gång) ----------
@@ -1018,7 +1018,15 @@ function drawWaterFlow(tm){if(!WATER_ISO||!IMG.water)return;const frozen=G.ice&&
   pt.setTransform(new DOMMatrix([1,.5,-1,.5,0,0]).scale(.6).translate(off*64,0));ctx.globalAlpha=.28;ctx.fillStyle=pt;ctx.fillRect(WB.x0-60,WB.y0-60,WB.x1-WB.x0+120,WB.y1-WB.y0+120);ctx.globalAlpha=1;
   for(let i=0;i<46;i++){const r=rng(i*17+3);const gx=((r()*(N+6)+tm*(.45+r()*.35))%(N+6))-3,gy=WBG?WBG.y0+r()*(WBG.y1-WBG.y0):12;if(!isWater(gx,gy))continue;const p=iso(gx,gy),q=iso(gx+.5+r()*.5,gy);ctx.strokeStyle=`rgba(225,240,242,${.12+.12*Math.sin(tm*2+i)})`;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}
   ctx.restore()}
-function drawVillage(){const p=iso(VC.gx,VC.gy);const w=VN*TW*1.02;const img=SPR.village;const h=img.height*w/img.width;ctx.drawImage(img,p.x-w/2,p.y+VN*HH+6-h,w,h)}
+// Vajande flaggor: flaggområdet klipps ur bilden och ritas om i skivor som böljar
+const FLAGS={tower:{r:[.548,.02,.895,.16],mode:"h"},village:{r:[.695,.09,.79,.335],mode:"v"}};
+function prepFlag(key,img){if(!img)return;const f=FLAGS[key],W=img.width,H=img.height,x0=Math.floor(f.r[0]*W),y0=Math.floor(f.r[1]*H),x1=Math.ceil(f.r[2]*W),y1=Math.ceil(f.r[3]*H);
+  const piece=document.createElement("canvas");piece.width=x1-x0;piece.height=y1-y0;piece.getContext("2d").drawImage(img,x0,y0,x1-x0,y1-y0,0,0,x1-x0,y1-y0);
+  const base=document.createElement("canvas");base.width=W;base.height=H;const b=base.getContext("2d");b.drawImage(img,0,0);b.clearRect(x0,y0,x1-x0,y1-y0);f.piece=piece;f.base=base;f.x0=x0;f.y0=y0;f.W=W;f.H=H}
+function drawFlagged(key,dx,dy,w,h,tm,ph){const f=FLAGS[key];if(!f||!f.base)return false;const k=w/f.W;ctx.drawImage(f.base,dx,dy,w,h);const P=f.piece,pw=P.width,phh=P.height,wind=1+AMB.wind;
+  if(f.mode==="h"){const st=3;for(let x=0;x<pw;x+=st){const u=x/pw,off=Math.sin(tm*6*wind-u*7+ph)*u*phh*.12;ctx.drawImage(P,x,0,st+.6,phh,dx+(f.x0+x)*k,dy+(f.y0+off)*k,(st+.6)*k,phh*k)}}
+  else{const st=3;for(let y=0;y<phh;y+=st){const v=y/phh,off=Math.sin(tm*3.2*wind-v*4+ph)*v*pw*.06;ctx.drawImage(P,0,y,pw,st+.6,dx+(f.x0+off)*k,dy+(f.y0+y)*k,pw*k,(st+.6)*k)}}return true}
+function drawVillage(){const p=iso(VC.gx,VC.gy);const w=VN*TW*1.02;const img=SPR.village;const h=img.height*w/img.width;if(!drawFlagged("village",p.x-w/2,p.y+VN*HH+6-h,w,h,performance.now()/1000,0))ctx.drawImage(img,p.x-w/2,p.y+VN*HH+6-h,w,h)}
 function farmIcon(){const c=document.createElement("canvas");c.width=80;c.height=100;const x=c.getContext("2d");x.translate(40,80);drawFarmShape(x,0,1);return c.toDataURL()}
 function drawFarmShape(c,lv,s){c.save();c.scale(s,s);
   c.fillStyle="#b8902e";c.beginPath();c.moveTo(-38,0);c.lineTo(0,-19);c.lineTo(38,0);c.lineTo(0,19);c.closePath();c.fill();
@@ -1040,7 +1048,7 @@ function drawFarm(t){const p=iso(t.gx,t.gy),by=p.y+(t.lv[0]?40:34);const b=clamp
 function drawTower(t){if(t.type==="farm")return drawFarm(t);if(t.type==="catapult")return drawCatapult(t);const p=iso(t.gx,t.gy);const lvl=Math.max(...t.lv);const sp=t.type==="spear";const h=(sp?150:178)*(1+.04*lvl);const IM=sp?SPR.spear:SPR.tower,IMW=sp?SPR.spearW:SPR.towerW;const by=p.y+HH*.42;
   const b=clamp((t.born||0)/.45,0,1),grow=b<1?Math.max(.02,easeBack(b)):1;
   if(t.buff>0){const g=ctx.createRadialGradient(p.x,by-60,10,p.x,by-60,90);g.addColorStop(0,"rgba(246,217,138,.35)");g.addColorStop(1,"rgba(246,217,138,0)");ctx.fillStyle=g;ctx.fillRect(p.x-90,by-150,180,180)}
-  const sq=1+(t.recoil||0)*.025;ctx.save();ctx.translate(p.x,by);ctx.scale((1/sq)*(b<1?.85+.15*b:1),sq*grow);sprite(IM,0,0,h,false);ctx.restore();
+  const sq=1+(t.recoil||0)*.025;ctx.save();ctx.translate(p.x,by);ctx.scale((1/sq)*(b<1?.85+.15*b:1),sq*grow);if(IM===SPR.tower){const w=IM.width*h/IM.height;drawFlagged("tower",-w/2,-h,w,h,performance.now()/1000,t.gx*1.7+t.gy)||sprite(IM,0,0,h,false)}else sprite(IM,0,0,h,false);ctx.restore();
   if(t===G.selected){ctx.globalAlpha=.18+.1*Math.sin(performance.now()/180);sprite(IMW,p.x,by,h,false);ctx.globalAlpha=1}
   if(b<1)return;
   let ox=p.x-((t.lv.filter(v=>v>0).length-1)*9);for(let i=0;i<3;i++){if(!t.lv[i])continue;ctx.fillStyle=TT(t)[i].c;ctx.strokeStyle="#1a0f08";ctx.lineWidth=2;ctx.beginPath();ctx.arc(ox,by+6,7,0,7);ctx.fill();ctx.stroke();ctx.fillStyle="#1a0f08";ctx.font="900 10px Cinzel,serif";ctx.textAlign="center";ctx.fillText(t.lv[i],ox,by+9.5);ox+=18}}
