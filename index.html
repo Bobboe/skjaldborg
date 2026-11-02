@@ -434,7 +434,7 @@ const ACT={key:"a1",name:"Akt I · Klankrig",vc:{gx:14,gy:17},jarl:[16.6,14.6],g
          B:[[-1.4,21],[4,21],[4,24.6],[9.4,24.6],[9.4,19.6],[13.3,19.6],[13.3,18.95]],
          D:[[29.4,20],[24.4,20],[24.4,24.4],[19,24.4],[19,18.1],[16,18.1]]},
   pathCh:{A:0,B:1,S:2,D:3},
-  bridges:[{x0:5.25,x1:6.75,y0:10.2,y1:13.8},{x0:12.25,x1:13.05,y0:10.2,y1:13.8,foot:true}],
+  bridges:[{x0:5.25,x1:6.75,y0:9.9,y1:14.2},{x0:12.0,x1:13.3,y0:9.9,y1:14.2,foot:true}],
   water(){const top=[],bot=[];for(let i=0;i<=56;i++){const gx=-0.6+i*29.2/56;top.push([gx,11.05+0.35*Math.sin(gx*.55)+0.15*Math.sin(gx*1.7+1)]);bot.push([gx,13.0+0.3*Math.sin(gx*.5+2)+0.14*Math.sin(gx*2.1)])}return{poly:top.concat(bot.slice().reverse()),shores:[top,bot]}},
   rocks:[[1.4,2.4,1.6],[26.4,2.0,1.5],[2.2,15.6,1.3],[26.6,14.6,1.6],[11.6,3.0,1.2],[21.6,26.6,1.4],[3.0,27.0,1.3],[27,27,1.5],[14.2,25.8,1.1],[9.4,6.0,.9]],
   spots:60};
@@ -457,11 +457,16 @@ const isWater=(gx,gy)=>inPoly(gx,gy,WATER);
 const onBridge=(gx,gy)=>BRIDGES.some(b=>gx>b.x0&&gx<b.x1&&gy>b.y0&&gy<b.y1);
 const inIceZone=(gx,gy)=>!!ICEDEF&&gx>ICEDEF.zone.x0&&gx<ICEDEF.zone.x1&&isWater(gx,gy);
 const iceWalk=(gx,gy)=>!!ICEDEF&&G.ice&&G.ice.river>.5&&(G.ice.frozen||!inIceZone(gx,gy));
-const walkable=(gx,gy)=>gx>0.2&&gy>0.2&&gx<N-0.2&&gy<N-0.2&&(!isWater(gx,gy)||onBridge(gx,gy)||iceWalk(gx,gy))&&!inVillage(gx,gy);
+const walkableSlow=(gx,gy)=>gx>0.2&&gy>0.2&&gx<N-0.2&&gy<N-0.2&&(!isWater(gx,gy)||onBridge(gx,gy))&&!inVillage(gx,gy);
+// Förberäknad gångkarta: 1 = mark/bro, 2 = flod, 3 = flod i iszonen, 0 = blockerat
+const WR=8,WN=N*WR;let WGRID=null;
+function buildWalkGrid(){WGRID=new Uint8Array(WN*WN);for(let j=0;j<WN;j++)for(let i=0;i<WN;i++){const x=(i+.5)/WR,y=(j+.5)/WR;let v=0;if(walkableSlow(x,y))v=1;else if(x>0.2&&y>0.2&&x<N-0.2&&y<N-0.2&&!inVillage(x,y)&&isWater(x,y))v=(x>16.7&&x<19.3)?3:2;WGRID[j*WN+i]=v}}
+function walkable(gx,gy){if(!WGRID)return walkableSlow(gx,gy);const i=Math.floor(gx*WR),j=Math.floor(gy*WR);if(i<0||j<0||i>=WN||j>=WN)return false;const v=WGRID[j*WN+i];if(v===1)return true;if(!v)return false;
+  if(!ICEDEF||!G.ice||G.ice.river<=.5)return false;return v===2||G.ice.frozen}
 function makeSpots(){const c=[];for(let i=0;i<N;i++)for(let j=0;j<N;j++){const gx=i+.5,gy=j+.5;const d=distToPath(gx,gy);if(d<1.22||d>2.05)continue;if(gx<1||gy<1||gx>N-1||gy>N-1)continue;if(isWater(gx,gy)||isWater(gx+.6,gy)||isWater(gx,gy-.6)||isWater(gx-.6,gy)||isWater(gx,gy+.6)||onBridge(gx,gy))continue;if(Math.hypot(gx-VC.gx,gy-VC.gy)<3.2)continue;c.push({gx,gy,score:Math.abs(d-1.5)+(((gx*7+gy*13)%5)*.01)})}
   c.sort((a,b)=>a.score-b.score||a.gx-b.gx||a.gy-b.gy);const out=[];for(const p of c){if(out.every(o=>Math.hypot(o.gx-p.gx,o.gy-p.gy)>=2.2))out.push(p);if(out.length>=ACT.spots)break}
   return out.map((p,i)=>{let ch=9;for(const k in PO)if(distTo(PO[k],p.gx,p.gy)<=2.1)ch=Math.min(ch,ACT.pathCh[k]);return{id:i,gx:p.gx,gy:p.gy,ch,tower:null}})}
-function initAct(){for(const k in ACT.paths)PO[k]=mkPath(ACT.paths[k]);PA=PO.A;PS=PO.S;const w=ACT.water();WATER=w.poly;SHORES=w.shores;SPOTS=makeSpots();
+function initAct(){for(const k in ACT.paths)PO[k]=mkPath(ACT.paths[k]);PA=PO.A;PS=PO.S;const w=ACT.water();WATER=w.poly;SHORES=w.shores;buildWalkGrid();SPOTS=makeSpots();
   let d=0;ICE_IN=ICE_OUT=0;for(;d<PS.len;d+=.05){const p=pathAt(d,PS);if(isWater(p.gx,p.gy)){if(!ICE_IN)ICE_IN=d;ICE_OUT=d}}}
 const spotOpen=s=>s.ch<=LI;
 function setChapter(i){LI=i;LV=LEVELS[i];PATHS=LV.open.map(k=>PO[k]);ICEDEF=LV.ice||null;if(IMG.grass)buildGround()}
@@ -747,7 +752,7 @@ function updateUnits(dt){
     if(u.temp&&G.time>u.temp){u.remove=true;release(u);puff(u);continue}
     u.lastHit+=dt;if(u.lastHit>3)u.hp=Math.min(u.maxhp,u.hp+(u.kind==="jarl"?9:5)*dt);
     let ax,ay,following=false;
-    if(u.kind==="jarl"){ax=u.ax;ay=u.ay}else{const o=HIRD_OFF[u.slot];if(j.cmd||j.dead){following=true;ax=(j.dead?GATE.gx+.8:j.gx)+o[0];ay=(j.dead?GATE.gy-1:j.gy)+o[1]}else{ax=j.ax+o[0];ay=j.ay+o[1]}}
+    if(u.kind==="jarl"){ax=u.ax;ay=u.ay}else{const o=HIRD_OFF[u.slot];if(j.cmd||j.dead){following=true;ax=(j.dead?GATE.gx+.8:j.gx)+o[0];ay=(j.dead?GATE.gy-1:j.gy)+o[1]}else{ax=j.ax+o[0];ay=j.ay+o[1]}if(!walkable(ax,ay)){const bx=j.dead?GATE.gx+.8:(j.cmd?j.gx:j.ax),by=j.dead?GATE.gy-1:(j.cmd?j.gy:j.ay);let f=false;for(const k of[.6,.3]){const x=bx+o[0]*k,y=by+o[1]*k;if(walkable(x,y)){ax=x;ay=y;f=true;break}}if(!f){ax=bx;ay=by}}}
     u.following=following;
     if(u.kind==="jarl"&&u.cmd){if(moveTo(u,ax,ay,u.speed,dt)<.08)u.cmd=false;continue}
     if(following){if(u.blocks.length)release(u);moveTo(u,ax,ay,u.speed*1.15,dt);continue}
@@ -767,9 +772,30 @@ function updateUnits(dt){
   // nivå
   const need=[0,45,120];if(j.lvl<3&&j.xp>=need[j.lvl]){j.lvl++;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f);j.hp=j.maxhp;toast(`Jarlen nivå ${j.lvl}`,"Mer skada och mer liv");G.rings.push({gx:j.gx,gy:j.gy,t:0,max:.9,r:2,c:"246,217,138"})}
 }
-function moveTo(u,x,y,sp,dt,stop=0){const dx=x-u.gx,dy=y-u.gy;const d=Math.hypot(dx,dy);if(d<=stop+.02)return d;const s=Math.min(d-stop,sp*dt);const nx=u.gx+dx/d*s,ny=u.gy+dy/d*s;if(stepPhase(u,s,GAIT[u.kind].stride))dust(u,2,18);
-  if(walkable(nx,ny)||!walkable(u.gx,u.gy)){u.gx=nx;u.gy=ny}else if(walkable(nx,u.gy))u.gx=nx;else if(walkable(u.gx,ny))u.gy=ny;
-  if(Math.abs(dx-dy)>.02)u.face=(dx-dy)<0;u.moving=.15;return d}
+// ---------- Vägsökning (A* på halvrutor) ----------
+const GR=2,GN=N*GR;
+const cellOk=(x,y,m=.2)=>walkable(x,y)&&walkable(x+m,y)&&walkable(x-m,y)&&walkable(x,y+m)&&walkable(x,y-m);
+function lineClear(ax,ay,bx,by){const d=Math.hypot(bx-ax,by-ay),n=Math.ceil(d/.12);for(let i=1;i<=n;i++){const t=i/n,x=ax+(bx-ax)*t,y=ay+(by-ay)*t;if(!(i===n?walkable(x,y):cellOk(x,y,.16)))return false}return true}
+function findPath(sx,sy,tx,ty){const idx=(i,j)=>j*GN+i,cx=v=>clamp(Math.floor(v*GR),0,GN-1),ok=(i,j)=>{if(i<0||j<0||i>=GN||j>=GN)return false;return cellOk((i+.5)/GR,(j+.5)/GR)};
+  let si=cx(sx),sj=cx(sy),ti=cx(tx),tj=cx(ty);
+  if(!ok(ti,tj)){let best=null,bd=1e9;for(let r=1;r<8&&!best;r++)for(let a=-r;a<=r;a++)for(let b=-r;b<=r;b++){if(!ok(ti+a,tj+b))continue;const dd=a*a+b*b;if(dd<bd){bd=dd;best=[ti+a,tj+b]}}if(!best)return null;[ti,tj]=best}
+  const g=new Float32Array(GN*GN).fill(1e9),from=new Int32Array(GN*GN).fill(-1),closed=new Uint8Array(GN*GN);const open=[[0,si,sj]];g[idx(si,sj)]=0;let found=false,it=0;
+  while(open.length&&it++<6000){let m=0;for(let k=1;k<open.length;k++)if(open[k][0]<open[m][0])m=k;const[,i,j]=open[m];open[m]=open[open.length-1];open.pop();const id=idx(i,j);if(closed[id])continue;closed[id]=1;if(i===ti&&j===tj){found=true;break}
+    for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){if(!a&&!b)continue;const ni=i+a,nj=j+b;if(!ok(ni,nj))continue;if(a&&b&&(!ok(i+a,j)||!ok(i,j+b)))continue;const nid=idx(ni,nj),ng=g[id]+(a&&b?1.414:1);if(ng<g[nid]){g[nid]=ng;from[nid]=id;open.push([ng+Math.hypot(ti-ni,tj-nj),ni,nj])}}}
+  if(!found)return null;const pts=[];let c=idx(ti,tj);while(c!==-1&&c!==idx(si,sj)){pts.push([(c%GN+.5)/GR,((c/GN|0)+.5)/GR]);c=from[c]}pts.reverse();
+  const out=[];const c0=[(si+.5)/GR,(sj+.5)/GR];let cur=[sx,sy];if(pts.length&&!lineClear(sx,sy,pts[0][0],pts[0][1])){out.push(c0);cur=c0}for(let k=0;k<pts.length;k++){const nxt=pts[k+1];if(nxt&&lineClear(cur[0],cur[1],nxt[0],nxt[1]))continue;out.push(pts[k]);cur=pts[k]}return out}
+function steerTarget(u,x,y){if(lineClear(u.gx,u.gy,x,y)){u.route=null;return[x,y]}
+  const now=G.time;if(!u.route||Math.hypot(u.routeX-x,u.routeY-y)>.7||u.stuck>=.5){if(now-(u.routeAt||-9)>.25||!u.route){u.route=findPath(u.gx,u.gy,x,y);u.routeX=x;u.routeY=y;u.routeAt=now;u.stuck=0}}
+  if(!u.route||!u.route.length)return[x,y];while(u.route.length>1&&Math.hypot(u.route[0][0]-u.gx,u.route[0][1]-u.gy)<.2)u.route.shift();
+  if(u.route.length>1&&lineClear(u.gx,u.gy,u.route[1][0],u.route[1][1]))u.route.shift();return u.route[0]}
+function unstick(u){if(walkable(u.gx,u.gy)&&(u.stuck||0)<1)return;let best=null,bd=1e9;const ci=Math.floor(u.gx*GR),cj=Math.floor(u.gy*GR);
+  for(let r=0;r<=6&&!best;r++)for(let a=-r;a<=r;a++)for(let b=-r;b<=r;b++){const x=(ci+a+.5)/GR,y=(cj+b+.5)/GR;if(!cellOk(x,y))continue;const d=Math.hypot(x-u.gx,y-u.gy);if(d<bd){bd=d;best=[x,y]}}
+  if(best){u.gx=best[0];u.gy=best[1]}u.route=null;u.stuck=0;u.bestD=1e9}
+function moveTo(u,x,y,sp,dt,stop=0){const fd=Math.hypot(x-u.gx,y-u.gy);if(fd<=stop+.02)return fd;unstick(u);const tgt=steerTarget(u,x,y);const routed=tgt[0]!==x||tgt[1]!==y;
+  const dx=tgt[0]-u.gx,dy=tgt[1]-u.gy;const d=routed?Math.hypot(dx,dy)+stop+.2:Math.hypot(dx,dy);if(d<=stop+.02)return fd;const ox=u.gx,oy=u.gy;const dl=Math.hypot(dx,dy)||1;const s=Math.min(routed?dl+.0001:d-stop,sp*dt);const nx=u.gx+dx/dl*s,ny=u.gy+dy/dl*s;if(stepPhase(u,s,GAIT[u.kind].stride))dust(u,2,18);
+  if(walkable(nx,ny)){u.gx=nx;u.gy=ny}else if(walkable(nx,u.gy))u.gx=nx;else if(walkable(u.gx,ny))u.gy=ny;
+  u.pt=(u.pt||0)+dt;if(u.pt>=.5){if(fd<(u.bestD??1e9)-.12){u.bestD=fd;u.stuck=0}else u.stuck=(u.stuck||0)+u.pt;u.pt=0}if(Math.abs((u.lastTX??x)-x)+Math.abs((u.lastTY??y)-y)>.5){u.bestD=1e9;u.stuck=0}u.lastTX=x;u.lastTY=y;
+  if(Math.abs(dx-dy)>.02)u.face=(dx-dy)<0;u.moving=.15;return fd}
 
 function updateEnemies(dt){
   for(const e of G.enemies){
