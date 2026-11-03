@@ -487,10 +487,10 @@ const LEVELS=[
  {key:"a1c6",bossName:"Havshövdingen Kåre",name:"Höst · Brandnätter",theme:"autumn",open:["A","B","F","G"],draw:["A","B","D","F","G"],boss:"rival",bossLine:"En hövding från havet leder strandhugget",intro:"Fler skepp. En andra landstigningsplats har öppnats i sydväst.",hp:7.5},
  {key:"a1c7",bossName:"Hjalte Isbjörn",name:"Vinter · Fjordisen",theme:"winter",open:["A","B","F","G"],draw:["A","B","D","F","G","S"],boss:"berserk",bossLine:"Bärsärkarna kommer över isen igen",intro:"Floden fryser på nytt. Håll en katapult redo.",hp:9,ice:true},
  {key:"a1c8",bossName:"Sjökungen Harald",name:"Vår · Sjökungen",theme:"spring",open:["A","B","D","F","G"],draw:["A","B","D","F","G"],boss:"harald",bossLine:"Sjökungen Harald kliver i land",intro:"Sjökungen själv seglar mot byn. Alla vägar är öppna.",hp:11},
- {key:"a1c9",bossName:"Bärsärken Grim",name:"Sommar · Bergsvägen",theme:"summer",open:["A","D","E"],draw:["A","B","D","E","F","G"],boss:"berserk",bossLine:"Ulvklanens förtrupp väller ner från berget",intro:"Landet har vuxit österut mot Ulvaberget. En ny väg leder ner från bergen.",hp:15},
- {key:"a1c10",bossName:"Vargföraren Sköll",name:"Höst · Vargtimmen",theme:"autumn",open:["A","B","D","E","H"],draw:["A","B","D","E","F","G","H"],boss:"rival",bossLine:"Vargflockarna jagar i dimman",intro:"En andra bergsväg har öppnats i sydost.",hp:18},
- {key:"a1c11",bossName:"Seidkonan Ása",name:"Vinter · Midvinterblot",theme:"winter",open:["A","B","D","E","H"],draw:["A","B","D","E","F","G","H","S"],boss:"boss",bossLine:"Seidkonan väcker vintermörkret",intro:"Midvinter. Floden fryser och Ulvklanen blotar inför den sista striden.",hp:19.5,ice:true},
- {key:"a1c12",bossName:"Ulf Gråpäls",name:"Vår · Ulvklanens sista strid",theme:"spring",open:["A","B","D","E","F","G","H"],draw:["A","B","D","E","F","G","H"],boss:"wolfjarl",bossLine:"Ulvklanens jarl leder hela hären",intro:"Ulvklanen anfaller från alla håll. Det här är slutstriden.",hp:22}
+ {key:"a1c9",bossName:"Bärsärken Grim",name:"Sommar · Bergsvägen",theme:"summer",open:["A","D","E"],draw:["A","B","D","E","F","G"],boss:"berserk",bossLine:"Ulvklanens förtrupp väller ner från berget",intro:"Landet har vuxit österut mot Ulvaberget. En ny väg leder ner från bergen.",hp:12.5},
+ {key:"a1c10",bossName:"Vargföraren Sköll",name:"Höst · Vargtimmen",theme:"autumn",open:["A","B","D","E","H"],draw:["A","B","D","E","F","G","H"],boss:"rival",bossLine:"Vargflockarna jagar i dimman",intro:"En andra bergsväg har öppnats i sydost.",hp:13.5},
+ {key:"a1c11",bossName:"Seidkonan Ása",name:"Vinter · Midvinterblot",theme:"winter",open:["A","B","D","E","H"],draw:["A","B","D","E","F","G","H","S"],boss:"asa",bossLine:"Seidkonan väcker vintermörkret",intro:"Midvinter. Floden fryser och Ulvklanen blotar inför den sista striden.",hp:15,ice:true},
+ {key:"a1c12",bossName:"Ulf Gråpäls",name:"Vår · Ulvklanens sista strid",theme:"spring",open:["A","B","D","E","F","G","H"],draw:["A","B","D","E","F","G","H"],boss:"wolfjarl",bossLine:"Ulvklanens jarl leder hela hären",intro:"Ulvklanen anfaller från alla håll. Det här är slutstriden.",hp:14.5}
 ];
 function mkPath(pts){const seg=[];let len=0;for(let i=0;i<pts.length-1;i++){const[a,b]=[pts[i],pts[i+1]];const l=Math.hypot(b[0]-a[0],b[1]-a[1]);seg.push({ax:a[0],ay:a[1],bx:b[0],by:b[1],len:l,start:len});len+=l}return{pts,seg,len}}
 let LI=0,LV=LEVELS[0],PO={},PATHS=[],PA=null,PS=null,VC=ACT.vc,GATE={gx:16.2,gy:17},WATER=[],SHORES=[],ROCKS=ACT.rocks,SPOTS=[],BRIDGES=ACT.bridges,ICEDEF=null,ICE_IN=0,ICE_OUT=0;
@@ -602,7 +602,7 @@ const SCENES={
  pre10:[["asa","Ditt blot når inga gudar, jarl. Vintermörkret lyder bara mig."],["gudrun","Seidkonan Ása. Hon har gjort Ulvklanen hel. Bryt hennes makt så faller deras mod."]],
  post10:[["gudrun","Seidkonan är borta. Nu finns bara Ulf Gråpäls och hela hans här kvar."]],
  pre11:[["ulf","Nu slutar det, Arnbjörn. Antingen brinner din by – eller så faller jag."],["sigvard",()=>SF("rival")==="ally"?"Han kommer från alla håll. Mina män håller österns väg så länge vi kan.":null],["jarl","Till tornen! Det här är vår sista strid."]],
- post11:[["gudrun","Ulvklanen är bruten. Ulf Gråpäls ligger i snön vid bergspasset."],["jarl","Tre år. Byn står kvar."],["gudrun","Men i norr har nordljuset blivit rött, Arnbjörn. Något större än klanerna har vaknat."]]
+ post11:[["gudrun","Ulvklanen är bruten. Ulf Gråpäls ligger i snön vid bergspasset."],["sigvard",()=>SF("rival")==="ally"?"Min skuld är betald, Arnbjörn. Skogen i väster är din – jag håller den åt dig.":null],["eyvind",()=>SF("rival")==="dead"?null:null],["gudrun",()=>SF("rival")==="dead"?"Sigvards ätt är utplånad. Ingen gör längre anspråk på skogen – men inga vänner finns kvar i väster heller.":null],["ragnhild",()=>SF("harald")==="alliance"?"Min far är död, och hans skepp är mina nu. Fjorden kan bli stilla mellan oss, om du vill.":null],["gudrun",()=>SF("harald")==="war"?"Haralds flotta ligger på fjordens botten. Ingen seglar mot byn på länge.":null],["gudrun",()=>SF("blot")==="offer"?"Oden tog emot ditt offer. Korparna sitter fortfarande på långhusets tak.":null],["jarl","Tre år. Byn står kvar."],["gudrun","Men i norr har nordljuset blivit rött, Arnbjörn. Något större än klanerna har vaknat."]]
 };
 let ST=null;
 function porSrc(c){return ASSETS[c.por]||ASSETS[c.fb]||""}
@@ -774,6 +774,8 @@ function drawShip(sh,tm){if(sh.gx==null)return;const p=iso(sh.gx,sh.gy),bob=Math
   const sw=Math.sin(tm*1.4)*6;for(let i=0;i<5;i++){ctx.fillStyle=i%2?"#f1e6cf":"#b8322a";ctx.beginPath();ctx.moveTo(-64+i*24,-160);ctx.lineTo(-40+i*24,-160);ctx.quadraticCurveTo(-36+i*24+sw,-110,-40+i*24,-60);ctx.lineTo(-64+i*24,-60);ctx.quadraticCurveTo(-60+i*24+sw,-110,-64+i*24,-160);ctx.fill()}
   ctx.strokeStyle="#22140a";ctx.lineWidth=2;ctx.strokeRect(-64,-160,120,100);ctx.restore()}
 function enemySpecial(e,dt){const T=ETYPES[e.type];
+  if(e.type==="seid"||(e.type==="asa"&&e.armor<=0)||e.type==="asa"){e.healT=(e.healT||0)-dt;if(e.healT<=0){e.healT=1;const R=e.type==="asa"?3:2,f=e.type==="asa"?.05:.04;let n=0;for(const o of G.enemies){if(o===e||o.hp<=0||dist(o,e)>R)continue;if(o.hp<o.maxhp){o.hp=Math.min(o.maxhp,o.hp+o.maxhp*f);n++}}if(n){G.rings.push({gx:e.gx,gy:e.gy,t:0,max:.7,r:R,c:"120,220,130"})}}}
+  if(e.type==="asa"){e.sumT=(e.sumT??8)-dt;if(e.sumT<=0){e.sumT=13;for(let q=0;q<3;q++){spawn({type:"varg",hpMul:LV.hp*.9,P:e.P});const w=G.enemies[G.enemies.length-1];if(w&&w.type==="varg"){w.d=Math.max(0,e.d-.4-q*.3);const pp=pathAt(w.d,w.P);w.gx=pp.gx;w.gy=pp.gy}}toast("Ása kallar på vargarna","");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:.9,r:2.2,c:"150,90,200"})}}
   if(e.type==="skytt"){let u=null,bd=T.range;for(const f of friendlies()){const d=dist(f,e);if(d<bd){bd=d;u=f}}
     if(u){e.face=iso(u.gx,u.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;e.aim=1;if(e.cd<=0){e.cd=T.acd;e.swing=1;const a=iso(e.gx,e.gy),b=iso(u.gx,u.gy);G.streaks.push({x1:a.x,y1:a.y-40,x2:b.x,y2:b.y-40,t:0});u.hp-=e.atk*(u.dr||1);u.lastHit=0;u.flash=.12;if(u.hp<=0)killUnit(u)}return true}e.aim=0}
   if(e.type==="brand"&&!e.lit){const t=G.towers.find(t=>t.type!=="farm"&&!(t.fire>0)&&dist(t,e)<1.9);if(t){e.lit=true;t.fire=22;G.stats.fires=(G.stats.fires||0)+1;t.douse=0;const p=iso(t.gx,t.gy);floatText(p,"Brand!","#ff9a5a",-170);SND.thump();
@@ -782,7 +784,15 @@ function enemySpecial(e,dt){const T=ETYPES[e.type];
 function towerFire(t,dt){if(!(t.fire>0))return false;t.fire-=dt;const p=iso(t.gx,t.gy);if(Math.random()<dt*14)G.parts.push({x:p.x+(Math.random()-.5)*50,y:p.y-60-Math.random()*90,vx:(Math.random()-.5)*10,vy:-40,life:.6,max:.6,size:6,type:"fire"});if(Math.random()<dt*5)G.parts.push({x:p.x+(Math.random()-.5)*30,y:p.y-150,vx:6,vy:-26,life:2.4,max:2.4,size:12,type:"smoke"});
   const J=G.jarl;if(J&&!J.dead&&dist(J,t)<1.6){t.douse=(t.douse||0)+dt;if(t.douse>1.2){t.fire=0;floatText(p,"Släckt","#a9cbd4",-170);puff(t,10)}}else t.douse=Math.max(0,(t.douse||0)-dt*.5);
   if(t.fire<=0)t.fire=0;return t.fire>0}
-const NEWT={skytt:"Bågskyttar skjuter på hirden och jarlen på avstånd",brand:"Brandmän tänder eld på tornen",ryttare:"Ryttare är snabba – bara jarlen och sköldbärare kan hejda dem"};
+const NEWT={varg:"Vargar kommer i flock och springer fort",skoldmur:"Sköldmuren tar nästan ingen skada av pilar – använd spjut och katapulter",seid:"Seidkonan helar fienderna runt sig – döda henne först",jatte:"Jätten slår omkull hela hirden runt sig",skytt:"Bågskyttar skjuter på hirden och jarlen på avstånd",brand:"Brandmän tänder eld på tornen",ryttare:"Ryttare är snabba – bara jarlen och sköldbärare kan hejda dem"};
+let MTN=null;
+function drawMountains(){if(IMG.ulvaberget){const im=IMG.ulvaberget,a=iso(N*.78,-1),w=im.width*1.5,h=im.height*1.5;ctx.drawImage(im,a.x-w/2,a.y+60-h,w,h);return}
+  if(!MTN){const R=rng(77);MTN=[];for(let i=0;i<9;i++){const gx=14+i*3.4+R()*1.5,gy=-2.5-R()*2.5,hh=260+R()*320,ww=320+R()*220;MTN.push({gx,gy,hh,ww})}MTN.sort((a,b)=>a.gy-b.gy);MTN.peak=MTN.reduce((a,b)=>b.hh>a.hh?b:a)}
+  for(const m of MTN){const p=iso(m.gx,m.gy),b=p.y+40;const g=ctx.createLinearGradient(0,b-m.hh,0,b);g.addColorStop(0,"#6f7480");g.addColorStop(1,"#2a2e36");ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(p.x-m.ww/2,b);ctx.lineTo(p.x-m.ww*.12,b-m.hh*.82);ctx.lineTo(p.x,b-m.hh);ctx.lineTo(p.x+m.ww*.18,b-m.hh*.86);ctx.lineTo(p.x+m.ww/2,b);ctx.closePath();ctx.fill();
+    ctx.fillStyle="rgba(235,240,246,.92)";ctx.beginPath();ctx.moveTo(p.x-m.ww*.22,b-m.hh*.66);ctx.lineTo(p.x-m.ww*.12,b-m.hh*.82);ctx.lineTo(p.x,b-m.hh);ctx.lineTo(p.x+m.ww*.18,b-m.hh*.86);ctx.lineTo(p.x+m.ww*.26,b-m.hh*.7);ctx.lineTo(p.x+m.ww*.08,b-m.hh*.76);ctx.lineTo(p.x-m.ww*.06,b-m.hh*.68);ctx.closePath();ctx.fill();
+    ctx.fillStyle="rgba(0,0,0,.18)";ctx.beginPath();ctx.moveTo(p.x,b-m.hh);ctx.lineTo(p.x+m.ww*.18,b-m.hh*.86);ctx.lineTo(p.x+m.ww/2,b);ctx.lineTo(p.x+m.ww*.05,b);ctx.closePath();ctx.fill()}
+  const m=MTN.peak,p=iso(m.gx,m.gy),b=p.y+40-m.hh;ctx.fillStyle="#1d1a1c";ctx.fillRect(p.x-14,b-36,28,40);ctx.fillRect(p.x-24,b-18,12,22);ctx.fillRect(p.x+12,b-22,12,26);ctx.beginPath();ctx.moveTo(p.x-17,b-36);ctx.lineTo(p.x,b-58);ctx.lineTo(p.x+17,b-36);ctx.fill();
+  ctx.fillStyle="rgba(255,140,60,.8)";ctx.fillRect(p.x-3,b-26,6,8)}
 // ---------- Bybyggnader ----------
 const BLD=[
  {id:"longhus",name:"Långhus",cost:[90,160,240],desc:["Byn får +25 max-HP och lagar 4 HP när varje våg startar.","Byn får +50 max-HP och lagar 7 HP per våg.","Byn får +75 max-HP och lagar 10 HP per våg."]},
@@ -839,7 +849,7 @@ function prepSprites(){
   SPR.cat=IMG.tower_catapult||tinted(IMG.tower_spear,"#8a96a3",.35);SPR.catW=tinted(SPR.cat,"#fff",.9);SPR.tower=IMG.tower_archer;SPR.towerW=tinted(IMG.tower_archer,"#fff",.9);SPR.spear=IMG.tower_spear;SPR.spearW=tinted(IMG.tower_spear,"#fff",.9);
   SPR.jarl=IMG.jarl;SPR.jarlW=tinted(IMG.jarl,"#fff",1);
   SPR.hird=IMG.hird;SPR.hirdW=tinted(IMG.hird,"#fff",1);
-  {const PH={skytt:["thrall","#2f6a2a",.32],brand:["thrall","#c2481a",.38],ryttare:["brute","#6b4a2a",.3],harald:["boss","#d9a83a",.28]};for(const[k,[b,c,a]]of Object.entries(PH)){if(!SPR[k+"_w"]&&SPR[b+"_w"]){SPR[k+"_w"]=SPR[b+"_w"].map(f=>tinted(f,c,a));SPR[k+"_wW"]=SPR[b+"_wW"]}if(!SPR[k+"_a"]&&SPR[b+"_a"]){SPR[k+"_a"]=SPR[b+"_a"].map(f=>tinted(f,c,a));SPR[k+"_aW"]=SPR[b+"_aW"]}SPR[k]=IMG[k]||tinted(IMG[b],c,a);SPR[k+"W"]=tinted(SPR[k],"#fff",1)}}
+  {const PH={varg:["thrall","#8a8a90",.55],skoldmur:["brute","#30405a",.32],seid:["woman","#5a2a6a",.4],jatte:["brute","#8a7a6a",.35],asa:["woman","#3a1a4a",.45],skytt:["thrall","#2f6a2a",.32],brand:["thrall","#c2481a",.38],ryttare:["brute","#6b4a2a",.3],harald:["boss","#d9a83a",.28]};for(const[k,[b,c,a]]of Object.entries(PH)){if(!SPR[k+"_w"]&&SPR[b+"_w"]){SPR[k+"_w"]=SPR[b+"_w"].map(f=>tinted(f,c,a));SPR[k+"_wW"]=SPR[b+"_wW"]}if(!SPR[k+"_a"]&&SPR[b+"_a"]){SPR[k+"_a"]=SPR[b+"_a"].map(f=>tinted(f,c,a));SPR[k+"_aW"]=SPR[b+"_aW"]}SPR[k]=IMG[k]||tinted(IMG[b],c,a);SPR[k+"W"]=tinted(SPR[k],"#fff",1)}}
   SPR.thrall=IMG.thrall;SPR.thrallW=tinted(IMG.thrall,"#fff",1);
   SPR.brute=IMG.brute;SPR.bruteW=tinted(IMG.brute,"#fff",1);
   SPR.boss=IMG.boss;SPR.bossW=tinted(IMG.boss,"#fff",1);SPR.rival=IMG.rival||tinted(IMG.jarl,"#1f2d6e",.45);SPR.rivalW=tinted(SPR.rival,"#fff",1);SPR.wolfjarl=IMG.wolfjarl||tinted(IMG.boss,"#0a0a12",.45);SPR.wolfjarlW=tinted(SPR.wolfjarl,"#fff",1);SPR.berserk=IMG.berserk||tinted(IMG.brute,"#7a1a10",.4);SPR.berserkW=tinted(SPR.berserk,"#fff",1);
@@ -998,6 +1008,11 @@ const ETYPES={
   skytt:{hp:22,speed:.9,atk:6,acd:1.5,bounty:7,vdmg:1,h:62,xp:1,range:3,name:"Bågskytt"},
   brand:{hp:30,speed:1.25,atk:3,acd:1,bounty:9,vdmg:2,h:62,xp:2,name:"Brandman"},
   ryttare:{hp:44,speed:2.0,atk:7,acd:1,bounty:11,vdmg:3,h:112,xp:2,noblock:true,name:"Ryttare"},
+  varg:{hp:20,speed:1.75,atk:5,acd:.8,bounty:5,vdmg:1,h:46,xp:1,name:"Varg"},
+  skoldmur:{hp:26*2.6,speed:.62,atk:8,acd:1.2,bounty:13,vdmg:3,h:72,xp:3,arrowMul:.4,name:"Sköldmur"},
+  seid:{hp:46,speed:.7,atk:3,acd:1.4,bounty:14,vdmg:2,h:66,xp:3,name:"Seidkona"},
+  jatte:{hp:26*10,arm:.2,speed:.48,atk:26,acd:1.6,bounty:40,vdmg:8,h:150,xp:8,name:"Jätte"},
+  asa:{hp:700,armor:440,speed:.45,atk:20,acd:1.2,bounty:240,vdmg:40,h:122,xp:40,boss:true,name:"Seidkonan Ása",intro:"Hon helar sina krigare och kallar på vargar – bryt hennes rustning snabbt"},
   harald:{hp:900,armor:560,speed:.42,atk:28,acd:1.2,bounty:240,vdmg:40,h:136,xp:40,boss:true,name:"Sjökungen Harald",intro:"Bryt hans rustning med tornen – han har guld nog att köpa en ny"},
   berserk:{hp:560,armor:220,speed:.5,atk:18,acd:1.1,bounty:160,vdmg:30,h:132,xp:30,boss:true,name:"Bärsärkskungen",intro:"Ju mer han blöder, desto vildare slåss han"}
 };
@@ -1006,7 +1021,9 @@ function buildWave(w){const c=w-LI*CHW,list=[];const hpMul=LV.hp*Math.pow(1.13,c
   for(let i=0;i<n;i++)list.push({type:"thrall",hpMul,delay:gap});
   for(let k=0;k<br;k++){const pos=Math.floor((k+1)*list.length/(br+1));list.splice(pos,0,{type:"brute",hpMul,delay:gap*1.6})}
   if(LI>=4){const k=Math.min(LI-3,4),add=(t,n,dl)=>{for(let q=0;q<n;q++){const pos=1+Math.floor(Math.random()*(list.length-1));list.splice(pos,0,{type:t,hpMul,delay:gap*dl})}};
-    add("skytt",c>=2?Math.floor(c/3)+Math.ceil(k/2):0,1);add("brand",c>=4?1+Math.floor(k/3):0,1.2);add("ryttare",LI>=5&&c>=3?Math.floor(c/4)+Math.ceil(k/3):0,1.1)}
+    add("skytt",c>=2?Math.floor(c/3)+Math.ceil(k/2):0,1);add("brand",c>=4?1+Math.floor(k/3):0,1.2);add("ryttare",LI>=5&&c>=3?Math.floor(c/4)+Math.ceil(k/3):0,1.1);
+    if(LI>=8){const y=LI-7;if(c>=2)for(let q=0;q<Math.floor(c/5)+Math.ceil(y/2);q++){const pos=1+Math.floor(Math.random()*(list.length-1));list.splice(pos,0,{type:"varg",hpMul,delay:gap*.25},{type:"varg",hpMul,delay:.25},{type:"varg",hpMul,delay:.25},{type:"varg",hpMul,delay:gap})}
+      add("skoldmur",c>=3?Math.floor(c/3)+Math.ceil(y/2):0,1.3);add("seid",c>=5?1+Math.floor(y/2):0,1.2);add("jatte",c>=6?Math.floor((c-3)/4)+(y>=4?1:0):0,2.2)}}
   if(c===CHW&&LV.boss)list.splice(Math.floor(list.length*.55),0,{type:LV.boss,hpMul:(LV.hp>1?Math.sqrt(LV.hp)*1.15:1)*(LV.bossMul||1),delay:3});
   return list}
 
@@ -1129,7 +1146,7 @@ function updateUnits(dt){
     let tgt=u.blocks[0]||null;
     if(!tgt){const aggro=u.kind==="jarl"?1.8:u.ranged?3.4:2.1;const anc=u.kind==="jarl"?{gx:ax,gy:ay}:{gx:j.ax,gy:j.ay};let best=null,bd=1e9;
       for(const e of G.enemies){if(e.hp<=0||(e.engaged&&e.engaged!==u))continue;if(e.boss&&e.armor>0)continue;const da=dist(e,anc);if(da>aggro)continue;const d=dist(e,u);if(d<bd){bd=d;best=e}}tgt=best}
-    if(tgt&&u.ranged){const d=dist(u,tgt);u.face=iso(tgt.gx,tgt.gy).x<iso(u.gx,u.gy).x;u.fight=d<=u.ranged;if(d>u.ranged)moveTo(u,tgt.gx,tgt.gy,u.speed,dt,u.ranged-.3);else{u.cd-=dt;if(u.cd<=0){u.cd=u.acd;u.swing=1;const a=iso(u.gx,u.gy),b=iso(tgt.gx,tgt.gy);G.streaks=G.streaks||[];G.streaks.push({x1:a.x,y1:a.y-40,x2:b.x,y2:b.y-tgt.h*.5,t:0});hitEnemy(tgt,u.dmg,false,false);SND.bow()}}}
+    if(tgt&&u.ranged){const d=dist(u,tgt);u.face=iso(tgt.gx,tgt.gy).x<iso(u.gx,u.gy).x;u.fight=d<=u.ranged;if(d>u.ranged)moveTo(u,tgt.gx,tgt.gy,u.speed,dt,u.ranged-.3);else{u.cd-=dt;if(u.cd<=0){u.cd=u.acd;u.swing=1;const a=iso(u.gx,u.gy),b=iso(tgt.gx,tgt.gy);G.streaks=G.streaks||[];G.streaks.push({x1:a.x,y1:a.y-40,x2:b.x,y2:b.y-tgt.h*.5,t:0});hitEnemy(tgt,u.dmg,false,false,false,{arrow:true});SND.bow()}}}
     else if(tgt){const d=dist(u,tgt);if(d>.48)moveTo(u,tgt.gx,tgt.gy,u.speed,dt,.45);u.face=iso(tgt.gx,tgt.gy).x<iso(u.gx,u.gy).x;
       u.cd-=dt;u.fight=d<.8;if(d<.8&&u.cd<=0){u.cd=u.acd;u.lunge=1;u.swing=1;const isJ=u.kind==="jarl",dm=u.dmg*(isJ?jarlDmgMul(u):1);hitEnemy(tgt,dm,false,false);sparks(tgt);SND.hit();
         if(isJ){if(sk("k3"))for(const o of G.enemies)if(o!==tgt&&o.hp>0&&dist(o,tgt)<1&&!(o.boss&&o.armor>0))hitEnemy(o,dm*.5,false,false);if(sk("k4"))u.hp=Math.min(u.maxhp,u.hp+dm*.25)}}}
@@ -1175,7 +1192,7 @@ function updateEnemies(dt){
     if(e.hp<=0)continue;
     if(e.type==="berserk"&&e.armor<=0){e.rage=clamp(1-e.hp/e.maxhp,0,1);if(!e.roared&&e.hp<e.maxhp*.5){e.roared=true;G.shake=.7;SND.waveHorn();toast("Bärsärkagång!","Han slår undan allt runt sig");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:.8,r:2.4,c:"220,60,40"});for(const u of G.units){if(u.dead||dist(u,e)>2.4)continue;u.hp-=35;u.flash=.2;u.lastHit=0;const dx=u.gx-e.gx,dy=u.gy-e.gy,l=Math.hypot(dx,dy)||1;const nx=u.gx+dx/l*.9,ny=u.gy+dy/l*.9;if(walkable(nx,ny)){u.gx=nx;u.gy=ny}release(u);if(u.hp<=0)killUnit(u)}}}
     if(e.stun>0){e.stun-=dt;continue}
-    if(e.engaged){const u=e.engaged;if(u.dead||u.remove||!u.blocks.includes(e)){e.engaged=null}else{e.face=iso(u.gx,u.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;if(e.cd<=0){e.cd=e.acd*(1-.4*(e.rage||0));e.lunge=1;e.swing=1;u.hp-=e.atk*(1+(e.rage||0))*(u.dr||1);u.lastHit=0;u.flash=.12;if(u.hp<=0)killUnit(u)}e.lunge=Math.max(0,(e.lunge||0)-dt*4);continue}}
+    if(e.engaged){const u=e.engaged;if(u.dead||u.remove||!u.blocks.includes(e)){e.engaged=null}else{e.face=iso(u.gx,u.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;if(e.cd<=0){e.cd=e.acd*(1-.4*(e.rage||0));e.lunge=1;e.swing=1;u.hp-=e.atk*(1+(e.rage||0))*(u.dr||1);if(e.type==="jatte"){G.shake=Math.max(G.shake,.3);dust(u,6,30);for(const o of friendlies()){if(o===u||dist(o,e)>1.3)continue;o.hp-=e.atk*.6*(o.dr||1);o.lastHit=0;o.flash=.12;const dx=o.gx-e.gx,dy=o.gy-e.gy,l=Math.hypot(dx,dy)||1;const nx=o.gx+dx/l*.5,ny=o.gy+dy/l*.5;if(walkable(nx,ny)){o.gx=nx;o.gy=ny}if(o.hp<=0)killUnit(o)}}u.lastHit=0;u.flash=.12;if(u.hp<=0)killUnit(u)}e.lunge=Math.max(0,(e.lunge||0)-dt*4);continue}}
     if(e.free){raidFoeAI(e,dt);continue}
     if(enemySpecial(e,dt))continue;
     e.slowT=Math.max(0,(e.slowT||0)-dt);const stepD=e.speed*(e.slowT>0?e.slowF:1)*(1+.8*(e.rage||0))*(G.wx==="storm"?1.12:1)*dt;e.d+=stepD;e.footfall=stepPhase(e,stepD,GAIT[e.type].stride);
@@ -1186,7 +1203,7 @@ function updateEnemies(dt){
 }
 function killUnit(u){u.hp=0;release(u);puff(u);if(u.temp){u.remove=true;return}if(RAID&&u.kind==="jarl"){u.dead=999;raidEnd(false);return}u.dead=u.kind==="jarl"?10:sk("h5")?6:12;if(u.kind==="jarl"){toast("Jarlen har fallit","Han återvänder till byn om 10 s");u.cmd=false}}
 function hitEnemy(e,amt,fromTower,crit,silent,opt){if(e.hp<=0)return;opt=opt||{};
-  if(e.arm)amt*=1-e.arm*(1-(opt.pierce||0));
+  if(e.arm)amt*=1-e.arm*(1-(opt.pierce||0));{const am=ETYPES[e.type].arrowMul;if(am&&opt.arrow){amt*=am;if(Math.random()<.3)floatText(iso(e.gx,e.gy),"Studs!","#c8d6dc",-e.h)}}
   if(e.boss){if(e.armor>0){if(fromTower){e.armor=Math.max(0,e.armor-amt*(opt.armorMul||1));e.flash=.08;if(e.armor===0){toast("Rustningen är bruten","Skicka in jarlen!");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:1,r:1.8,c:"220,230,235"})}}return}if(fromTower)amt*=.08}
   e.hp-=amt;if(!silent)e.flash=.1;
   if(crit){floatText(iso(e.gx,e.gy),`${Math.round(amt)}!`,"#f6d98a",-e.h)}
@@ -1207,7 +1224,7 @@ function updateTowers(dt){
       G.proj.push({cat:true,t:0,dur:.95,sx:tp.x+40,sy:tp.y-150,tgx:tg.gx,tgy:tg.gy,st,lx:0,ly:0});SND.thump();continue}
     for(const e of inR){const crit=Math.random()<st.crit;G.proj.push({t:0,dur:sp?.42:.32,sx:iso(t.gx,t.gy).x+(Math.random()-.5)*20,sy:iso(t.gx,t.gy).y-(sp?105:150),e,dmg:st.dmg*(crit?2.5:1),crit,burn:st.burn,burnT:st.burnT,fire:!sp&&t.lv[2]>0,spear:sp,st,tgx:t.gx,tgy:t.gy,lx:0,ly:0})}}
 }
-function updateProj(dt){for(const p of G.proj){p.t+=dt;if(p.cat){if(p.t>=p.dur){p.done=true;catImpact(p)}continue}const tp=iso(p.e.gx,p.e.gy);if(p.e.hp>0){p.lx=tp.x;p.ly=tp.y-p.e.h*.55}if(p.t>=p.dur){p.done=true;if(p.e.hp>0){sparks(p.e);const st=p.st||{};const opt={pierce:st.pierce||0,armorMul:st.armorMul||1};if(p.spear)spearHit(p,st,opt);hitEnemy(p.e,p.dmg,true,p.crit,false,opt);if(p.burn>0){p.e.burn=Math.max(p.e.burn,p.burn);p.e.burnT=p.burnT}}}}G.proj=G.proj.filter(p=>!p.done)}
+function updateProj(dt){for(const p of G.proj){p.t+=dt;if(p.cat){if(p.t>=p.dur){p.done=true;catImpact(p)}continue}const tp=iso(p.e.gx,p.e.gy);if(p.e.hp>0){p.lx=tp.x;p.ly=tp.y-p.e.h*.55}if(p.t>=p.dur){p.done=true;if(p.e.hp>0){sparks(p.e);const st=p.st||{};const opt={pierce:st.pierce||0,armorMul:st.armorMul||1,arrow:!p.spear};if(p.spear)spearHit(p,st,opt);hitEnemy(p.e,p.dmg,true,p.crit,false,opt);if(p.burn>0){p.e.burn=Math.max(p.e.burn,p.burn);p.e.burnT=p.burnT}}}}G.proj=G.proj.filter(p=>!p.done)}
 
 function catImpact(p){const st=p.st,c={gx:p.tgx,gy:p.tgy};const ip=iso(c.gx,c.gy);G.shake=Math.max(G.shake,.14);
   for(let k=0;k<16;k++)G.parts.push({x:ip.x+(Math.random()-.5)*30,y:ip.y-4,vx:(Math.random()-.5)*110,vy:-30-Math.random()*70,g:200,life:.7,max:.7,size:3+Math.random()*5,type:"dust"});
@@ -1241,7 +1258,7 @@ function draw(){
   if(!GROUND)return;
   let sx=0,sy=0;if(G.shake>0){sx=(Math.random()-.5)*10*G.shake;sy=(Math.random()-.5)*10*G.shake}
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(W/2-cam.x*z+sx),DPR*(H/2-cam.y*z+sy));
-  ctx.drawImage(GROUND,-N*HW,0,N*TW,N*TH+CLIFF);
+  if(N>=40&&!RAID)drawMountains();ctx.drawImage(GROUND,-N*HW,0,N*TW,N*TH+CLIFF);
   const tm=performance.now()/1000;
   drawWaterFlow(tm);drawAmbGround(tm);
   // levande vatten
@@ -1320,6 +1337,7 @@ const GAIT={
   rival:{stride:1.0,nd:-1,frames:true,feet:[[.27,.49,.8],[.54,.83,.82]]},
   wolfjarl:{stride:.55,nd:-1,frames:true,feet:[[.29,.52,.8],[.58,.8,.8]]},
   berserk:{stride:.6,nd:-1,frames:true,feet:[[.3,.52,.8],[.56,.8,.8]]},
+  varg:{stride:1.1,nd:-1,frames:true,feet:[[.24,.53,.8],[.6,.86,.79]]},skoldmur:{stride:.55,nd:-1,frames:true,feet:[[.3,.5,.79],[.5,.72,.85]]},seid:{stride:.8,nd:-1,frames:true,feet:[[.3,.5,.8],[.5,.75,.8]]},jatte:{stride:.5,nd:-1,frames:true,feet:[[.3,.5,.79],[.5,.72,.85]]},asa:{stride:.8,nd:-1,frames:true,feet:[[.3,.5,.8],[.5,.75,.8]]},
   skytt:{stride:.55,nd:-1,frames:true,feet:[[.24,.53,.8],[.6,.86,.79]]},brand:{stride:.6,nd:-1,frames:true,feet:[[.24,.53,.8],[.6,.86,.79]]},ryttare:{stride:1.2,nd:-1,frames:true,feet:[[.3,.5,.79],[.5,.72,.85]]},harald:{stride:.55,nd:-1,frames:true,feet:[[.29,.52,.8],[.58,.8,.8]]}};
 const PARTS=new Map();
 function getParts(img,g){let p=PARTS.get(img);if(p)return p;const W=img.width,H=img.height,F=Math.ceil(H*.05);
