@@ -342,6 +342,8 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
     <div class="panel card"><h2>Pausat</h2><div class="row"><button class="big" id="resumeBtn">Fortsätt</button><button class="ghost" id="restartBtn">Börja om kapitlet</button><button class="ghost" id="pauseMenu">Meny</button></div></div>
   </div>
 
+  <div class="ov" id="raidOv" hidden><div class="panel card"><span class="sub" id="raidSub"></span><h1 id="raidTitle" style="font-size:clamp(28px,6vw,46px)"></h1><p id="raidTxt"></p><div class="row"><button class="big" id="raidHome">Hem till byn</button><button class="ghost" id="raidRetry">Försök igen</button></div></div></div>
+
   <div id="storyOv" hidden><div class="stbox"><div class="stpor" id="stPor"></div><div><div class="stname" id="stName"></div><div class="sttext" id="stText"></div><div class="stchoices" id="stChoices"></div><div class="sthint" id="stHint">Tryck för att fortsätta</div></div><button class="stskip" id="stSkip">Hoppa över ›</button></div></div>
 
   <div class="ov" id="endOv" hidden>
@@ -613,6 +615,86 @@ function applyStory(L,i){L={...L};const fl=STORY.flags;
 function ensureAlly(){if(STORY.flags.rival!=="ally"||LI<8||!G.jarl)return;if(G.units.some(u=>u.kind==="rival"))return;const j=G.jarl,o=HIRD_OFF[8];
   G.units.push({kind:"rival",ally:true,slot:8,gx:j.gx+o[0],gy:j.gy+o[1],hp:520,maxhp:520,cd:0,dead:0,face:false,t:0,blocks:[],lastHit:9,flash:0,cap:3,dmg:20,acd:.9,speed:2.5,lunge:0})}
 const jarlHpMul=()=>LV&&LV.blot?1.25:1;
+// ---------- Räder: jarlen och hirden på egna kartor ----------
+const RAIDS={
+ 1:{id:"lager",name:"Räd · Ulvklanens läger",n:22,start:[3,19.5],goal:"cage",runes:2,gold:100,
+   intro:[["gudrun","Ulvklanen tog fångar från gårdarna i somras. De hålls i ett läger i skogen, en halv dags marsch härifrån."],["jarl","Då hämtar vi hem dem. Bara jag och hirden – tornen får vakta byn."]],
+   offer:"Befria de tre fångarna i Ulvklanens läger. Belöning: 2 runstenar och bytet.",
+   hint:"Ta dig in i lägret och stå vid burarna för att befria fångarna. Jarlen får inte falla.",
+   trail:[[3,19.5],[6.5,16.5],[8,12.5],[12,11],[15,8.5],[17,6.8]],
+   camps:[{at:[8,12.5],foes:["thrall","thrall","thrall"]},{at:[13.5,14.5],foes:["thrall","thrall","brute"]},{at:[16.5,7],foes:["thrall","thrall","thrall","brute"]},{at:[9.5,4.5],foes:["thrall","thrall"]},{at:[4.6,17.6],foes:["thrall","thrall"]},{at:[10.6,11.4],foes:["thrall","thrall"]},{at:[19.5,13],foes:["brute","thrall"]}],
+   objs:[{t:"cage",at:[18.8,5]},{t:"cage",at:[15,4.6]},{t:"cage",at:[19.4,8.6]},{t:"tent",at:[13.6,8.4]},{t:"tent",at:[17.8,10.6]},{t:"fire",at:[16.6,7.2]}],
+   rocks:[[5,6,1.4],[19,16,1.6],[11,19,1.2]]},
+ 2:{id:"kloster",name:"Räd · Klosterön",n:22,start:[3,18.2],goal:"chest",runes:2,gold:0,chestGold:45,reinf:{every:32,at:[19.5,3.5],foes:["thrall","thrall","brute"]},water:true,
+   intro:[["gudrun","Munkarna på klosterön har silver i kistor som ingen vaktar ordentligt. Ännu."],["jarl","Vi tar kistorna innan vakterna hinner samlas."]],
+   offer:"Plundra de fyra kistorna på klosterön innan vakterna samlas. Belöning: 2 runstenar och silvret.",
+   hint:"Gå fram till kistorna för att plundra dem. Fler vakter kommer från klostret hela tiden. Jarlen får inte falla.",
+   trail:[[3,18.2],[7,15],[11,13],[14,10],[17,6.5]],
+   camps:[{at:[9,14],foes:["thrall","thrall"]},{at:[14,9.5],foes:["thrall","thrall","thrall"]},{at:[17,6],foes:["brute","thrall","thrall"]},{at:[5.5,16.4],foes:["thrall","thrall"]},{at:[11.6,12.4],foes:["thrall","brute"]},{at:[19.6,12.6],foes:["thrall","thrall"]}],
+   objs:[{t:"chest",at:[12.4,8.2]},{t:"chest",at:[16,4.6]},{t:"chest",at:[19,9.2]},{t:"chest",at:[15.4,12]},{t:"hall",at:[18.2,3.2]}],
+   rocks:[[6,6,1.3],[20,15,1.4]]}};
+let RAID=null;
+const raidHp=()=>1+.3*LI;
+function raidFoe(type,at,alert){const T=ETYPES[type],m=raidHp(),a=Math.random()*6.28,r=.3+Math.random()*.7;const gx=at[0]+Math.cos(a)*r,gy=at[1]+Math.sin(a)*r;
+  return{free:true,kind:type,type,home:{gx,gy},gx,gy,d:0,P:null,boss:false,hp:T.hp*m,maxhp:T.hp*m,armor:0,arm:T.arm||0,maxArmor:0,speed:Math.min(2.3,T.speed*1.9),atk:T.atk*.6*Math.sqrt(m),acd:T.acd,cd:Math.random(),bounty:T.bounty,vdmg:0,h:T.h,xp:T.xp,engaged:null,stun:0,burn:0,burnT:0,flash:0,t:Math.random()*5,face:Math.random()<.5,off:0,alert:!!alert}}
+function raidFoeAI(e,dt){let tgt=null,bd=1e9;const ag=e.alert?10:3.6;for(const u of friendlies()){const d=dist(u,e);if(d<ag&&d<bd){bd=d;tgt=u}}
+  if(tgt){if(!e.alert){e.alert=true;for(const o of G.enemies)if(o.free&&!o.alert&&dist(o,e)<3.4)o.alert=true}
+    if(bd>.55)moveTo(e,tgt.gx,tgt.gy,e.speed,dt,.45);else{e.face=iso(tgt.gx,tgt.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;if(e.cd<=0){e.cd=e.acd;e.lunge=1;e.swing=1;tgt.hp-=e.atk;tgt.lastHit=0;tgt.flash=.12;if(tgt.hp<=0)killUnit(tgt)}}
+    if(dist(e,e.home)>13)e.alert=false}
+  else{e.alert=false;if(dist(e,e.home)>.4)moveTo(e,e.home.gx,e.home.gy,e.speed*.6,dt,.2)}
+  e.lunge=Math.max(0,(e.lunge||0)-dt*4)}
+function raidWater(n){const top=[];for(let i=0;i<=40;i++){const x=-1.5+i*(n+3)/40;top.push([x,n*.94+.35*Math.sin(x*.7)+.15*Math.sin(x*2.1)])}return{poly:top.concat([[n+1.5,n+3],[-1.5,n+3]]),shores:[top]}}
+function raidTrees(def){const R=rng(def.id.length*97+13),out=[],P=PO.R;let tries=0;while(out.length<70&&tries++<5000){const gx=.5+R()*(def.n-1),gy=.5+R()*(def.n-1);
+  if(distTo(P,gx,gy)<1.8||isWater(gx,gy+.6)||isWater(gx,gy))continue;if(def.camps.some(c=>Math.hypot(c.at[0]-gx,c.at[1]-gy)<2.6))continue;if(def.objs.some(o=>Math.hypot(o.at[0]-gx,o.at[1]-gy)<2.2))continue;
+  if(Math.hypot(def.start[0]-gx,def.start[1]-gy)<2.5||out.some(t=>Math.hypot(t.gx-gx,t.gy-gy)<1.2))continue;out.push({gx,gy,pine:R()<.6,s:.82+R()*.38,ph:R()*6,flip:R()<.5})}return out}
+function offerRaid(next){const R=RAIDS[LI];STORY.raids=STORY.raids||{};if(!R||STORY.raids[R.id])return next();
+  const key="raid_"+R.id;SCENES[key]={lines:R.intro.concat([["gudrun",R.offer]]),choice:{id:key,opts:[{v:"go",label:"Gör räden",desc:"Jarlen och hirden går ut på egen hand. Byn väntar tills ni är tillbaka."},{v:"skip",label:"Hoppa över",desc:"Ingen belöning. Räden kan inte göras senare."}]}};
+  playScene(key,()=>{if(SF(key)==="go")startRaid(R,next);else{STORY.raids[R.id]="skip";saveAct();next()}})}
+const RSC=1.3;function scaleRaid(d){if(d.scaled)return d;const k=RSC,P=a=>[a[0]*k,a[1]*k];return{...d,scaled:true,n:Math.round(d.n*k),start:P(d.start),trail:d.trail.map(P),camps:d.camps.map(c=>({...c,at:P(c.at)})),objs:d.objs.map(o=>({...o,at:P(o.at)})),rocks:d.rocks.map(r=>[r[0]*k,r[1]*k,r[2]]),reinf:d.reinf?{...d.reinf,at:P(d.reinf.at)}:null}}
+function startRaid(def,next){def=scaleRaid(def);const S={G,N,LV,PO,PATHS,SPOTS,PLOTS,TREES,WATER,SHORES,ROCKS,BRIDGES,VC,ICEDEF,PA,PS};const A=G;
+  RAID={def,S,next,objs:def.objs.map(o=>({...o})),got:0,need:def.objs.filter(o=>o.t===def.goal).length,t:0,freed:[],rt:def.reinf?def.reinf.every:0};
+  N=def.n;LV={...LV,draw:["R"],open:[]};PO={R:mkPath(def.trail)};PATHS=[];SPOTS=[];PLOTS=[];const w=def.water?raidWater(def.n):{poly:[],shores:[]};WATER=w.poly;SHORES=w.shores;ROCKS=def.rocks;BRIDGES=[];VC={gx:-60,gy:-60};ICEDEF=null;TREES=raidTrees(def);
+  buildWalkGrid();buildGround();resetGame();
+  const j=G.jarl,aj=A.jarl;j.lvl=aj.lvl;j.xp=aj.xp;j.maxhp=aj.maxhp;j.hp=j.maxhp;j.gx=j.ax=def.start[0];j.gy=j.ay=def.start[1];
+  G.bld=A.bld;syncHird();for(const u of G.units){if(u.kind==="hird"){const o=HIRD_OFF[u.slot];u.gx=j.gx+o[0]*.6;u.gy=j.gy+o[1]*.6}}if(A.units.some(u=>u.kind==="rival"))ensureAlly();
+  G.gold=0;G.vill=null;G.started=true;G.paused=false;
+  for(const c of def.camps)for(const f of c.foes)G.enemies.push(raidFoe(f,c.at));
+  const p=iso(j.gx+3,j.gy-4);cam.z=fitZoom()*1.7;cam.x=p.x;cam.y=p.y;clampCam();updateHUD(true);setTimeout(()=>toast(def.name,def.hint),300)}
+function raidUpdate(dt){const R=RAID,j=G.jarl;if(R.over)return;R.t+=dt;
+  for(const o of R.objs){if(o.done)continue;const op={gx:o.at[0],gy:o.at[1]};
+    if(o.t==="cage"){const near=!j.dead&&dist(j,op)<1.35,foes=G.enemies.some(e=>e.hp>0&&dist(e,op)<2.6);if(near&&!foes){o.p=(o.p||0)+dt/1.8;if(o.p>=1){o.done=true;R.got++;SND.build();puff(op,12);toast("Fången är fri",`${R.got} av ${R.need}`);R.freed.push({gx:op.gx,gy:op.gy,t:0,k:R.got%2?"farmer":"woman"})}}else o.p=Math.max(0,(o.p||0)-dt*.6)}
+    if(o.t==="chest"&&!j.dead&&dist(j,op)<1.15){o.done=true;R.got++;G.gold+=R.def.chestGold;SND.coin();floatText(iso(op.gx,op.gy),`+${R.def.chestGold}`,"#e3b34c",-40);puff(op,10);toast("Kistan är plundrad",`${R.got} av ${R.need}`)}}
+  for(const f of R.freed){f.t+=dt;const s=R.def.start,d=Math.hypot(s[0]-f.gx,s[1]-f.gy);if(d>.2){f.gx+=(s[0]-f.gx)/d*1.6*dt;f.gy+=(s[1]-f.gy)/d*1.6*dt;f.face=(s[0]-f.gx)-(s[1]-f.gy)<0}f.ph=(f.ph||0)+dt*6}
+  if(R.def.reinf){R.rt-=dt;if(R.rt<=0){R.rt=R.def.reinf.every;for(const f of R.def.reinf.foes)G.enemies.push(raidFoe(f,R.def.reinf.at,true));toast("Vakterna samlas","Fler krigare kommer från klostret")}}
+  if(R.got>=R.need)raidEnd(true)}
+function raidEnd(win){const R=RAID;if(!R||R.over)return;R.over=true;R.win=win;G.over=true;win?SND.win():SND.lose();const loot=win?G.gold+R.def.gold:0;R.loot=loot;
+  $("raidSub").textContent=R.def.name;$("raidTitle").textContent=win?"Räden lyckades":"Jarlen har fallit";
+  $("raidTxt").textContent=win?`Ni tar med er ${loot} guld och ${R.def.runes} runstenar hem till byn.${R.def.goal==="cage"?" Fångarna är fria.":""}`:"Hirden bär hem sin jarl. Ni kan försöka igen eller gå hem utan byte.";
+  $("raidRetry").hidden=win;setTimeout(()=>{$("raidOv").hidden=false},900)}
+function restoreRaidWorld(){const S=RAID.S;({G,N,LV,PO,PATHS,SPOTS,PLOTS,TREES,WATER,SHORES,ROCKS,BRIDGES,VC,ICEDEF,PA,PS}=S);RAID=null;buildWalkGrid()}
+function raidHome(){const R=RAID;$("raidOv").hidden=true;const win=R.win,loot=R.loot||0,next=R.next,def=R.def;restoreRaidWorld();buildGround();
+  STORY.raids[def.id]=win?"done":"fail";if(win){G.gold+=loot;STORY.runes=(STORY.runes||0)+def.runes}G.over=false;G.paused=false;centerCam();saveAct();updateHUD(true);
+  if(win)setTimeout(()=>toast(`+${loot} guld · +${def.runes} runstenar`,"Runstenarna sparas till jarlens färdighetsträd"),200);setTimeout(next,win?2600:200)}
+function raidRetry(){const R=RAID;$("raidOv").hidden=true;const def=R.def,next=R.next;restoreRaidWorld();startRaid(def,next)}
+function abortRaid(){if(RAID){$("raidOv").hidden=true;restoreRaidWorld()}}
+document.getElementById("raidHome").addEventListener("click",raidHome);document.getElementById("raidRetry").addEventListener("click",raidRetry);
+function drawRaidObj(o,tm){const p=iso(o.at[0],o.at[1]);
+  if(o.t==="cage"){shadow(p.x,p.y,34);if(!o.done){const im=SPR[(o.at[0]>17?"woman":"farmer")+"_w"];if(im)ctx.drawImage(im[0],p.x-im[0].width*54/im[0].height/2,p.y-54,im[0].width*54/im[0].height,54)}
+    ctx.strokeStyle="#4a3018";ctx.lineWidth=5;const w=34,h=70;for(let k=-2;k<=2;k++){if(o.done&&k>0)continue;ctx.beginPath();ctx.moveTo(p.x+k*w/2,p.y+4-Math.abs(k)*2);ctx.lineTo(p.x+k*w/2,p.y-h);ctx.stroke()}
+    ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(p.x-w-4,p.y-h);ctx.lineTo(p.x+w+4,p.y-h);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-w-4,p.y-h*.45);ctx.lineTo(p.x+(o.done?0:w+4),p.y-h*.45);ctx.stroke();
+    if(o.p>0&&!o.done){ctx.strokeStyle="#f6d98a";ctx.lineWidth=5;ctx.beginPath();ctx.arc(p.x,p.y-h-18,12,-Math.PI/2,-Math.PI/2+o.p*6.283);ctx.stroke()}
+    else if(!o.done){const a=.55+.35*Math.sin(tm*4);ctx.fillStyle=`rgba(246,217,138,${a})`;ctx.font="900 22px Cinzel,serif";ctx.textAlign="center";ctx.fillText("!",p.x,p.y-h-10)}}
+  else if(o.t==="chest"){shadow(p.x,p.y,24);ctx.fillStyle="#5b3a1e";ctx.strokeStyle="#2a1a0c";ctx.lineWidth=2;ctx.beginPath();ctx.rect(p.x-20,p.y-26,40,24);ctx.fill();ctx.stroke();ctx.fillStyle="#b08a3a";ctx.fillRect(p.x-20,p.y-17,40,4);
+    if(!o.done){ctx.fillStyle="#6b4524";ctx.beginPath();ctx.ellipse(p.x,p.y-26,20,8,0,Math.PI,0);ctx.fill();ctx.stroke();ctx.fillStyle="#e3b34c";ctx.fillRect(p.x-3,p.y-24,6,8);const a=.5+.4*Math.sin(tm*4);ctx.fillStyle=`rgba(246,217,138,${a})`;ctx.font="900 22px Cinzel,serif";ctx.textAlign="center";ctx.fillText("!",p.x,p.y-46)}
+    else{ctx.fillStyle="#6b4524";ctx.beginPath();ctx.ellipse(p.x,p.y-38,20,8,-.5,Math.PI,0);ctx.fill()}}
+  else if(o.t==="tent"){shadow(p.x,p.y,56);ctx.fillStyle="#8a6a48";ctx.strokeStyle="#3e2a16";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x-58,p.y+6);ctx.lineTo(p.x,p.y-74);ctx.lineTo(p.x+58,p.y+6);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle="#a8865e";ctx.beginPath();ctx.moveTo(p.x,p.y-74);ctx.lineTo(p.x+58,p.y+6);ctx.lineTo(p.x+18,p.y+12);ctx.closePath();ctx.fill();ctx.fillStyle="#2a1a0c";ctx.beginPath();ctx.moveTo(p.x-12,p.y+8);ctx.lineTo(p.x,p.y-30);ctx.lineTo(p.x+10,p.y+9);ctx.closePath();ctx.fill();
+    ctx.strokeStyle="#3e2a16";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(p.x-6,p.y-70);ctx.lineTo(p.x-14,p.y-90);ctx.moveTo(p.x+6,p.y-70);ctx.lineTo(p.x+14,p.y-90);ctx.stroke()}
+  else if(o.t==="fire"){const f=.8+.2*Math.sin(tm*13)+.1*Math.sin(tm*31);const g=ctx.createRadialGradient(p.x,p.y-8,0,p.x,p.y-8,90);g.addColorStop(0,`rgba(255,170,70,${.35*f})`);g.addColorStop(1,"rgba(255,120,30,0)");ctx.fillStyle=g;ctx.fillRect(p.x-90,p.y-98,180,180);
+    ctx.strokeStyle="#3a2412";ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(p.x-18,p.y+2);ctx.lineTo(p.x+16,p.y-6);ctx.moveTo(p.x-14,p.y-6);ctx.lineTo(p.x+18,p.y+3);ctx.stroke();
+    ctx.fillStyle=`rgba(255,${150+Math.random()*60|0},40,.9)`;ctx.beginPath();ctx.moveTo(p.x-12,p.y-2);ctx.quadraticCurveTo(p.x,p.y-34*f,p.x+12,p.y-2);ctx.fill();if(Math.random()<.2)G.parts.push({x:p.x,y:p.y-20,vx:(Math.random()-.5)*10,vy:-26,life:2,max:2,size:8,type:"smoke"})}
+  else if(o.t==="hall"){const im=SPR.b_longhus_2;if(im){const w=im.width*.95,h=im.height*.95;ctx.drawImage(im,p.x-w/2,p.y+HH-h,w,h)}}}
+function drawFreed(f){const fr=SPR[f.k+"_w"];if(!fr)return;const p=iso(f.gx,f.gy),im=fr[Math.floor(f.ph)%fr.length],h=54,w=im.width*h/im.height,a=clamp(1-(f.t-6)/2,0,1);if(a<=0)return;ctx.save();ctx.globalAlpha=a;ctx.translate(p.x,p.y);if(f.face)ctx.scale(-1,1);ctx.drawImage(im,-w/2,-h,w,h);ctx.restore()}
 // ---------- Bybyggnader ----------
 const BLD=[
  {id:"longhus",name:"Långhus",cost:[90,160,240],desc:["Byn får +25 max-HP och lagar 4 HP när varje våg startar.","Byn får +50 max-HP och lagar 7 HP per våg.","Byn får +75 max-HP och lagar 10 HP per våg."]},
@@ -894,7 +976,7 @@ function moveJarl(gx,gy){const j=G.jarl;if(j.dead)return;j.ax=gx;j.ay=gy;j.cmd=t
 function release(u){for(const e of u.blocks)if(e.engaged===u)e.engaged=null;u.blocks=[]}
 
 // ---------- Vågor ----------
-const canCallWave=()=>!G.over&&G.started&&G.wave<CH_END()&&G.queue.length===0&&(G.wave===CH_START()||G.countdown!==null);
+const canCallWave=()=>!RAID&&!G.over&&G.started&&G.wave<CH_END()&&G.queue.length===0&&(G.wave===CH_START()||G.countdown!==null);
 function payFarms(){let tot=0;for(const t of G.towers){if(t.type!=="farm")continue;const inc=FARM_INC[t.lv[0]];tot+=inc;G.gold+=inc;t.recoil=1;const p=iso(t.gx,t.gy);floatText(p,`+${inc}`,"#e3b34c",-110);
   if(G.coins.length<25){const sp=w2s(t.gx,t.gy);for(let k=0;k<3;k++)G.coins.push({x:sp.x+(k-1)*10,y:sp.y-60*cam.z,t:-k*.12})}}{const hl=bl("handel");if(hl){const inc=HANDEL_INC[hl];tot+=inc;G.gold+=inc;const pl=PLOTS.find(p=>p.id==="handel");if(pl)floatText(iso(pl.gx,pl.gy),`+${inc}`,"#e3b34c",-150)}const rl=bl("longhus");if(rl&&G.hp<maxHp()){const r=Math.min(REPAIR[rl],maxHp()-G.hp);G.hp+=r;floatText(iso(VC.gx,VC.gy-1),`+${r} HP`,"#9fd18a",-120)}}if(tot)SND.coin();G.stats.farmGold=(G.stats.farmGold||0)+tot}
 // ---------- Is ----------
@@ -917,7 +999,7 @@ function spawn(def){const T=ETYPES[def.type];const P0=curPath();const p=pathAt(P
 
 // ---------- Uppdatering ----------
 function update(dt){
-  G.time+=dt;ambUpdate(dt);updateIce(dt);updateFires(dt);wxUpdate(dt);
+  G.time+=dt;ambUpdate(dt);updateIce(dt);updateFires(dt);wxUpdate(dt);if(RAID)raidUpdate(dt);
   // vågor
   if(G.queue.length){G.spawnT-=dt;if(G.spawnT<=0){const d=G.queue.shift();spawn(d);G.spawnT=G.queue.length?G.queue[0].delay:0;if(!G.queue.length&&G.wave<CH_END())G.countdown=22}}
   if(G.countdown!==null){G.countdown-=dt;if(G.countdown<=0){G.countdown=0;startWave()}}
@@ -997,13 +1079,14 @@ function updateEnemies(dt){
     if(e.type==="berserk"&&e.armor<=0){e.rage=clamp(1-e.hp/e.maxhp,0,1);if(!e.roared&&e.hp<e.maxhp*.5){e.roared=true;G.shake=.7;SND.waveHorn();toast("Bärsärkagång!","Han slår undan allt runt sig");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:.8,r:2.4,c:"220,60,40"});for(const u of G.units){if(u.dead||dist(u,e)>2.4)continue;u.hp-=35;u.flash=.2;u.lastHit=0;const dx=u.gx-e.gx,dy=u.gy-e.gy,l=Math.hypot(dx,dy)||1;const nx=u.gx+dx/l*.9,ny=u.gy+dy/l*.9;if(walkable(nx,ny)){u.gx=nx;u.gy=ny}release(u);if(u.hp<=0)killUnit(u)}}}
     if(e.stun>0){e.stun-=dt;continue}
     if(e.engaged){const u=e.engaged;if(u.dead||u.remove||!u.blocks.includes(e)){e.engaged=null}else{e.face=iso(u.gx,u.gy).x>iso(e.gx,e.gy).x;e.cd-=dt;if(e.cd<=0){e.cd=e.acd*(1-.4*(e.rage||0));e.lunge=1;e.swing=1;u.hp-=e.atk*(1+(e.rage||0));u.lastHit=0;u.flash=.12;if(u.hp<=0)killUnit(u)}e.lunge=Math.max(0,(e.lunge||0)-dt*4);continue}}
+    if(e.free){raidFoeAI(e,dt);continue}
     e.slowT=Math.max(0,(e.slowT||0)-dt);const stepD=e.speed*(e.slowT>0?e.slowF:1)*(1+.8*(e.rage||0))*(G.wx==="storm"?1.12:1)*dt;e.d+=stepD;e.footfall=stepPhase(e,stepD,GAIT[e.type].stride);
     if(e.d>=e.P.len){e.hp=0;e.reached=true;const vd=e.vdmg*(1-.15*ml("wall"));G.hp=Math.max(0,Math.round((G.hp-vd)*10)/10);G.shake=Math.min(1,.25+e.vdmg/30);SND.thump();const p=iso(GATE.gx,GATE.gy);floatText(p,`−${Math.round(vd*10)/10}`,"#ff8a7a");if(G.hp<=0)endGame(false);continue}
     const p=pathAt(e.d,e.P);const nx=-p.dy,ny=p.dx;e.gx=p.gx+nx*e.off;e.gy=p.gy+ny*e.off;e.face=(p.dx-p.dy)>0;e.moving=1;if(e.footfall){footprint(e);if(e.boss){G.shake=Math.max(G.shake,.16);dust(e,7,44)}else if(e.type==="brute"){dust(e,3,26)}else if(Math.random()<.5)dust(e,1)}
   }
   G.enemies=G.enemies.filter(e=>{if(e.hp>0)return true;if(!e.reached)G.dying.push({e,t:0});if(e.engaged){const u=e.engaged;u.blocks=u.blocks.filter(x=>x!==e)}if(e===G.bossRef)G.bossRef=null;return false});
 }
-function killUnit(u){u.hp=0;release(u);puff(u);if(u.temp){u.remove=true;return}u.dead=u.kind==="jarl"?10:12;if(u.kind==="jarl"){toast("Jarlen har fallit","Han återvänder till byn om 10 s");u.cmd=false}}
+function killUnit(u){u.hp=0;release(u);puff(u);if(u.temp){u.remove=true;return}if(RAID&&u.kind==="jarl"){u.dead=999;raidEnd(false);return}u.dead=u.kind==="jarl"?10:12;if(u.kind==="jarl"){toast("Jarlen har fallit","Han återvänder till byn om 10 s");u.cmd=false}}
 function hitEnemy(e,amt,fromTower,crit,silent,opt){if(e.hp<=0)return;opt=opt||{};
   if(e.arm)amt*=1-e.arm*(1-(opt.pierce||0));
   if(e.boss){if(e.armor>0){if(fromTower){e.armor=Math.max(0,e.armor-amt*(opt.armorMul||1));e.flash=.08;if(e.armor===0){toast("Rustningen är bruten","Skicka in jarlen!");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:1,r:1.8,c:"220,230,235"})}}return}if(fromTower)amt*=.08}
@@ -1085,7 +1168,7 @@ function draw(){
   if(G.marker){const k=G.marker.t/.8;ellipse(G.marker.gx,G.marker.gy,.25+.25*k,"transparent",`rgba(246,217,138,${1-k})`)}
   // objekt i djupordning
   const list=[];
-  list.push({k:VC.gx+VC.gy+VN*.35,f:drawVillage});
+  if(!RAID)list.push({k:VC.gx+VC.gy+VN*.35,f:drawVillage});else{for(const o of RAID.objs)list.push({k:o.at[0]+o.at[1]+(o.t==="hall"?1:0),f:()=>drawRaidObj(o,tm)});for(const f of RAID.freed)list.push({k:f.gx+f.gy,f:()=>drawFreed(f)})}
   for(const pl of PLOTS)list.push({k:pl.gx+pl.gy+.6,f:()=>drawPlot(pl)});
   if(G.vill)for(const v of G.vill)list.push({k:v.gx+v.gy,f:()=>drawVill(v)});
   {const vx0=cam.x-W/2/cam.z-120,vx1=cam.x+W/2/cam.z+120,vy0=cam.y-H/2/cam.z-60,vy1=cam.y+H/2/cam.z+260;for(const t of TREES){if(t.gx>N-.3||t.gy>N-.3)continue;const p=iso(t.gx,t.gy);if(p.x<vx0||p.x>vx1||p.y<vy0||p.y>vy1)continue;list.push({k:t.gx+t.gy,f:()=>drawTree(t,tm)})}}
@@ -1375,7 +1458,7 @@ $("topBtn").addEventListener("click",()=>showTop(topLvl));
 $("topBack").addEventListener("click",()=>{$("topOv").hidden=true;showLevels()});
 $("hallBack").addEventListener("click",()=>{$("hallOv").hidden=true;showLevels()});
 $("hallReset").addEventListener("click",()=>{M={};metaSave(M);showHall()});
-function showLevels(){renderHallBtn();const sv=loadSave(),box=$("levelList");box.innerHTML="";const cur=sv?sv.ch:0;
+function showLevels(){abortRaid();renderHallBtn();const sv=loadSave(),box=$("levelList");box.innerHTML="";const cur=sv?sv.ch:0;
   LEVELS.forEach((L,i)=>{if(i%4===0){const h=document.createElement("div");h.className="yearhd";h.textContent=YEARS[i/4].name;box.appendChild(h)}const st=starsOf(i),done=st>0;const d=document.createElement("div");d.className="lvl"+(L.theme==="winter"?" win":"")+(sv&&i===cur?" cur":"");
     d.innerHTML=`<span class="no">${i+1}</span><span><b>${L.name}</b><small>${sv&&i===cur?"Här är du nu. "+L.intro:done?"Avklarat.":i===0||sv&&i<cur?L.intro:"Nås genom att klara kapitel "+i+"."}</small></span><span class="st">${[0,1,2].map(k=>STAR(k<st)).join("")}</span>`;box.appendChild(d)});
   const row=document.createElement("div");row.className="row";
@@ -1407,14 +1490,14 @@ const HINTS=[
 let lastHud={};
 function updateHUD(force){
   const set=(k,v,fn)=>{if(force||lastHud[k]!==v){lastHud[k]=v;fn(v)}};
-  set("hp",G.hp,v=>{$("hpTxt").textContent=Math.ceil(v);$("hpBar").style.width=Math.min(100,v/maxHp()*100)+"%"});
+  if(RAID){set("hp","r"+RAID.got+"/"+RAID.need,v=>{$("hpTxt").textContent=RAID.got+"/"+RAID.need;$("hpBar").style.width=RAID.got/RAID.need*100+"%"})}else set("hp",G.hp,v=>{$("hpTxt").textContent=Math.ceil(v);$("hpBar").style.width=Math.min(100,v/maxHp()*100)+"%"});
   set("gold",G.gold,v=>{$("goldTxt").textContent=v;if(G.buildSpot){$("buildArcher").disabled=v<TOWER_COST;$("buildSpear").disabled=v<SPEAR_COST;$("buildFarm").disabled=v<FARM_COST;$("buildCat").disabled=v<CAT_COST}if(G.selected)renderTPanel()});
-  set("wave",G.wave+"|"+LI,v=>$("waveTxt").textContent=`Kap ${LI+1} · Våg ${CW()}/${CHW}`);
+  set("wave",RAID?"raid":G.wave+"|"+LI,v=>$("waveTxt").textContent=RAID?RAID.def.name:`Kap ${LI+1} · Våg ${CW()}/${CHW}`);
   const wb=$("waveBtn"),cw=canCallWave()&&!G.paused;wb.hidden=!cw;if(cw){const t=G.countdown===null?`Starta våg ${CW()+1}`:`Våg ${CW()+1} om ${Math.ceil(G.countdown)} s · starta nu +${Math.round(G.countdown*1.5)}`;set("wbt",t,v=>wb.textContent=v)}
   const j=G.jarl;$("jHp").style.width=(j.dead?0:j.hp/j.maxhp*100)+"%";set("lvl",j.lvl,v=>$("lvTxt").textContent=v);
   const need=[0,45,120,120];$("jXp").style.width=(j.lvl>=3?100:clamp((j.xp-need[j.lvl-1])/(need[j.lvl]-need[j.lvl-1]),0,1)*100)+"%";
   for(let i=0;i<3;i++){const el=$("ab"+i);const c=G.cds[i];el.querySelector(".cd").style.setProperty("--p",j.dead?1:c/G.cdMax[i]);el.querySelector(".t").textContent=c>0?Math.ceil(c):"";el.classList.toggle("ready",c<=0&&!j.dead&&G.started)}
-  const h=(LI===0?HINTS:LI===2?HINTS_B2:[]).find(h=>!h.done()&&(!h.when||h.when()));const ht=G.started&&!G.over&&h?h.t:"";set("hint",ht,v=>{$("hint").textContent=v});$("hint").hidden=!ht||!!G.bossRef||!!G.selected;
+  const h=RAID?null:(LI===0?HINTS:HINTS.slice(7).concat(LI===2?HINTS_B2:[])).find(h=>!h.done()&&(!h.when||h.when()));const ht=G.started&&!G.over?(RAID?RAID.def.hint:h?h.t:""):"";set("hint",ht,v=>{$("hint").textContent=v});$("hint").hidden=!ht||!!G.bossRef||!!G.selected;
   const b=G.bossRef;$("bossBar").hidden=!b;if(b){$("bossHp").style.width=b.hp/b.maxhp*100+"%";const seg=b.maxArmor/3;[...$("armorSeg").children].forEach((el,i)=>el.firstChild.style.transform=`scaleX(${clamp((b.armor-seg*i)/seg,0,1)})`)}
 }
 // ---------- Akt: sparning och kapitelbyten ----------
@@ -1423,9 +1506,9 @@ function saveAct(){try{localStorage.setItem(SAVEK,JSON.stringify({ch:LI,gold:G.g
 function loadSave(){try{return JSON.parse(localStorage.getItem(SAVEK)||"null")}catch(e){return null}}
 function clearSave(){try{localStorage.removeItem(SAVEK)}catch(e){}}
 function newIce(){return ICEDEF?{frozen:false,broken:false,hp:0,max:ICEDEF.hp,river:0,hole:0,refreezeAt:null,flash:0}:null}
-function beginPlay(){$("startOv").hidden=true;$("endOv").hidden=true;G.started=true;centerCam();ensureAlly();playScene("pre"+LI,()=>setTimeout(()=>toast(LI%4===0&&LI?YEARS[yearOf(LI)].name:`Kapitel ${LI+1}`,(LI%4===0&&LI?`Kapitel ${LI+1} · `:"")+LV.name+" – "+LV.intro),300))}
-function newAct(){SND.init();renderSnd();clearSave();STORY={flags:{},seen:{}};setChapter(0);resetGame();G.chHp=G.hp;saveAct();beginPlay()}
-function continueAct(){const sv=loadSave();if(!sv)return newAct();SND.init();renderSnd();STORY=sv.story||{flags:{},seen:{}};setChapter(sv.ch);resetGame();
+function beginPlay(){$("startOv").hidden=true;$("endOv").hidden=true;G.started=true;centerCam();ensureAlly();playScene("pre"+LI,()=>offerRaid(()=>setTimeout(()=>toast(LI%4===0&&LI?YEARS[yearOf(LI)].name:`Kapitel ${LI+1}`,(LI%4===0&&LI?`Kapitel ${LI+1} · `:"")+LV.name+" – "+LV.intro),300)))}
+function newAct(){abortRaid();SND.init();renderSnd();clearSave();STORY={flags:{},seen:{}};setChapter(0);resetGame();G.chHp=G.hp;saveAct();beginPlay()}
+function continueAct(){abortRaid();const sv=loadSave();if(!sv)return newAct();SND.init();renderSnd();STORY=sv.story||{flags:{},seen:{}};setChapter(sv.ch);resetGame();
   G.gold=sv.gold;G.hp=sv.hp;G.chHp=sv.hp;G.stats.kills=sv.kills||0;const j=G.jarl;j.lvl=sv.jl||1;j.xp=sv.jx||0;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f*jarlHpMul());j.hp=j.maxhp;
   G.bld=sv.bld||{};applyMeta();syncHird();for(const u of G.units)u.hp=u.maxhp;
   for(const t of sv.towers){const sp=t.x!=null?SPOTS.find(q=>Math.abs(q.gx-t.x)<.01&&Math.abs(q.gy-t.y)<.01)||SPOTS.slice().sort((a,b)=>Math.hypot(a.gx-t.x,a.gy-t.y)-Math.hypot(b.gx-t.x,b.gy-t.y)).find(q=>!q.tower):SPOTS[t.s];if(!sp||sp.tower)continue;const tw={type:t.type,gx:sp.gx,gy:sp.gy,spot:sp,lv:t.lv,cd:.3,spent:t.spent,buff:0,born:9};sp.tower=tw;G.towers.push(tw)}
