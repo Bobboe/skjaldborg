@@ -178,6 +178,19 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 .levels .row{margin-top:4px}
 .lvl.win{border-color:var(--frost)}
 .yearhd{font-family:Cinzel,serif;font-weight:800;color:#e3b34c;font-size:14px;letter-spacing:.06em;text-align:left;margin:10px 2px 2px;border-bottom:1px solid rgba(227,179,76,.35);padding-bottom:3px}
+#storyOv{position:absolute;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:linear-gradient(180deg,rgba(5,8,9,.15),rgba(5,8,9,.82) 60%);padding:12px max(16px,var(--sa-right)) max(14px,var(--sa-bottom)) max(16px,var(--sa-left))}
+#storyOv[hidden]{display:none}
+.stbox{position:relative;width:min(760px,100%);display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:end;background:linear-gradient(180deg,#2c1f14,#1b120b);border:1px solid rgba(227,179,76,.6);border-radius:14px;padding:14px 16px 12px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.stpor{width:clamp(84px,18vw,150px);aspect-ratio:1;border-radius:12px;border:2px solid rgba(227,179,76,.7);background:#120c07 center/cover no-repeat;margin-top:-50px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
+.stpor.sprite{background-size:contain;background-position:center bottom}
+.stname{font-family:Cinzel,serif;font-weight:800;color:#e3b34c;font-size:16px;letter-spacing:.04em}
+.sttext{font-size:clamp(14px,2.2vw,17px);line-height:1.4;color:#f1e6cf;margin:4px 0 6px;min-height:2.8em}
+.sthint{font-size:11px;color:rgba(241,230,207,.5);text-align:right}
+.stchoices{display:grid;gap:8px;margin-top:4px}
+.stchoices button{text-align:left;background:rgba(0,0,0,.35);border:1px solid rgba(227,179,76,.6);border-radius:10px;padding:8px 12px;color:#f6d98a;font-weight:800;font-size:15px;cursor:pointer}
+.stchoices button small{display:block;font-weight:500;color:rgba(241,230,207,.75);font-size:12px;margin-top:2px}
+.stskip{position:absolute;top:8px;right:10px;background:none;border:none;color:rgba(241,230,207,.55);font-size:12px;cursor:pointer}
+@media (max-height:520px){.stpor{width:78px;margin-top:-30px}.sttext{min-height:0}}
 @media (max-height:520px){.lvl{padding:6px 12px}.lvl small{display:none}.lvl .no{font-size:18px}}
 .hallbtn{display:flex;align-items:center;gap:8px;justify-content:center;font:900 14px var(--display);letter-spacing:.08em;color:var(--gold2);background:rgba(0,0,0,.28);border:1px solid var(--gold);border-radius:10px;padding:9px 18px}
 .hallbtn svg{width:16px;height:16px}
@@ -329,6 +342,8 @@ button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
     <div class="panel card"><h2>Pausat</h2><div class="row"><button class="big" id="resumeBtn">Fortsätt</button><button class="ghost" id="restartBtn">Börja om kapitlet</button><button class="ghost" id="pauseMenu">Meny</button></div></div>
   </div>
 
+  <div id="storyOv" hidden><div class="stbox"><div class="stpor" id="stPor"></div><div><div class="stname" id="stName"></div><div class="sttext" id="stText"></div><div class="stchoices" id="stChoices"></div><div class="sthint" id="stHint">Tryck för att fortsätta</div></div><button class="stskip" id="stSkip">Hoppa över ›</button></div></div>
+
   <div class="ov" id="endOv" hidden>
     <div class="panel card"><span class="sub" id="endSub">Bana 1</span><h1 id="endTitle" style="font-size:clamp(28px,6vw,48px)">Seger</h1><div class="stars" id="endStars"></div><p id="endTxt"></p><ol class="toplist mini" id="endTop" hidden></ol><div class="row"><button class="big" id="nextBtn" hidden>Nästa bana</button><button class="big" id="againBtn">Spela igen</button><button class="ghost" id="menuBtn">Banor</button></div></div>
   </div>
@@ -448,18 +463,18 @@ const ACT={key:"a1",name:"Akt I · Klankrig",vc:{gx:14,gy:17},jarl:[16.6,14.6],g
 const seaTop=gx=>31.2+.35*Math.sin(gx*.6)+.15*Math.sin(gx*1.9+1);
 const isSea=(gx,gy)=>gy>seaTop(gx);
 const LEVELS=[
- {key:"a1c1",name:"Sommar · Fjordvägen",theme:"summer",open:["A"],draw:["A"],boss:"boss",bossLine:"Sjövargen och hans folk anfaller",intro:"Ulvklanen kommer norrifrån över bron.",hp:1.3},
- {key:"a1c2",name:"Höst · Skogsvägen",theme:"autumn",open:["A","B"],draw:["A","B"],boss:"rival",bossLine:"Rivaljarlen rider ut ur skogen",intro:"En väg har öppnats genom skogen i väster. Höstdimman kan dra in – håll jarlen nära tornen.",hp:1.75},
- {key:"a1c3",name:"Vinter · Isfloden",theme:"winter",open:["A","B"],draw:["A","B","S"],boss:"berserk",bossLine:"Bärsärkskungen leder ulvklanen över isen",intro:"Floden fryser snart och öppnar en genväg mot byn.",hp:3.1,ice:true},
- {key:"a1c4",name:"Vår · Bergspasset",theme:"spring",open:["A","B","D"],draw:["A","B","D"],boss:"wolfjarl",bossLine:"Ulvklanens jarl själv leder anfallet",intro:"Snön har smält i bergspasset i öster. Vårstormar drar in – blixten slår ner bland fienden.",hp:4.8},
- {key:"a1c5",name:"Sommar · Strandhugget",theme:"summer",open:["A","F"],draw:["A","D","F"],boss:"boss",bossLine:"Sjövargen är tillbaka – nu med sjökungens skepp",intro:"Landet har vuxit ner mot fjorden. Skepp lägger till vid stranden i söder.",hp:5.6},
- {key:"a1c6",name:"Höst · Brandnätter",theme:"autumn",open:["A","B","F","G"],draw:["A","B","D","F","G"],boss:"rival",bossLine:"En hövding från havet leder strandhugget",intro:"Fler skepp. En andra landstigningsplats har öppnats i sydväst.",hp:6.8},
- {key:"a1c7",name:"Vinter · Fjordisen",theme:"winter",open:["A","B","F","G"],draw:["A","B","D","F","G","S"],boss:"berserk",bossLine:"Bärsärkarna kommer över isen igen",intro:"Floden fryser på nytt. Håll en katapult redo.",hp:8.2,ice:true},
- {key:"a1c8",name:"Vår · Sjökungen",theme:"spring",open:["A","B","D","F","G"],draw:["A","B","D","F","G"],boss:"wolfjarl",bossLine:"Sjökungen Harald kliver i land",intro:"Sjökungen själv seglar mot byn. Alla vägar är öppna.",hp:10},
- {key:"a1c9",name:"Sommar · Bergsvägen",theme:"summer",open:["A","D","E"],draw:["A","B","D","E","F","G"],boss:"berserk",bossLine:"Ulvklanens förtrupp väller ner från berget",intro:"Landet har vuxit österut mot Ulvaberget. En ny väg leder ner från bergen.",hp:13.5},
- {key:"a1c10",name:"Höst · Vargtimmen",theme:"autumn",open:["A","B","D","E","H"],draw:["A","B","D","E","F","G","H"],boss:"rival",bossLine:"Vargflockarna jagar i dimman",intro:"En andra bergsväg har öppnats i sydost.",hp:16.5},
- {key:"a1c11",name:"Vinter · Midvinterblot",theme:"winter",open:["A","B","D","E","H"],draw:["A","B","D","E","F","G","H","S"],boss:"boss",bossLine:"Seidkonan väcker vintermörkret",intro:"Midvinter. Floden fryser och Ulvklanen blotar inför den sista striden.",hp:19.5,ice:true},
- {key:"a1c12",name:"Vår · Ulvklanens sista strid",theme:"spring",open:["A","B","D","E","F","G","H"],draw:["A","B","D","E","F","G","H"],boss:"wolfjarl",bossLine:"Ulvklanens jarl leder hela hären",intro:"Ulvklanen anfaller från alla håll. Det här är slutstriden.",hp:23}
+ {key:"a1c1",bossName:"Orm Sjövargen",name:"Sommar · Fjordvägen",theme:"summer",open:["A"],draw:["A"],boss:"boss",bossLine:"Sjövargen och hans folk anfaller",intro:"Ulvklanen kommer norrifrån över bron.",hp:1.3},
+ {key:"a1c2",bossName:"Sigvard Rivaljarl",name:"Höst · Skogsvägen",theme:"autumn",open:["A","B"],draw:["A","B"],boss:"rival",bossLine:"Rivaljarlen rider ut ur skogen",intro:"En väg har öppnats genom skogen i väster. Höstdimman kan dra in – håll jarlen nära tornen.",hp:1.75},
+ {key:"a1c3",bossName:"Hrafn Bärsärkskung",name:"Vinter · Isfloden",theme:"winter",open:["A","B"],draw:["A","B","S"],boss:"berserk",bossLine:"Bärsärkskungen leder ulvklanen över isen",intro:"Floden fryser snart och öppnar en genväg mot byn.",hp:3.1,ice:true},
+ {key:"a1c4",bossName:"Ulf Gråpäls",name:"Vår · Bergspasset",theme:"spring",open:["A","B","D"],draw:["A","B","D"],boss:"wolfjarl",bossLine:"Ulvklanens jarl själv leder anfallet",intro:"Snön har smält i bergspasset i öster. Vårstormar drar in – blixten slår ner bland fienden.",hp:4.8},
+ {key:"a1c5",bossName:"Orm Sjövargen",name:"Sommar · Strandhugget",theme:"summer",open:["A","F"],draw:["A","D","F"],boss:"boss",bossLine:"Sjövargen är tillbaka – nu med sjökungens skepp",intro:"Landet har vuxit ner mot fjorden. Skepp lägger till vid stranden i söder.",hp:5.6},
+ {key:"a1c6",bossName:"Havshövdingen Kåre",name:"Höst · Brandnätter",theme:"autumn",open:["A","B","F","G"],draw:["A","B","D","F","G"],boss:"rival",bossLine:"En hövding från havet leder strandhugget",intro:"Fler skepp. En andra landstigningsplats har öppnats i sydväst.",hp:6.8},
+ {key:"a1c7",bossName:"Hjalte Isbjörn",name:"Vinter · Fjordisen",theme:"winter",open:["A","B","F","G"],draw:["A","B","D","F","G","S"],boss:"berserk",bossLine:"Bärsärkarna kommer över isen igen",intro:"Floden fryser på nytt. Håll en katapult redo.",hp:8.2,ice:true},
+ {key:"a1c8",bossName:"Sjökungen Harald",name:"Vår · Sjökungen",theme:"spring",open:["A","B","D","F","G"],draw:["A","B","D","F","G"],boss:"wolfjarl",bossLine:"Sjökungen Harald kliver i land",intro:"Sjökungen själv seglar mot byn. Alla vägar är öppna.",hp:10},
+ {key:"a1c9",bossName:"Bärsärken Grim",name:"Sommar · Bergsvägen",theme:"summer",open:["A","D","E"],draw:["A","B","D","E","F","G"],boss:"berserk",bossLine:"Ulvklanens förtrupp väller ner från berget",intro:"Landet har vuxit österut mot Ulvaberget. En ny väg leder ner från bergen.",hp:13.5},
+ {key:"a1c10",bossName:"Vargföraren Sköll",name:"Höst · Vargtimmen",theme:"autumn",open:["A","B","D","E","H"],draw:["A","B","D","E","F","G","H"],boss:"rival",bossLine:"Vargflockarna jagar i dimman",intro:"En andra bergsväg har öppnats i sydost.",hp:16.5},
+ {key:"a1c11",bossName:"Seidkonan Ása",name:"Vinter · Midvinterblot",theme:"winter",open:["A","B","D","E","H"],draw:["A","B","D","E","F","G","H","S"],boss:"boss",bossLine:"Seidkonan väcker vintermörkret",intro:"Midvinter. Floden fryser och Ulvklanen blotar inför den sista striden.",hp:19.5,ice:true},
+ {key:"a1c12",bossName:"Ulf Gråpäls",name:"Vår · Ulvklanens sista strid",theme:"spring",open:["A","B","D","E","F","G","H"],draw:["A","B","D","E","F","G","H"],boss:"wolfjarl",bossLine:"Ulvklanens jarl leder hela hären",intro:"Ulvklanen anfaller från alla håll. Det här är slutstriden.",hp:23}
 ];
 function mkPath(pts){const seg=[];let len=0;for(let i=0;i<pts.length-1;i++){const[a,b]=[pts[i],pts[i+1]];const l=Math.hypot(b[0]-a[0],b[1]-a[1]);seg.push({ax:a[0],ay:a[1],bx:b[0],by:b[1],len:l,start:len});len+=l}return{pts,seg,len}}
 let LI=0,LV=LEVELS[0],PO={},PATHS=[],PA=null,PS=null,VC=ACT.vc,GATE={gx:16.2,gy:17},WATER=[],SHORES=[],ROCKS=ACT.rocks,SPOTS=[],BRIDGES=ACT.bridges,ICEDEF=null,ICE_IN=0,ICE_OUT=0;
@@ -526,6 +541,78 @@ function drawWeather(tm){
     for(const b of WX.bolts){const sp=w2s(b.gx,b.gy),a=1-b.t/.45,R=rng(b.seed);const pts=[];let px=sp.x+(R()-.5)*120,py=-10;const steps=9;for(let k=0;k<=steps;k++){const f=k/steps;pts.push([px+(sp.x-px)*f+(k&&k<steps?(R()-.5)*40:0),py+(sp.y-py)*f])}
       for(const[wd,col]of[[9,`rgba(140,170,255,${.35*a})`],[3,`rgba(245,248,255,${a})`]]){ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.beginPath();pts.forEach(([u,v],k)=>k?ctx.lineTo(u,v):ctx.moveTo(u,v));ctx.stroke()}}
     if(WX.flash>0){ctx.fillStyle=`rgba(225,232,255,${.32*WX.flash})`;ctx.fillRect(0,0,W,H)}}}
+// ---------- Berättelse ----------
+let STORY={flags:{},seen:{}};
+const CAST={
+ gudrun:{name:"Gudrun völva",por:"por_gudrun",fb:"woman_w1"},
+ jarl:{name:"Jarl Arnbjörn",por:"por_jarl",fb:"jarl"},
+ orm:{name:"Orm Sjövargen",por:"por_orm",fb:"boss"},
+ sigvard:{name:"Sigvard Rivaljarl",por:"por_sigvard",fb:"rival_w1"},
+ hrafn:{name:"Hrafn Bärsärkskung",por:"por_hrafn",fb:"berserk"},
+ ulf:{name:"Ulf Gråpäls",por:"por_ulf",fb:"wolfjarl_w1"},
+ harald:{name:"Sjökungen Harald",por:"por_harald",fb:"boss"},
+ ragnhild:{name:"Ragnhild Haraldsdotter",por:"por_ragnhild",fb:"woman_w1"},
+ asa:{name:"Seidkonan Ása",por:"por_asa",fb:"woman_w1"},
+ eyvind:{name:"Eyvind Sigvardsson",por:"por_eyvind",fb:"rival_w1"}};
+const SF=k=>STORY.flags[k];
+const SCENES={
+ pre0:[["gudrun","Ulvklanen har brutit freden, Arnbjörn. Deras båtar har synts uppe vid fjordvägen, och de kommer över bron i norr."],["jarl","Då möter vi dem vid bron. Ingen ulv sätter sin tass i min by."],["gudrun","Bygg torn längs vägen. Och håll dig nära dina män – de följer dig vart du går."]],
+ post0:[["orm","Det här... är inte slutet, jarl. Havet glömmer aldrig."],["gudrun","Sjövargen flydde ut på fjorden. Men hans folk talar om en annan fiende – en jarl i skogen i väster som vill ha vår mark."]],
+ pre1:[["sigvard","Arnbjörn! Din by står på mark som min far brukade. I höst tar jag tillbaka den."],["jarl","Din far förlorade den i ärlig strid, Sigvard. Du kommer att göra samma sak."]],
+ post1:{lines:[["sigvard","Gör det snabbt. Jag hade gjort detsamma med dig."],["gudrun","Han ligger på knä i leran, Arnbjörn. Hans män väntar på vad du gör."]],
+   choice:{id:"rival",opts:[{v:"ally",label:"Skona honom",desc:"Sigvard svär dig trohet. Han kommer när du behöver honom som mest."},{v:"dead",label:"Döda honom",desc:"Hans skattkista blir din: +300 guld. Men han hade söner."}]},
+   after:{ally:[["sigvard","...Du är en underlig jarl. Mitt svärd är ditt, tills skulden är betald."]],dead:[["gudrun","Det är gjort. Hans kista är tung av silver – och hans söner har sett allt."]]}},
+ pre2:[["gudrun","Vintern kommer tidigt i år. Floden fryser, och då finns ingen bro som hindrar dem."],["hrafn","Hör du trummorna, jarl? Bärsärkarna kommer över isen!"]],
+ post2:[["hrafn","Ulf... Gråpäls... han kommer själv... när snön smälter..."],["gudrun","Ulvklanens jarl. Då vet vi vem som står bakom allt detta."]],
+ pre3:[["ulf","Du har dödat mina hundar, Arnbjörn. Nu kommer vargen själv."],["jarl","Kom då. Bergspasset är smalt – det blir din grav."]],
+ post3:[["gudrun","Ulf Gråpäls flydde skadad upp i bergen. Han kommer tillbaka."],["jarl","Låt honom komma. Byn har vuxit – vi har vuxit."],["gudrun","Ett år har gått. Nästa sommar seglar något mot oss från fjorden."]],
+ pre4:[["gudrun","Ett år har gått, och byns mark når nu ända ner till fjorden. Men där ute syns segel."],["orm","Du dränkte mig inte tillräckligt djupt, Arnbjörn! Sjökungen Harald har gett mig nya skepp."],["gudrun","De landstiger på stranden i söder. Bygg torn vid strandvägen."]],
+ post4:{lines:[["ragnhild","Jag är Ragnhild, dotter till Sjökungen Harald. Min far har sett hur du slog hans Sjövarg."],["ragnhild","Han erbjuder fred. Ta mig till hustru, så seglar hans skepp förbi din by."],["gudrun","Harald är listig, Arnbjörn. Men ett år utan skepp vore ett år att bygga."]],
+   choice:{id:"harald",opts:[{v:"alliance",label:"Ingå alliansen",desc:"+200 guld i hemgift och inga skepp i kapitel 6–7. Men kan man lita på Harald?"},{v:"war",label:"Avvisa honom",desc:"Kriget mot havet fortsätter för fullt – men Harald försvagas av förlusterna."}]},
+   after:{alliance:[["ragnhild","Då är det bestämt. Må fjorden vara stilla mellan våra folk."]],war:[["ragnhild","Min far kommer inte att glömma det här, jarl."]]}},
+ pre5:[["gudrun",()=>SF("harald")==="alliance"?"Fjorden är stilla, som Harald lovade. Men Ulvklanen anfaller landvägen med brandmän i natten.":"Haralds skepp är fler nu. En andra landstigningsplats har öppnats i sydväst."]],
+ post5:[["gudrun","Elden är släckt. Men röken från Ulvaberget syns tydligare för varje vecka."]],
+ pre6:[["gudrun","Floden fryser igen. Hrafns bror Hjalte leder bärsärkarna över isen för att hämnas."]],
+ post6:[["gudrun",()=>SF("harald")==="alliance"?"Ragnhild har varit tyst i veckor. Hon står ofta vid stranden och ser ut över fjorden.":"Haralds flotta samlas vid fjordens mynning. Till våren kommer han själv."]],
+ pre7:[["ragnhild",()=>SF("harald")==="alliance"?"Förlåt mig, Arnbjörn. Min far har alltid tänkt svika dig. Hans skepp ligger redan vid stranden.":null],
+   ["harald",()=>SF("harald")==="alliance"?"En jarl utan skepp är ingen jarl. Din by blir min hamn!":"Du avvisade min dotter, Arnbjörn. Nu avgör vi det på stranden."]],
+ post7:[["harald","Havet... tar mig..."],["gudrun","Fjorden är din, Arnbjörn. Men i öster röker det från Ulvaberget. Ulf Gråpäls har samlat alla klaner."]],
+ pre8:[["gudrun","Ett tredje år. Byn har vuxit mot bergen i öster, och därifrån kommer Ulvklanens förtrupp."],["sigvard",()=>SF("rival")==="ally"?"Jarl Arnbjörn. Jag svor dig trohet – nu är det dags att betala min skuld. Jag slåss vid din sida.":null]],
+ post8:[["gudrun","Förtruppen är krossad. Men det var bara början."]],
+ pre9:[["eyvind",()=>SF("rival")==="dead"?"Du dödade min far i leran, Arnbjörn. I höst hämnas jag honom med Ulvklanens vargar.":null],["gudrun",()=>SF("rival")==="dead"?null:"Vargflockar jagar i dimman. Håll jarlen nära tornen."]],
+ post9:{lines:[["gudrun","Midvinterblotet närmar sig. Gudarna kräver offer om de ska stå vid vår sida i den sista striden."]],
+   choice:{id:"blot",opts:[{v:"offer",label:"Offra till Oden",desc:"Hälften av ditt guld offras. I de två sista kapitlen gör tornen +15 % skada och jarlen får +25 % liv."},{v:"steel",label:"Lita på stålet",desc:"Du behåller guldet. Ingen gudahjälp."}]},
+   after:{offer:[["gudrun","Oden har sett ditt offer. Korparna flyger över byn."]],steel:[["jarl","Mina torn och mina män räcker. Gudarna får se på."]]}},
+ pre10:[["asa","Ditt blot når inga gudar, jarl. Vintermörkret lyder bara mig."],["gudrun","Seidkonan Ása. Hon har gjort Ulvklanen hel. Bryt hennes makt så faller deras mod."]],
+ post10:[["gudrun","Seidkonan är borta. Nu finns bara Ulf Gråpäls och hela hans här kvar."]],
+ pre11:[["ulf","Nu slutar det, Arnbjörn. Antingen brinner din by – eller så faller jag."],["sigvard",()=>SF("rival")==="ally"?"Han kommer från alla håll. Mina män håller österns väg så länge vi kan.":null],["jarl","Till tornen! Det här är vår sista strid."]],
+ post11:[["gudrun","Ulvklanen är bruten. Ulf Gråpäls ligger i snön vid bergspasset."],["jarl","Tre år. Byn står kvar."],["gudrun","Men i norr har nordljuset blivit rött, Arnbjörn. Något större än klanerna har vaknat."]]
+};
+let ST=null;
+function porSrc(c){return ASSETS[c.por]||ASSETS[c.fb]||""}
+function playScene(id,done){const sc=SCENES[id];if(!sc||STORY.seen[id]){done&&done();return}
+  const lines=(Array.isArray(sc)?sc:sc.lines).map(([w,t])=>[w,typeof t==="function"?t():t]).filter(l=>l[1]);
+  ST={id,lines,i:0,sc,done,choosing:false};if(G)G.paused=true;$("storyOv").hidden=false;showLine()}
+function showLine(){const l=ST.lines[ST.i],c=CAST[l[0]];const p=$("stPor");const src=porSrc(c);p.style.backgroundImage=src?`url(${src})`:"";p.classList.toggle("sprite",!ASSETS[c.por]);
+  $("stName").textContent=c.name;$("stText").textContent=l[1];$("stChoices").innerHTML="";$("stHint").hidden=false;
+  const last=ST.i===ST.lines.length-1;if(last&&ST.sc.choice&&!ST.picked){ST.choosing=true;$("stHint").hidden=true;$("stSkip").hidden=true;
+    for(const o of ST.sc.choice.opts){const b=document.createElement("button");b.innerHTML=`${o.label}<small>${o.desc}</small>`;b.addEventListener("click",e=>{e.stopPropagation();pickChoice(o.v)});$("stChoices").appendChild(b)}}else $("stSkip").hidden=false}
+function pickChoice(v){const ch=ST.sc.choice;STORY.flags[ch.id]=v;ST.picked=true;ST.choosing=false;applyChoice(ch.id,v);const extra=(ST.sc.after&&ST.sc.after[v])||[];ST.lines=ST.lines.concat(extra);ST.i++;if(ST.i>=ST.lines.length)endScene();else showLine()}
+function applyChoice(id,v){if(id==="rival"&&v==="dead"){G.gold+=300;floatText(iso(VC.gx,VC.gy-2),"+300","#e3b34c")}if(id==="harald"&&v==="alliance"){G.gold+=200;floatText(iso(VC.gx,VC.gy-2),"+200","#e3b34c")}if(id==="blot"&&v==="offer"){G.gold=Math.floor(G.gold/2)}updateHUD(true)}
+function advanceScene(){if(!ST||ST.choosing)return;ST.i++;if(ST.i>=ST.lines.length)endScene();else showLine()}
+function endScene(){const d=ST.done,id=ST.id;STORY.seen[id]=1;ST=null;$("storyOv").hidden=true;if(G)G.paused=false;if(id.startsWith("pre"))saveAct();d&&d()}
+document.getElementById("storyOv").addEventListener("click",advanceScene);
+document.getElementById("stSkip").addEventListener("click",e=>{e.stopPropagation();if(!ST)return;if(ST.sc.choice&&!ST.picked){ST.i=ST.lines.length-1;showLine();return}endScene()});
+// Valen påverkar kapitlen
+function applyStory(L,i){L={...L};const fl=STORY.flags;
+  if(fl.harald==="alliance"&&(i===5||i===6)){L.open=L.open.filter(k=>k!=="F"&&k!=="G");L.intro="Haralds skepp håller sig borta. Ulvklanen anfaller landvägen."}
+  if(i===7)L.bossMul=fl.harald==="alliance"?1.25:fl.harald==="war"?.85:1;
+  if(i===9){if(fl.rival==="dead"){L.boss="rival";L.bossName="Eyvind Sigvardsson";L.bossLine="Eyvind hämnas sin far"}else{L.boss="berserk";L.bossName="Vargföraren Sköll"}}
+  if(fl.blot==="offer"&&i>=10)L.blot=true;
+  return L}
+function ensureAlly(){if(STORY.flags.rival!=="ally"||LI<8||!G.jarl)return;if(G.units.some(u=>u.kind==="rival"))return;const j=G.jarl,o=HIRD_OFF[8];
+  G.units.push({kind:"rival",ally:true,slot:8,gx:j.gx+o[0],gy:j.gy+o[1],hp:520,maxhp:520,cd:0,dead:0,face:false,t:0,blocks:[],lastHit:9,flash:0,cap:3,dmg:20,acd:.9,speed:2.5,lunge:0})}
+const jarlHpMul=()=>LV&&LV.blot?1.25:1;
 // ---------- Bybyggnader ----------
 const BLD=[
  {id:"longhus",name:"Långhus",cost:[90,160,240],desc:["Byn får +25 max-HP och lagar 4 HP när varje våg startar.","Byn får +50 max-HP och lagar 7 HP per våg.","Byn får +75 max-HP och lagar 10 HP per våg."]},
@@ -553,7 +640,7 @@ function drawPlot(pl){const lv=bl(pl.id);const img=bldImg(pl.id,Math.max(0,lv-1)
   const b=pl.born!=null?Math.min(1,pl.born):1;const sy=.6+.4*(1-Math.pow(1-b,3));ctx.drawImage(img,p.x-w/2,by-h*sy,w,h*sy)}
 function plotAt(sx,sy){for(const pl of PLOTS){const img=bldImg(pl.id,Math.max(0,bl(pl.id)-1));if(!img)continue;const p=w2s(pl.gx,pl.gy);const w=img.width*BSC*cam.z*.8,h=img.height*BSC*cam.z;const by=p.y+HH*1.05*cam.z;if(sx>p.x-w/2&&sx<p.x+w/2&&sy>by-h&&sy<by+8*cam.z)return pl}return null}
 function syncHird(){if(!G.jarl)return;const want=2+ml("hird")+bl("hirdhus"),hm=Math.round(90*(1+.2*Math.max(0,bl("hirdhus")-1)));let have=G.units.filter(u=>u.kind==="hird"&&!u.temp);
-  for(let i=have.length;i<Math.min(want,HIRD_OFF.length);i++){const h=makeHird(i,0);G.units.push(h);if(G.started)puff(h,6)}
+  for(let i=have.length;i<Math.min(want,8);i++){const h=makeHird(i,0);G.units.push(h);if(G.started)puff(h,6)}
   for(const u of G.units)if(u.kind==="hird"&&!u.temp){if(u.maxhp!==hm){u.hp+=hm-u.maxhp;u.maxhp=hm}}}
 function buildBld(pl){const lv=bl(pl.id),B=BLDI[pl.id];if(lv>=3)return;const cost=B.cost[lv];if(G.gold<cost)return;G.gold-=cost;G.bld[pl.id]=lv+1;pl.born=0;
   if(pl.id==="longhus")G.hp=Math.min(maxHp(),G.hp+25);if(pl.id==="hirdhus")syncHird();applyMeta();
@@ -566,7 +653,7 @@ function renderBPanel(){const pl=G.selPlot;if(!pl)return;const B=BLDI[pl.id],lv=
 const ICE_BASE={warn:1,freeze:2,refreeze:3,hp:300,zone:{x0:16.7,x1:19.3},center:[18,12.1]};
 const yearOf=i=>Math.floor(i/4);
 function entryD(P){for(let d=0;d<P.len;d+=.1){const q=pathAt(d,P);if(q.gx<=N+1.4&&q.gy<=N+1.4&&q.gx>=-1.5&&q.gy>=-1.5)return d}return 0}
-function setChapter(i){LI=i;LV=LEVELS[i];const nN=YEARN[yearOf(i)];if(nN!==N){N=nN;if(WGRID)buildWalkGrid()}for(const k in PO)PO[k].d0=entryD(PO[k]);PATHS=LV.open.map(k=>PO[k]);
+function setChapter(i){LI=i;LV=applyStory(LEVELS[i],i);const nN=YEARN[yearOf(i)];if(nN!==N){N=nN;if(WGRID)buildWalkGrid()}for(const k in PO)PO[k].d0=entryD(PO[k]);PATHS=LV.open.map(k=>PO[k]);
   ICEDEF=LV.ice?{...ICE_BASE,warn:i*CHW+ICE_BASE.warn,freeze:i*CHW+ICE_BASE.freeze,hp:Math.round(ICE_BASE.hp*Math.sqrt(LV.hp/3.1))}:null;if(IMG.grass)buildGround()}
 function loadLevel(i){setChapter(i)}
 // ---------- Bilder ----------
@@ -727,7 +814,7 @@ let M=metaLoad();const ml=id=>M[id]||0;
 const starsTotal=()=>LEVELS.reduce((a,L,i)=>a+starsOf(i),0);
 const starsSpent=()=>META.reduce((a,u)=>{let c=0;for(let l=0;l<ml(u.id);l++)c+=metaCost(l);return a+c},0);
 function applyMeta(){const d=1-.06*ml("carp")-(bl("verkstad")>=2?.1:0)-(bl("verkstad")>=3?.1:0);TOWER_COST=Math.round(70*.9*d);SPEAR_COST=Math.round(85*.9*d);FARM_COST=Math.round(60*d);CAT_COST=Math.round(90*.9*d);COST={archer:TOWER_COST,spear:SPEAR_COST,farm:FARM_COST,catapult:CAT_COST}}
-function towerStats(t){const s=baseStats(t);const k=t.type==="spear"?ml("spear"):t.type==="catapult"?ml("stone"):t.type==="archer"||!t.type?ml("arrow"):0;s.dmg*=(1+.1*k)*(bl("smedja")>=3?1.12:1);if(G.wx){if(fogged(t))s.range*=.7;if(G.wx==="storm"&&(t.type==="archer"||!t.type))s.dmg*=.75}if(t.type==="catapult")s.radius*=1+.08*ml("stone");return s}
+function towerStats(t){const s=baseStats(t);const k=t.type==="spear"?ml("spear"):t.type==="catapult"?ml("stone"):t.type==="archer"||!t.type?ml("arrow"):0;s.dmg*=(1+.1*k)*(bl("smedja")>=3?1.12:1)*(LV.blot?1.15:1);if(G.wx){if(fogged(t))s.range*=.7;if(G.wx==="storm"&&(t.type==="archer"||!t.type))s.dmg*=.75}if(t.type==="catapult")s.radius*=1+.08*ml("stone");return s}
 function baseStats(t){const[a,b,c]=t.lv;if(t.type==="catapult")return{range:3.7+.2*a,dmg:24*(1+.3*a),radius:.85+.12*a,cd:2.9*(1-.05*a),fire:b?5+3*b:0,fireT:b?2+.45*b:0,iceDmg:c?40*(1+.5*(c-1)):0,armorMul:1+.35*c,pierce:c?.3+.05*c:0,crit:0,targets:1,burn:0,burnT:0,line:0,slowT:0,pull:0};if(t.type==="spear")return{range:2.7+.15*a,dmg:22*(1+.28*a),crit:0,targets:1,cd:1.7*(1-.04*b),burn:0,burnT:0,pierce:Math.min(1,.6+.08*a),armorMul:2+.5*a,line:b?0.9+.35*b:0,lineDmg:.55+.05*b,slowF:c?.55-.04*c:1,slowT:c?1+.35*c:0,pull:c>=3?.2*(c-2):0};return{pierce:0,armorMul:1,line:0,slowT:0,pull:0,range:3+0.35*a,dmg:8*(1+0.3*a),crit:0.08*a,targets:1+(b>=1)+(b>=3)+(b>=5),cd:0.85*(1-0.06*b),burn:2.6*c,burnT:3}}
 function canUpgrade(t,i){const lv=t.lv;if(lv[i]>=5||lv[i]>=tierCap())return false;const next=lv.map((v,k)=>k===i?v+1:v);if(next.filter(v=>v>0).length>2)return false;if(next.filter(v=>v>2).length>1)return false;return true}
 
@@ -743,7 +830,7 @@ function buildWave(w){const c=w-LI*CHW,list=[];const hpMul=LV.hp*Math.pow(1.13,c
   if(c===CHW){n=14+Math.round(LI*2.2);br=3+Math.min(LI,6)}
   for(let i=0;i<n;i++)list.push({type:"thrall",hpMul,delay:gap});
   for(let k=0;k<br;k++){const pos=Math.floor((k+1)*list.length/(br+1));list.splice(pos,0,{type:"brute",hpMul,delay:gap*1.6})}
-  if(c===CHW&&LV.boss)list.splice(Math.floor(list.length*.55),0,{type:LV.boss,hpMul:LV.hp>1?Math.sqrt(LV.hp)*1.15:1,delay:3});
+  if(c===CHW&&LV.boss)list.splice(Math.floor(list.length*.55),0,{type:LV.boss,hpMul:(LV.hp>1?Math.sqrt(LV.hp)*1.15:1)*(LV.bossMul||1),delay:3});
   return list}
 
 // ---------- Tillstånd ----------
@@ -759,7 +846,7 @@ function resetGame(){
   for(const pl of PLOTS)pl.born=9;WX.fog=WX.storm=0;WX.bolts=[];
   updateHUD(true);closePanels();
 }
-const HIRD_OFF=[[-.75,.55],[.55,-.75],[.85,.6],[-.6,-.85],[.1,1.05],[1.05,-.1],[-1.05,.1],[-.1,-1.05]];
+const HIRD_OFF=[[-.75,.55],[.55,-.75],[.85,.6],[-.6,-.85],[.1,1.05],[1.05,-.1],[-1.05,.1],[-.1,-1.05],[1.35,.95]];
 function makeHird(slot,temp){const j=G.jarl;const o=HIRD_OFF[slot];return{kind:"hird",slot,temp,gx:j.gx+o[0],gy:j.gy+o[1],hp:90,maxhp:90,cd:0,dead:0,face:false,t:Math.random()*3,blocks:[],lastHit:9,flash:0,cap:1,dmg:6,acd:.9,speed:2.6,lunge:0}}
 
 // ---------- Kamera & canvas ----------
@@ -826,7 +913,7 @@ function startWave(){if(!canCallWave())return;if(G.countdown!==null&&G.countdown
 const curPath=()=>{const P=PATHS[(Math.random()*PATHS.length)|0];return(P===PA&&ICEDEF&&G.ice&&G.ice.frozen)?PS:P};
 function nearestD(P,gx,gy){let best={d:0,dist:1e9};for(const s of P.seg){const vx=s.bx-s.ax,vy=s.by-s.ay;let t=((gx-s.ax)*vx+(gy-s.ay)*vy)/(s.len*s.len);t=clamp(t,0,1);const dd=Math.hypot(gx-s.ax-vx*t,gy-s.ay-vy*t);if(dd<best.dist)best={d:s.start+t*s.len,dist:dd}}return best}
 function spawn(def){const T=ETYPES[def.type];const P0=curPath();const p=pathAt(P0.d0||0,P0);const e={P:P0,boss:!!T.boss,type:def.type,gx:p.gx,gy:p.gy,d:P0.d0||0,hp:T.hp*def.hpMul,maxhp:T.hp*def.hpMul,armor:T.armor||0,arm:T.arm||0,maxArmor:T.armor||0,speed:T.speed*(0.92+Math.random()*.16),atk:T.atk*(def.type==="boss"?1:Math.sqrt(def.hpMul)),acd:T.acd,cd:0,bounty:Math.round(T.bounty*(1+.45*Math.min(LI,3)+.08*Math.max(0,LI-3))),vdmg:T.vdmg,h:T.h,xp:T.xp,engaged:null,stun:0,burn:0,burnT:0,flash:0,t:Math.random()*5,face:false,off:(Math.random()-.5)*.5};
-  G.enemies.push(e);if(e.boss){G.bossRef=e;G.bossIntro=2.5;G.shake=.7;$("bossName").textContent=T.name.toUpperCase();toast(T.name,T.intro)}}
+  G.enemies.push(e);if(e.boss){e.name=LV.bossName||T.name;G.bossRef=e;G.bossIntro=2.5;G.shake=.7;$("bossName").textContent=e.name.toUpperCase();toast(e.name,T.intro)}}
 
 // ---------- Uppdatering ----------
 function update(dt){
@@ -875,7 +962,7 @@ function updateUnits(dt){
   for(const e of G.enemies){if(e.engaged||e.hp<=0)continue;if(e.boss&&e.armor>0)continue;
     for(const u of fr){if(u.blocks.length<u.cap&&dist(u,e)<.62){e.engaged=u;u.blocks.push(e);break}}}
   // nivå
-  const need=[0,45,120];if(j.lvl<3&&j.xp>=need[j.lvl]){j.lvl++;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f);j.hp=j.maxhp;toast(`Jarlen nivå ${j.lvl}`,"Mer skada och mer liv");G.rings.push({gx:j.gx,gy:j.gy,t:0,max:.9,r:2,c:"246,217,138"})}
+  const need=[0,45,120];if(j.lvl<3&&j.xp>=need[j.lvl]){j.lvl++;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f*jarlHpMul());j.hp=j.maxhp;toast(`Jarlen nivå ${j.lvl}`,"Mer skada och mer liv");G.rings.push({gx:j.gx,gy:j.gy,t:0,max:.9,r:2,c:"246,217,138"})}
 }
 // ---------- Vägsökning (A* på halvrutor) ----------
 const GR=2,GN=NMAX*GR;
@@ -922,7 +1009,7 @@ function hitEnemy(e,amt,fromTower,crit,silent,opt){if(e.hp<=0)return;opt=opt||{}
   if(e.boss){if(e.armor>0){if(fromTower){e.armor=Math.max(0,e.armor-amt*(opt.armorMul||1));e.flash=.08;if(e.armor===0){toast("Rustningen är bruten","Skicka in jarlen!");G.rings.push({gx:e.gx,gy:e.gy,t:0,max:1,r:1.8,c:"220,230,235"})}}return}if(fromTower)amt*=.08}
   e.hp-=amt;if(!silent)e.flash=.1;
   if(crit){floatText(iso(e.gx,e.gy),`${Math.round(amt)}!`,"#f6d98a",-e.h)}
-  if(e.hp<=0){G.gold+=e.bounty;G.stats.kills++;SND.coin();if(G.coins.length<25){const sp=w2s(e.gx,e.gy);G.coins.push({x:sp.x,y:sp.y-e.h*cam.z*.6,t:0})}G.jarl.xp+=e.xp;floatText(iso(e.gx,e.gy),`+${e.bounty}`,"#e3b34c",-e.h*.6);puff(e,e.boss?26:10);if(e.boss)toast(ETYPES[e.type].name+" har fallit","")}}
+  if(e.hp<=0){G.gold+=e.bounty;G.stats.kills++;SND.coin();if(G.coins.length<25){const sp=w2s(e.gx,e.gy);G.coins.push({x:sp.x,y:sp.y-e.h*cam.z*.6,t:0})}G.jarl.xp+=e.xp;floatText(iso(e.gx,e.gy),`+${e.bounty}`,"#e3b34c",-e.h*.6);puff(e,e.boss?26:10);if(e.boss)toast((e.name||ETYPES[e.type].name)+" har fallit","")}}
 function updateTowers(dt){
   for(const pl of PLOTS)if(pl.born<9)pl.born+=dt*2;
   for(const t of G.towers){t.born=(t.born||0)+dt;if(t.type==="farm"){t.recoil=Math.max(0,(t.recoil||0)-dt*3);continue}const st=towerStats(t);t.buff=Math.max(0,(t.buff||0)-dt);t.cd-=dt*(t.buff>0?1.4:1);t.recoil=Math.max(0,(t.recoil||0)-dt*3);
@@ -1185,7 +1272,7 @@ function drawTower(t){if(t.type==="farm")return drawFarm(t);if(t.type==="catapul
   if(t===G.selected){ctx.globalAlpha=.18+.1*Math.sin(performance.now()/180);sprite(IMW,p.x,by,h,false);ctx.globalAlpha=1}
   if(b<1)return;
   let ox=p.x-((t.lv.filter(v=>v>0).length-1)*9);for(let i=0;i<3;i++){if(!t.lv[i])continue;ctx.fillStyle=TT(t)[i].c;ctx.strokeStyle="#1a0f08";ctx.lineWidth=2;ctx.beginPath();ctx.arc(ox,by+6,7,0,7);ctx.fill();ctx.stroke();ctx.fillStyle="#1a0f08";ctx.font="900 10px Cinzel,serif";ctx.textAlign="center";ctx.fillText(t.lv[i],ox,by+9.5);ox+=18}}
-function drawUnit(u){const p=iso(u.gx,u.gy);const isJ=u.kind==="jarl";const h=isJ?80:62;u.moving=Math.max(0,(u.moving||0)-.016);
+function drawUnit(u){const p=iso(u.gx,u.gy);const isJ=u.kind==="jarl";const h=isJ?80:u.ally?86:62;u.moving=Math.max(0,(u.moving||0)-.016);
   const amt=u.walk||0;const lx=u.lunge*(u.face?-6:6);const br=1+.02*Math.sin(u.t*2.6)*(1-amt);const sheet=SPR[u.kind+"_w"];const g=sheet?{...GAIT[u.kind],nd:-1}:GAIT[u.kind];const fl=sheet?!u.face:u.face;
   if(isJ){const pu=.5+.5*Math.sin(performance.now()/400);ctx.beginPath();ctx.ellipse(p.x,p.y,27,13,0,0,7);ctx.strokeStyle=`rgba(246,217,138,${.4+.3*pu})`;ctx.lineWidth=2.5;ctx.stroke()}
   shadow(p.x,p.y,(isJ?20:15)*(1-.08*amt*(1-Math.abs(Math.sin(u.ph||0)))));
@@ -1255,7 +1342,7 @@ $("pauseMenu").addEventListener("click",()=>{$("pauseOv").hidden=true;SND.pause(
 $("resumeBtn").addEventListener("click",()=>{G.paused=false;SND.pause(false);$("pauseOv").hidden=true});
 $("restartBtn").addEventListener("click",()=>{$("pauseOv").hidden=true;SND.pause(false);G.paused=false;continueAct()});
 $("againBtn").addEventListener("click",()=>{$("endOv").hidden=true;continueAct()});
-$("nextBtn").addEventListener("click",()=>{$("endOv").hidden=true;nextChapter()});
+$("nextBtn").addEventListener("click",()=>{$("endOv").hidden=true;playScene("post"+LI,()=>nextChapter())});
 $("waveBtn").addEventListener("click",()=>{startWave();updateHUD()});
 $("menuBtn").addEventListener("click",()=>{$("endOv").hidden=true;showLevels()});
 const starsOf=i=>{try{return +localStorage.getItem("skj_"+LEVELS[i].key)||0}catch(e){return 0}};
@@ -1332,21 +1419,21 @@ function updateHUD(force){
 }
 // ---------- Akt: sparning och kapitelbyten ----------
 const SAVEK="skj_act1";
-function saveAct(){try{localStorage.setItem(SAVEK,JSON.stringify({ch:LI,gold:G.gold,hp:G.hp,kills:G.stats.kills,jl:G.jarl.lvl,jx:G.jarl.xp,bld:G.bld,towers:G.towers.map(t=>({s:t.spot.id,x:t.gx,y:t.gy,type:t.type,lv:t.lv,spent:t.spent}))}))}catch(e){}}
+function saveAct(){try{localStorage.setItem(SAVEK,JSON.stringify({ch:LI,gold:G.gold,hp:G.hp,kills:G.stats.kills,jl:G.jarl.lvl,jx:G.jarl.xp,bld:G.bld,story:STORY,towers:G.towers.map(t=>({s:t.spot.id,x:t.gx,y:t.gy,type:t.type,lv:t.lv,spent:t.spent}))}))}catch(e){}}
 function loadSave(){try{return JSON.parse(localStorage.getItem(SAVEK)||"null")}catch(e){return null}}
 function clearSave(){try{localStorage.removeItem(SAVEK)}catch(e){}}
 function newIce(){return ICEDEF?{frozen:false,broken:false,hp:0,max:ICEDEF.hp,river:0,hole:0,refreezeAt:null,flash:0}:null}
-function beginPlay(){$("startOv").hidden=true;$("endOv").hidden=true;G.started=true;centerCam();setTimeout(()=>toast(LI%4===0&&LI?YEARS[yearOf(LI)].name:`Kapitel ${LI+1}`,(LI%4===0&&LI?`Kapitel ${LI+1} · `:"")+LV.name+" – "+LV.intro),400)}
-function newAct(){SND.init();renderSnd();clearSave();setChapter(0);resetGame();G.chHp=G.hp;saveAct();beginPlay()}
-function continueAct(){const sv=loadSave();if(!sv)return newAct();SND.init();renderSnd();setChapter(sv.ch);resetGame();
-  G.gold=sv.gold;G.hp=sv.hp;G.chHp=sv.hp;G.stats.kills=sv.kills||0;const j=G.jarl;j.lvl=sv.jl||1;j.xp=sv.jx||0;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f);j.hp=j.maxhp;
+function beginPlay(){$("startOv").hidden=true;$("endOv").hidden=true;G.started=true;centerCam();ensureAlly();playScene("pre"+LI,()=>setTimeout(()=>toast(LI%4===0&&LI?YEARS[yearOf(LI)].name:`Kapitel ${LI+1}`,(LI%4===0&&LI?`Kapitel ${LI+1} · `:"")+LV.name+" – "+LV.intro),300))}
+function newAct(){SND.init();renderSnd();clearSave();STORY={flags:{},seen:{}};setChapter(0);resetGame();G.chHp=G.hp;saveAct();beginPlay()}
+function continueAct(){const sv=loadSave();if(!sv)return newAct();SND.init();renderSnd();STORY=sv.story||{flags:{},seen:{}};setChapter(sv.ch);resetGame();
+  G.gold=sv.gold;G.hp=sv.hp;G.chHp=sv.hp;G.stats.kills=sv.kills||0;const j=G.jarl;j.lvl=sv.jl||1;j.xp=sv.jx||0;const f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f*jarlHpMul());j.hp=j.maxhp;
   G.bld=sv.bld||{};applyMeta();syncHird();for(const u of G.units)u.hp=u.maxhp;
   for(const t of sv.towers){const sp=t.x!=null?SPOTS.find(q=>Math.abs(q.gx-t.x)<.01&&Math.abs(q.gy-t.y)<.01)||SPOTS.slice().sort((a,b)=>Math.hypot(a.gx-t.x,a.gy-t.y)-Math.hypot(b.gx-t.x,b.gy-t.y)).find(q=>!q.tower):SPOTS[t.s];if(!sp||sp.tower)continue;const tw={type:t.type,gx:sp.gx,gy:sp.gy,spot:sp,lv:t.lv,cd:.3,spent:t.spent,buff:0,born:9};sp.tower=tw;G.towers.push(tw)}
   updateHUD(true);beginPlay()}
 function nextChapter(){const from=LI;setChapter(from+1);G.ice=newIce();G.over=false;G.countdown=null;G.queue=[];G.wave=LI*CHW;G.fires=[];G.bossRef=null;G.wx=null;
-  G.hp=maxHp();G.chHp=G.hp;for(const u of G.units)if(!u.dead)u.hp=u.maxhp;saveAct();updateHUD(true);beginPlay()}
+  {const j=G.jarl,f=1+.25*(j.lvl-1);j.maxhp=Math.round(j.base*f*jarlHpMul())}G.hp=maxHp();G.chHp=G.hp;for(const u of G.units)if(!u.dead)u.hp=u.maxhp;saveAct();updateHUD(true);beginPlay()}
 function endGame(win){if(G.over)return;G.over=true;closePanels();win?SND.win():SND.lose();
-  const lost=Math.max(0,G.chHp-G.hp),stars=win?(lost<=15?3:lost<=45?2:1):0,last=LI===LEVELS.length-1;
+  const lost=Math.max(0,G.chHp-G.hp),stars=win?(lost<=15?3:lost<=45?2:1):0,last=LI===LEVELS.length-1;if(win&&last)setTimeout(()=>playScene("post"+LI),900);
   $("endSub").textContent=`${ACT.name} · Kapitel ${LI+1}`;
   $("endTitle").textContent=win?(last?"Akten är vunnen!":"Kapitlet är klart"):"Byn har fallit";
   $("nextBtn").hidden=!(win&&!last);$("nextBtn").textContent=win&&!last?`Kapitel ${LI+2}: ${LEVELS[LI+1].name.split(" · ")[0]}`:"";
