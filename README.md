@@ -16,4 +16,4 @@ Spelet är en enda fil (index.html) med all grafik, musik och kod inbyggd. Övri
 Ljud: spelet ljuder även när ringljudsknappen är på tyst (iOS 17+). Ljudknappen uppe till höger stänger av allt.
 
 ## Uppdatera
-Ersätt index.html och höj versionsnamnet `C` i sw.js (t.ex. `skjaldborg-v95`) så att installerade appar hämtar den nya versionen.
+Ersätt index.html och höj versionsnamnet `C` i sw.js (t.ex. `skjaldborg-v96`) så att installerade appar hämtar den nya versionen.
