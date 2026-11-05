@@ -130,12 +130,14 @@ const GAMES=[
  {id:"skjaldborg",name:"Skjaldborg",url:"/skjaldborg/",cover:"/img/skjaldborg-cover.webp",icon:"/img/skjaldborg-jarl.webp",genre:"Tower defense",
   desc:"Försvara byn mot Ulvklanen i tre år. Bygg torn, led din jarl och hird i strid och fatta val som formar berättelsen.",
   levels:SKJ_CH},
- {id:"soon",soon:true,name:"Nytt spel",genre:"Under utveckling",desc:"Nästa spel i Harder Arcade är på väg. Ditt konto och din statistik följer med."}
+ {id:"verkstad",name:"Verkstadsbråket",url:"/verkstadsbraket/",cover:"/img/verkstad-cover.webp",genre:"Fighting · EBO-personal",locked:true,
+  desc:"EBO-personalen gör upp i verkstaden. Arkadstege mot datorn eller två spelare på samma tangentbord."}
 ];
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 function skjLocal(){const stars={};for(const[k]of SKJ_CH){const v=+lsGet("skj_"+k)||0;if(v)stars[k]=v}
   let save=null;try{save=JSON.parse(lsGet("skj_act1")||"null")}catch(e){}return{stars,save}}
 function mergeStars(a,b){const o={...a};for(const k in b)o[k]=Math.max(o[k]||0,b[k]||0);return o}
+function vbStats(){let s={};try{s=JSON.parse(lsGet("vb_stats")||"{}")}catch(e){}return s}
 function skjStats(){const L=skjLocal();const stars=mergeStars(L.stars,(profile&&profile.stars)||{});const done=SKJ_CH.filter(([k])=>stars[k]>0).length;const tot=Object.values(stars).reduce((a,b)=>a+b,0);
   return{stars,done,tot,save:L.save,max:SKJ_CH.length*3}}
 
@@ -167,13 +169,19 @@ $("accOutBtn").onclick=async()=>{await sb.auth.signOut();user=null;profile=null;
 const starStr=n=>`<span class="st">${"★".repeat(n)}<span class="o">${"★".repeat(3-n)}</span></span>`;
 function viewGames(){const S=skjStats();const pct=Math.round(S.done/SKJ_CH.length*100);const cont=S.save&&S.save.ch!=null;
   return`<h1>Välkommen${user?", "+esc(displayName()):""}</h1><p class="lead">Välj ett spel. ${user?"Dina framsteg sparas i ditt konto.":"Logga in för att spara framsteg i molnet och synas på topplistorna."}</p>
-  <div class="grid">${GAMES.map(g=>g.soon?`<div class="card game soon"><div class="cov"><span>?</span><div class="tag">${esc(g.genre)}</div></div><div class="body"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p><div class="act"><button class="btn ghost" disabled>Kommer snart</button></div></div></div>`:
+  <div class="grid">${GAMES.map(g=>g.id==="verkstad"?vbCard(g):g.soon?`<div class="card game soon"><div class="cov"><span>?</span><div class="tag">${esc(g.genre)}</div></div><div class="body"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p><div class="act"><button class="btn ghost" disabled>Kommer snart</button></div></div></div>`:
    `<div class="card game"><div class="cov" style="background-image:url(${g.cover})"><div class="tag">${esc(g.genre)}</div></div><div class="body"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p>
     <div class="prog"><span><b>${S.done}/${SKJ_CH.length}</b> kapitel</span><span><b>${S.tot}/${S.max}</b> stjärnor</span>${cont?`<span>Nu: <b>kap ${S.save.ch+1}</b></span>`:""}</div><div class="pbar"><i style="width:${pct}%"></i></div>
     <div class="act"><a class="btn" href="${g.url}">${cont?"Fortsätt":"Spela"}</a><a class="btn ghost" href="#/profil">Statistik</a></div></div></div>`).join("")}</div>`}
+function vbCard(g){const V=vbStats();const unlocked=user&&user.user_metadata&&user.user_metadata.vb;
+  return`<div class="card game"><div class="cov" style="background-image:url(${g.cover})"><div class="tag">${esc(g.genre)}</div></div><div class="body"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p>
+   <div class="prog"><span><b>${V.matches||0}</b> matcher</span><span><b>${V.wins||0}</b> vinster</span><span>Bästa: <b>${(V.arcadeBest||0).toLocaleString("sv")}</b></span></div>
+   <div class="act"><a class="btn" href="${g.url}">${unlocked?"Spela":"Lås upp och spela"}</a><a class="btn ghost" href="#/profil">Statistik</a></div>
+   ${unlocked?"":`<p style="font-size:12px;color:var(--dim)">Kräver inloggning och EBO-koden.</p>`}</div></div>`}
 async function viewProfile(){const S=skjStats();const sv=S.save||{};
-  let best={};if(user&&sb){const{data}=await sb.from("scores").select("level,score,stars,created_at").eq("user_id",user.id).order("score",{ascending:false}).limit(500);for(const r of data||[])if(!best[r.level])best[r.level]=r}
-  const plays=user?Object.keys(best).length:0;const sumBest=Object.values(best).reduce((a,r)=>a+r.score,0);
+  let best={},bestVB=null;if(user&&sb){const q=await sb.from("scores").select("score").eq("user_id",user.id).eq("level","vb_arcade").order("score",{ascending:false}).limit(1);bestVB=q.data&&q.data[0]?q.data[0].score:null}
+  if(user&&sb){const{data}=await sb.from("scores").select("level,score,stars,created_at").eq("user_id",user.id).order("score",{ascending:false}).limit(500);for(const r of data||[])if(!best[r.level])best[r.level]=r}
+  const plays=user?Object.keys(best).length:0;const sumBest=SKJ_CH.reduce((a,[k])=>a+(best[k]?best[k].score:0),0);
   return`<h1>Min statistik</h1><p class="lead">${user?"Inloggad som <b>"+esc(displayName())+"</b>.":"Du är inte inloggad – här visas det som sparats i den här webbläsaren."}</p>
   ${user?"":`<div class="note" style="margin-bottom:20px">Logga in för att se dina bästa poäng och synas på topplistorna. <button class="btn sm" onclick="openAcc()">Logga in</button></div>`}
   <div class="sec"><div class="sechd"><img src="/img/skjaldborg-jarl.webp" alt=""><div><h2>Skjaldborg</h2><small>Akt I · Klankrig</small></div><div class="sp"></div><a class="btn sm" href="/skjaldborg/">Spela</a></div>
@@ -183,22 +191,32 @@ async function viewProfile(){const S=skjStats();const sv=S.save||{};
    <table><thead><tr><th>Kapitel</th><th>Stjärnor</th>${user?'<th class="n">Bästa poäng</th>':""}</tr></thead><tbody>
    ${SKJ_CH.map(([k,n],i)=>(i%4===0?`<tr class="yr"><td colspan="3">${YEARS[i/4]}</td></tr>`:"")+`<tr><td>${i+1}. ${esc(n)}</td><td>${S.stars[k]?starStr(S.stars[k]):'<span style="color:var(--dim)">–</span>'}</td>${user?`<td class="n">${best[k]?best[k].score.toLocaleString("sv"):"–"}</td>`:""}</tr>`).join("")}
    </tbody></table></div>
-  <div class="sec"><div class="sechd"><div style="width:44px;height:44px;border-radius:11px;background:var(--s3);display:grid;place-items:center;color:var(--dim);font:700 22px 'Space Grotesk',Inter,sans-serif">?</div><div><h2>Nytt spel</h2><small>Kommer snart</small></div></div><div class="empty">Statistik visas här när spelet släpps.</div></div>`}
-let lbLevel="total";
+  ${vbProfile(bestVB)}`}
+const VBN={hydraul:"Hydraulikern",kingove:"King-Ove",lager:"Lagerchefen",butik:"Butikssäljaren",svets:"Svetsaren",montor:"Montören",admin:"Admin",falt:"Fältteknikern",larling:"Lärlingen",el:"Elektrikern",truck:"Truckföraren",chef:"Chefen"};
+function vbProfile(best){const V=vbStats();const ch=Object.entries(V.chars||{}).sort((a,b)=>b[1].p-a[1].p);
+  return`<div class="sec"><div class="sechd"><div style="width:44px;height:44px;border-radius:11px;background:#ffc21a;display:grid;place-items:center;color:#1a1200;font:800 20px Inter">VB</div><div><h2>Verkstadsbråket</h2><small>Fighting · EBO-personal</small></div><div class="sp"></div><a class="btn sm" href="/verkstadsbraket/">Spela</a></div>
+   <div class="stats"><div class="stat"><small>Matcher</small><b>${V.matches||0}</b></div><div class="stat"><small>Vinster mot datorn</small><b>${V.wins||0}</b></div><div class="stat"><small>2-spelarmatcher</small><b>${V.vs||0}</b></div>
+    <div class="stat"><small>Arkad klarad</small><b>${V.arcadeClears||0}</b></div><div class="stat"><small>Bästa arkadpoäng</small><b>${Math.max(V.arcadeBest||0,best||0).toLocaleString("sv")}</b></div></div>
+   ${ch.length?`<table><thead><tr><th>Fighter</th><th class="n">Matcher</th><th class="n">Vinster</th></tr></thead><tbody>${ch.map(([id,c])=>`<tr><td>${esc(VBN[id]||id)}</td><td class="n">${c.p}</td><td class="n">${c.w}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">Spela en match så visas din statistik per fighter här.</div>'}</div>`}
+let lbGame="skjaldborg";let lbLevel="total";
 async function viewTop(){if(!sb)return`<h1>Topplistor</h1><div class="empty">Topplistorna kan inte nås just nu.</div>`;
   const{data,error}=await sb.from("scores").select("user_id,name,level,score").order("score",{ascending:false}).limit(1000);
   if(error)return`<h1>Topplistor</h1><div class="empty">Kunde inte hämta topplistan.</div>`;
   const best={};for(const r of data){const k=r.user_id+"|"+r.level;if(!best[k]||r.score>best[k].score)best[k]=r}
-  let rows;if(lbLevel==="total"){const tot={};for(const r of Object.values(best)){const t=tot[r.user_id]||(tot[r.user_id]={user_id:r.user_id,name:r.name,score:0,n:0});t.score+=r.score;t.n++;t.name=r.name}rows=Object.values(tot).sort((a,b)=>b.score-a.score)}
+  let rows;if(lbLevel==="total"){const tot={};for(const r of Object.values(best)){if(!r.level.startsWith("a1c"))continue;const t=tot[r.user_id]||(tot[r.user_id]={user_id:r.user_id,name:r.name,score:0,n:0});t.score+=r.score;t.n++;t.name=r.name}rows=Object.values(tot).sort((a,b)=>b.score-a.score)}
   else rows=Object.values(best).filter(r=>r.level===lbLevel).sort((a,b)=>b.score-a.score);
+  if(lbGame==="verkstad"){rows=Object.values(best).filter(r=>r.level==="vb_arcade").sort((a,b)=>b.score-a.score)}
   rows=rows.slice(0,50);
-  return`<h1>Topplistor</h1><p class="lead">De bästa spelarna i Harder Arcade. ${user?"":"Logga in för att själv hamna här."}</p>
+  const gtabs=`<div class="tabs" id="gtabs"><button data-g="skjaldborg" class="${lbGame==="skjaldborg"?"on":""}">Skjaldborg</button><button data-g="verkstad" class="${lbGame==="verkstad"?"on":""}">Verkstadsbråket</button></div>`;
+  if(lbGame==="verkstad")return`<h1>Topplistor</h1>${gtabs}<div class="sec"><div class="sechd"><div><h2>Verkstadsbråket</h2><small>Bästa arkadpoäng</small></div></div>${rows.length?`<table><thead><tr><th class="rank">#</th><th>Spelare</th><th class="n">Poäng</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${user&&r.user_id===user.id?"me":""}"><td class="rank">${i+1}</td><td>${esc(r.name||"Okänd")}</td><td class="n">${r.score.toLocaleString("sv")}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">Ingen har satt något resultat här än.</div>'}</div>`;
+  return`<h1>Topplistor</h1>${gtabs}<p class="lead">De bästa spelarna i Harder Arcade. ${user?"":"Logga in för att själv hamna här."}</p>
   <div class="sec"><div class="sechd"><img src="/img/skjaldborg-jarl.webp" alt=""><div><h2>Skjaldborg</h2><small>${lbLevel==="total"?"Summan av bästa poäng i varje kapitel":"Bästa poäng i kapitlet"}</small></div></div>
   <div class="tabs"><button data-l="total" class="${lbLevel==="total"?"on":""}">Totalt</button>${SKJ_CH.map(([k],i)=>`<button data-l="${k}" class="${lbLevel===k?"on":""}">Kap ${i+1}</button>`).join("")}</div>
   ${rows.length?`<table><thead><tr><th class="rank">#</th><th>Spelare</th>${lbLevel==="total"?'<th class="n">Kapitel</th>':""}<th class="n">Poäng</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${user&&r.user_id===user.id?"me":""}"><td class="rank">${i+1}</td><td>${esc(r.name||"Okänd viking")}</td>${lbLevel==="total"?`<td class="n">${r.n}</td>`:""}<td class="n">${r.score.toLocaleString("sv")}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">Ingen har satt något resultat här än.</div>'}</div>`}
 async function route(){const r=(location.hash.replace(/^#\/?/,"")||"").split("/")[0];
   for(const a of document.querySelectorAll("#nav a,#mnav a"))a.classList.toggle("on",a.dataset.r===r);
-  const v=$("view");if(r==="profil"){v.innerHTML=await viewProfile()}else if(r==="topplista"){v.innerHTML=`<h1>Topplistor</h1><div class="empty">Hämtar…</div>`;v.innerHTML=await viewTop();v.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{lbLevel=b.dataset.l;route()})}else v.innerHTML=viewGames();
+  if(r==="konto"){history.replaceState(null,"","#/");setTimeout(()=>{if(sb)openAcc();else setTimeout(()=>openAcc(),1200)},50)}
+  const v=$("view");if(r==="profil"){v.innerHTML=await viewProfile()}else if(r==="topplista"){v.innerHTML=`<h1>Topplistor</h1><div class="empty">Hämtar…</div>`;v.innerHTML=await viewTop();v.querySelectorAll(".tabs button[data-l]").forEach(b=>b.onclick=()=>{lbLevel=b.dataset.l;route()});v.querySelectorAll("#gtabs button").forEach(b=>b.onclick=()=>{lbGame=b.dataset.g;route()})}else v.innerHTML=viewGames();
   window.scrollTo(0,0)}
 addEventListener("hashchange",route);addEventListener("pageshow",e=>{if(e.persisted)route()});
 route();initCloud();
