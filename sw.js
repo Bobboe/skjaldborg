@@ -1,7 +1,7 @@
-// Skjaldborg service worker: spelet fungerar offline efter första besöket.
-const C="skjaldborg-v96";
-const FILES=["./","index.html","manifest.webmanifest","icon-180.png","icon-192.png","icon-512.png"];
-self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)));self.skipWaiting()});
+// Harder Arcade service worker: nätverket först, cache som reserv (offline).
+const C="arcade-v1";
+const FILES=["/","/index.html","/skjaldborg/","/skjaldborg/index.html","/manifest.webmanifest","/icon-180.png","/icon-192.png","/icon-512.png","/img/skjaldborg-cover.webp","/img/skjaldborg-jarl.webp"];
+self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)).catch(()=>{}));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim()});
-self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;
-  e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match("index.html"))))});
+self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;
+  e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match(u.pathname.startsWith("/skjaldborg")?"/skjaldborg/index.html":"/index.html"))))});
