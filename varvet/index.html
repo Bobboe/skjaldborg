@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0f12">
+<title>Varvet</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+:root{--bg:#0d0f12;--panel:rgba(16,18,22,.86);--line:#2a2e35;--txt:#e9e6df;--mut:#9aa0a8;--acc:#ffc21a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hud{position:fixed;z-index:5;pointer-events:none}
+.btn{pointer-events:auto;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:10px 14px;font:600 14px system-ui;cursor:pointer}
+.btn:active{transform:scale(.96)}
+.btn.acc{background:var(--acc);color:#111;border-color:var(--acc)}
+#top{top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));display:flex;gap:8px}
+#back{top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left))}
+#perf{top:calc(max(10px,env(safe-area-inset-top)) + 52px);left:max(10px,env(safe-area-inset-left));background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:12px ui-monospace,Menlo,monospace;line-height:1.5;display:none;white-space:pre}
+#loc{top:max(16px,calc(env(safe-area-inset-top) + 6px));left:50%;transform:translateX(-50%);font:700 13px system-ui;letter-spacing:.08em;text-transform:uppercase;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);opacity:.9}
+#joy{position:fixed;z-index:6;width:120px;height:120px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18);display:none;pointer-events:none;transform:translate(-50%,-50%)}
+#knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,194,26,.85);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+#hint{bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-size:13px;color:var(--mut);text-align:center;transition:opacity .6s}
+#menu{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,rgba(13,15,18,.55),rgba(13,15,18,.92))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 24px;width:min(380px,calc(100vw - 32px));text-align:center;backdrop-filter:blur(6px)}
+.card h1{margin:0 0 4px;font-size:34px;letter-spacing:.04em}
+.card h1 span{color:var(--acc)}
+.card p{margin:6px 0 18px;color:var(--mut);font-size:14px;line-height:1.45}
+.row{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--mut);padding:8px 12px;font:600 13px system-ui}
+.seg button.on{background:var(--acc);color:#111}
+.lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-top:12px}
+#settings{display:none}
+#loading{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:var(--bg);font:600 15px system-ui;color:var(--mut)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="loading">Bygger skärgården…</div>
+<a id="back" class="hud btn" href="/">← Arcade</a>
+<div id="top" class="hud"><button class="btn" id="bPerf">FPS</button><button class="btn" id="bSet">⚙</button></div>
+<div id="perf" class="hud"></div>
+<div id="loc" class="hud">Varvsön</div>
+<div id="hint" class="hud">Vänster tumme: gå · Höger tumme: titta runt</div>
+<div id="joy"><div id="knob"></div></div>
+<div id="menu">
+  <div class="card" id="mainCard">
+    <h1>VAR<span>VET</span></h1>
+    <p>Du har ärvt ett förfallet båtvarv på en ö i Bohuslän.<br>Demo – steg 1: utforska ön.</p>
+    <button class="btn acc" id="bPlay" style="width:100%;padding:14px;font-size:16px">Spela</button>
+    <div class="row"><button class="btn" id="bSet2" style="flex:1">Inställningar</button></div>
+  </div>
+  <div class="card" id="settings">
+    <h1 style="font-size:24px">Inställningar</h1>
+    <div class="lbl">Grafik</div>
+    <div class="row"><div class="seg" id="sQ"><button data-v="0">Låg</button><button data-v="1">Medel</button><button data-v="2">Hög</button></div></div>
+    <div class="lbl">Bildfrekvens</div>
+    <div class="row"><div class="seg" id="sF"><button data-v="30">30 fps</button><button data-v="60">60 fps</button></div></div>
+    <div class="lbl">Prestandamätare</div>
+    <div class="row"><div class="seg" id="sP"><button data-v="0">Av</button><button data-v="1">På</button></div></div>
+    <button class="btn acc" id="bClose" style="width:100%;margin-top:14px">Klar</button>
+  </div>
+</div>
+<script type="module">
+import * as THREE from "./three.module.min.js";
+
+// ================= Inställningar =================
+const SET=Object.assign({q:1,fps:30,perf:0},(()=>{try{return JSON.parse(localStorage.getItem("varvet_set")||"{}")}catch(e){return{}}})());
+const saveSet=()=>{try{localStorage.setItem("varvet_set",JSON.stringify(SET))}catch(e){}};
+const QUAL=[{dpr:1,shadow:0,smap:0,trees:.6},{dpr:1.5,shadow:1,smap:1024,trees:1},{dpr:2,shadow:1,smap:2048,trees:1}];
+
+// ================= Brus =================
+function makeNoise(seed){const p=new Uint8Array(512);const r=mulberry(seed);const a=[...Array(256).keys()];for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}for(let i=0;i<512;i++)p[i]=a[i&255];
+  const G=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];const F2=.5*(Math.sqrt(3)-1),G2=(3-Math.sqrt(3))/6;
+  return(x,y)=>{const s=(x+y)*F2,i=Math.floor(x+s),j=Math.floor(y+s),t=(i+j)*G2,x0=x-(i-t),y0=y-(j-t);const i1=x0>y0?1:0,j1=1-i1;const x1=x0-i1+G2,y1=y0-j1+G2,x2=x0-1+2*G2,y2=y0-1+2*G2;const ii=i&255,jj=j&255;
+    const c=(gx,gy,xx,yy)=>{let tt=.5-xx*xx-yy*yy;if(tt<0)return 0;tt*=tt;const g=G[p[gx+p[gy]]&7];return tt*tt*(g[0]*xx+g[1]*yy)};
+    return 70*(c(ii,jj,x0,y0)+c(ii+i1,jj+j1,x1,y1)+c(ii+1,jj+1,x2,y2))}}
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const N1=makeNoise(7),N2=makeNoise(19),N3=makeNoise(31);
+const fbm=(x,y,o=4)=>{let a=0,f=1,s=.5;for(let i=0;i<o;i++){a+=s*N1(x*f,y*f);f*=2.03;s*=.5}return a};
+const clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,sstep=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t)};
+
+// ================= Världen (höjd i meter, havsyta = 0) =================
+const ISLANDS=[{x:0,z:0,rx:95,rz:72,peak:15},{x:175,z:-120,rx:46,rz:38,peak:9},{x:-160,z:140,rx:30,rz:26,peak:6},{x:120,z:150,rx:14,rz:12,peak:4}];
+const YARD={x:0,z:44,r:18,h:1.3};
+function rawH(x,z){let m=-1;for(const I of ISLANDS){const dx=(x-I.x)/I.rx,dz=(z-I.z)/I.rz;const wob=.18*fbm(x*.012+I.x,z*.012+I.z,3);const d=Math.sqrt(dx*dx+dz*dz)+wob;const v=(1-d)*(I.peak/6);m=Math.max(m,v)}
+  let h;if(m>0){const k=sstep(0,1.2,m);h=m*6*(.55+.45*k);h+=k*(fbm(x*.03,z*.03,4)*4.5+Math.abs(N2(x*.08,z*.08))*1.6)}else{h=m*9}
+  return h}
+function H(x,z){let h=rawH(x,z);
+  // plan varvsplan
+  const dy=Math.hypot(x-YARD.x,z-YARD.z);const w=1-sstep(YARD.r,YARD.r+10,dy);h=lerp(h,YARD.h+N3(x*.1,z*.1)*.15,w);
+  // slip ner i vattnet
+  if(Math.abs(x+12)<5&&z>YARD.z+8&&z<YARD.z+48){const k=1-sstep(3,5,Math.abs(x+12));const sh=lerp(YARD.h,-2.6,clamp((z-(YARD.z+10))/30,0,1));h=Math.min(h,lerp(h,sh,k))}
+  return h}
+
+// ================= Rendering =================
+const cv=document.getElementById("c");
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:"high-performance"});
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const SKY=new THREE.Color("#9fd0ea"),FOG=new THREE.Color("#bfdced");
+scene.fog=new THREE.Fog(FOG,90,420);
+const camera=new THREE.PerspectiveCamera(55,1,.3,900);
+
+// himmel
+{const g=new THREE.SphereGeometry(800,24,12);const m=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:new THREE.Color("#4f9ad6")},mid:{value:SKY},bot:{value:FOG}},
+  vertexShader:"varying vec3 vP;void main(){vP=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
+  fragmentShader:"uniform vec3 top,mid,bot;varying vec3 vP;void main(){float y=vP.y;vec3 c=y>0.?mix(mid,top,pow(clamp(y*1.6,0.,1.),.8)):bot;c=mix(bot,c,smoothstep(-.02,.12,y));gl_FragColor=vec4(c,1.);}"});
+  const s=new THREE.Mesh(g,m);s.renderOrder=-1;s.frustumCulled=false;scene.add(s);scene.userData.sky=s}
+
+const hemi=new THREE.HemisphereLight("#d9efff","#6b8a4a",1.15);scene.add(hemi);
+const sun=new THREE.DirectionalLight("#fff1d6",2.1);sun.position.set(60,90,40);scene.add(sun);scene.add(sun.target);
+sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;sun.shadow.camera.near=10;sun.shadow.camera.far=220;sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;
+
+// ================= Terräng =================
+const WS=460,SEG=230;const HG=new Float32Array((SEG+1)*(SEG+1));
+function sampleGrid(x,z){const fx=(x+WS/2)/WS*SEG,fz=(z+WS/2)/WS*SEG;if(fx<0||fz<0||fx>=SEG||fz>=SEG)return -9;const ix=fx|0,iz=fz|0,tx=fx-ix,tz=fz-iz;const a=HG[iz*(SEG+1)+ix],b=HG[iz*(SEG+1)+ix+1],c=HG[(iz+1)*(SEG+1)+ix],d=HG[(iz+1)*(SEG+1)+ix+1];
+  return tx+tz<1?a+(b-a)*tx+(c-a)*tz:d+(c-d)*(1-tx)+(b-d)*(1-tz)}
+function buildTerrain(){const g=new THREE.PlaneGeometry(WS,WS,SEG,SEG);g.rotateX(-Math.PI/2);const pos=g.attributes.position;const col=new Float32Array(pos.count*3);
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);const h=H(x,z);pos.setY(i,h);HG[i]=h}
+  g.computeVertexNormals();const nor=g.attributes.normal;
+  const cSand=new THREE.Color("#e8d6a6"),cGrass=new THREE.Color("#7fb35a"),cGrass2=new THREE.Color("#5f9a47"),cRock=new THREE.Color("#b49a92"),cRock2=new THREE.Color("#8d7c7a"),cSea=new THREE.Color("#7a8f86"),cYard=new THREE.Color("#a99a7f"),c=new THREE.Color();
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i),h=pos.getY(i),ny=nor.getY(i);const n=N3(x*.05,z*.05);
+    if(h<-.4)c.copy(cSea).lerp(cSand,clamp((h+3)/3,0,1));
+    else if(h<.9+n*.4)c.copy(cSand);
+    else{c.copy(cGrass).lerp(cGrass2,clamp(.5+n,0,1));const rock=clamp((.86-ny)*5+(h>9?.4:0)+N2(x*.04,z*.04)*.5,0,1);c.lerp(rock>.5?cRock:cRock2,sstep(.25,.6,rock))}
+    const dy=Math.hypot(x-YARD.x,z-YARD.z);if(dy<YARD.r+4&&h>.4)c.lerp(cYard,(1-sstep(YARD.r-10,YARD.r+2,dy))*.55*(.7+.3*N2(x*.15,z*.15)));
+    col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b}
+  g.setAttribute("color",new THREE.BufferAttribute(col,3));
+  const m=new THREE.MeshLambertMaterial({vertexColors:true});const mesh=new THREE.Mesh(g,m);mesh.receiveShadow=true;scene.add(mesh);return mesh}
+
+// höjdtextur för vattnet (djup, skum vid strand)
+function heightTex(){const R=256,d=new Uint8Array(R*R*4);for(let j=0;j<R;j++)for(let i=0;i<R;i++){const x=(i/(R-1)-.5)*WS,z=(j/(R-1)-.5)*WS;const h=sampleGrid(x,z);const v=clamp((h+8)/12,0,1);d[(j*R+i)*4]=v*255;d[(j*R+i)*4+3]=255}
+  const t=new THREE.DataTexture(d,R,R);t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearFilter;t.needsUpdate=true;return t}
+
+// ================= Vatten =================
+let water;
+function buildWater(){const g=new THREE.PlaneGeometry(1600,1600,120,120);g.rotateX(-Math.PI/2);
+  const m=new THREE.ShaderMaterial({transparent:true,fog:true,uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{t:{value:0},hT:{value:heightTex()},ws:{value:WS},deep:{value:new THREE.Color("#1e5f86")},shallow:{value:new THREE.Color("#3fb5b8")},foam:{value:new THREE.Color("#f4fbff")},sunDir:{value:new THREE.Vector3(.5,.75,.35).normalize()}}]),
+  vertexShader:`uniform float t;varying vec3 vW;varying float vWave;
+    #include <fog_pars_vertex>
+    void main(){vec3 p=position;float w=sin(p.x*.08+t*1.1)*.18+sin(p.z*.11-t*.9)*.14+sin((p.x+p.z)*.21+t*1.7)*.06;p.y+=w;vWave=w;vec4 wp=modelMatrix*vec4(p,1.);vW=wp.xyz;vec4 mvPosition=viewMatrix*wp;gl_Position=projectionMatrix*mvPosition;
+    #include <fog_vertex>
+    }`,
+  fragmentShader:`uniform float t,ws;uniform sampler2D hT;uniform vec3 deep,shallow,foam,sunDir;varying vec3 vW;varying float vWave;
+    #include <fog_pars_fragment>
+    void main(){vec2 uv=vW.xz/ws+.5;float h=-9.;if(uv.x>0.&&uv.y>0.&&uv.x<1.&&uv.y<1.)h=texture2D(hT,uv).r*12.-8.;float depth=max(0.,-h);
+      vec3 c=mix(shallow,deep,smoothstep(.3,7.,depth));
+      float rip=sin(vW.x*.9+t*2.)*sin(vW.z*.7-t*1.6)+sin((vW.x-vW.z)*.5+t*1.3)*.6;
+      float f=smoothstep(.9,0.,depth+rip*.12)*(.65+.35*sin(t*2.+vW.x*.4+vW.z*.3));
+      c=mix(c,foam,clamp(f,0.,1.)*.85);
+      vec3 V=normalize(cameraPosition-vW);vec3 N=normalize(vec3(-.08*cos(vW.x*.08+t*1.1)+rip*.03,1.,-.06*cos(vW.z*.11-t*.9)+rip*.03));
+      float fres=pow(1.-max(dot(V,N),0.),3.);c=mix(c,vec3(.78,.9,.97),fres*.55);
+      float sp=pow(max(dot(reflect(-sunDir,N),V),0.),90.);c+=sp*.9;
+      c+=vWave*.08;
+      gl_FragColor=vec4(c,mix(.82,.97,smoothstep(.2,3.,depth)));
+      #include <fog_fragment>
+    }`});
+  water=new THREE.Mesh(g,m);water.renderOrder=1;scene.add(water)}
+
+// ================= Hjälp: slå ihop geometrier med färg =================
+function colored(geo,color){const g=geo.index?geo.toNonIndexed():geo;const c=new THREE.Color(color),n=g.attributes.position.count,a=new Float32Array(n*3);for(let i=0;i<n;i++){a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b}g.setAttribute("color",new THREE.BufferAttribute(a,3));g.deleteAttribute("uv");return g}
+function merge(list){let n=0;for(const g of list)n+=g.attributes.position.count;const P=new Float32Array(n*3),Nn=new Float32Array(n*3),C=new Float32Array(n*3);let o=0;
+  for(const g of list){P.set(g.attributes.position.array,o*3);Nn.set(g.attributes.normal.array,o*3);C.set(g.attributes.color.array,o*3);o+=g.attributes.position.count}
+  const r=new THREE.BufferGeometry();r.setAttribute("position",new THREE.BufferAttribute(P,3));r.setAttribute("normal",new THREE.BufferAttribute(Nn,3));r.setAttribute("color",new THREE.BufferAttribute(C,3));r.computeBoundingSphere();return r}
+const tr=(g,x,y,z,ry=0,s=1)=>{g.scale(s,s,s);if(ry)g.rotateY(ry);g.translate(x,y,z);return g};
+const VC=new THREE.MeshLambertMaterial({vertexColors:true}),VCD=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+
+// ================= Natur: tallar, björkar, klippor (instansierade) =================
+const COLL=[];// cirkelkollisioner {x,z,r}
+function buildNature(q){const rnd=mulberry(42);
+  const pine=merge([colored(tr(new THREE.CylinderGeometry(.18,.28,2.4,7),0,1.2,0),"#7a5136"),
+    colored(tr(new THREE.ConeGeometry(1.7,2.6,9),0,2.6,0),"#2f6b3d"),colored(tr(new THREE.ConeGeometry(1.35,2.3,9),0,3.8,0),"#357a43"),colored(tr(new THREE.ConeGeometry(.95,1.9,9),0,4.9,0),"#3d8a4b")]);
+  const birch=merge([colored(tr(new THREE.CylinderGeometry(.13,.18,3.2,6),0,1.6,0),"#efece4"),
+    colored(tr(new THREE.IcosahedronGeometry(1.5,1),0,3.9,0),"#8cc35b"),colored(tr(new THREE.IcosahedronGeometry(1.1,1),.7,4.6,.3),"#9bcf66")]);
+  const rockG=(()=>{const g=new THREE.IcosahedronGeometry(1,2);const p=g.attributes.position;for(let i=0;i<p.count;i++){const v=new THREE.Vector3().fromBufferAttribute(p,i);const k=1+.22*N2(v.x*1.7+3,v.z*1.7+v.y);v.multiplyScalar(k);v.y*=.62;p.setXYZ(i,v.x,v.y,v.z)}g.computeVertexNormals();return merge([colored(g,"#b8a29a")])})();
+  const place=(cnt,ok)=>{const out=[];let tries=0;while(out.length<cnt&&tries<cnt*30){tries++;const x=(rnd()-.5)*WS*.9,z=(rnd()-.5)*WS*.9;const h=H(x,z);if(!ok(x,z,h))continue;if(Math.hypot(x-YARD.x,z-YARD.z)<YARD.r+6)continue;if(COLL.some(c=>Math.hypot(c.x-x,c.z-z)<c.r+1.2))continue;out.push({x,z,h})}return out};
+  const slope=(x,z)=>{const e=1.5;return Math.hypot(H(x+e,z)-H(x-e,z),H(x,z+e)-H(x,z-e))/(2*e)};
+  const pines=place(Math.round(260*q.trees),(x,z,h)=>h>2.2&&slope(x,z)<.55&&fbm(x*.02,z*.02,2)>-.15);
+  for(const p of pines)COLL.push({x:p.x,z:p.z,r:.45});
+  const birches=place(Math.round(70*q.trees),(x,z,h)=>h>1.6&&h<7&&slope(x,z)<.4);
+  for(const p of birches)COLL.push({x:p.x,z:p.z,r:.35});
+  const rocks=place(140,(x,z,h)=>h>-.8&&h<9);
+  const mk=(geo,list,scaleF,cast)=>{const m=new THREE.InstancedMesh(geo,VC,list.length);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
+    list.forEach((p,i)=>{const s=scaleF();E.set(0,rnd()*6.28,0);Q.setFromEuler(E);S.set(s,s*(.85+rnd()*.3),s);T.set(p.x,p.h-.15,p.z);M.compose(T,Q,S);m.setMatrixAt(i,M)});m.castShadow=cast;m.receiveShadow=true;scene.add(m);return m};
+  mk(pine,pines,()=>.8+rnd()*.7,true);mk(birch,birches,()=>.8+rnd()*.5,true);
+  const rm=mk(rockG,rocks,()=>.6+rnd()*1.8,true);
+  rocks.forEach(p=>COLL.push({x:p.x,z:p.z,r:.7}));
+  // gräsruggar: små platta kluster
+  const grass=merge([colored(tr(new THREE.ConeGeometry(.12,.5,4),0,.25,0),"#6da64e"),colored(tr(new THREE.ConeGeometry(.1,.4,4),.15,.2,.08),"#7bb558"),colored(tr(new THREE.ConeGeometry(.1,.45,4),-.12,.22,-.1),"#5e9a45")]);
+  const gl=place(Math.round(700*q.trees),(x,z,h)=>h>1.2&&slope(x,z)<.35);COLL.length-=0;
+  const gm=new THREE.InstancedMesh(grass,VC,gl.length);const M=new THREE.Matrix4();gl.forEach((p,i)=>{M.makeRotationY(rnd()*6);M.setPosition(p.x,p.h,p.z);gm.setMatrixAt(i,M)});scene.add(gm)}
+
+// ================= Varvet =================
+const BOXES=[];// AABB-kollisioner {x0,x1,z0,z1}
+let bobBoat;
+function buildYard(){const parts=[];const Y=YARD.h;
+  // Faluröd verkstadsbod med vita knutar och sadeltak
+  const W=12,D=9,Hh=4.2,bx=4,bz=34;
+  parts.push(colored(tr(new THREE.BoxGeometry(W,Hh,D),bx,Y+Hh/2,bz),"#b8392b"));
+  for(const sx of[-1,1])for(const sz of[-1,1])parts.push(colored(tr(new THREE.BoxGeometry(.3,Hh,.3),bx+sx*W/2,Y+Hh/2,bz+sz*D/2),"#f2efe8"));
+  parts.push(...gable(bx,Y+Hh,bz,W,D,2.3,"#3b3f45","#b8392b"));
+  parts.push(colored(tr(new THREE.BoxGeometry(4.6,3.4,.2),bx,Y+1.7,bz+D/2+.05),"#6e1f17"));
+  parts.push(colored(tr(new THREE.BoxGeometry(4.9,.22,.3),bx,Y+3.5,bz+D/2+.1),"#f2efe8"));
+  for(const wx of[-4,4])parts.push(colored(tr(new THREE.BoxGeometry(1.3,1.1,.15),bx+wx,Y+2.4,bz+D/2+.04),"#cfe6f2"),colored(tr(new THREE.BoxGeometry(1.5,.12,.25),bx+wx,Y+1.8,bz+D/2+.08),"#f2efe8"));
+  BOXES.push({x0:bx-W/2-.3,x1:bx+W/2+.3,z0:bz-D/2-.3,z1:bz+D/2+.3});
+  // brygga
+  const jx=14,jz0=58,jz1=90;parts.push(colored(tr(new THREE.BoxGeometry(3.2,.3,jz1-jz0),jx,1.3,(jz0+jz1)/2),"#9a7a55"));
+  for(let z=jz0+1;z<jz1;z+=3)for(const s of[-1.4,1.4])parts.push(colored(tr(new THREE.CylinderGeometry(.16,.16,4.5,6),jx+s,-1.2,z),"#5e4630"));
+  parts.push(colored(tr(new THREE.BoxGeometry(8,.3,3),jx,1.3,jz1+1.2),"#9a7a55"));
+  // slip med räls och båt på vagn
+  {const z0=YARD.z+10,z1=YARD.z+40,y0=YARD.h+.12,y1=-2.48,len=Math.hypot(z1-z0,y0-y1),ang=Math.atan2(y0-y1,z1-z0);
+   for(const s of[-1,1]){const r=new THREE.BoxGeometry(.25,.25,len);r.rotateX(ang);r.translate(-12+s*1.3,(y0+y1)/2,(z0+z1)/2);parts.push(colored(r,"#5b5f66"))}}
+  // gammal båt på bockar på planen
+  const yb=new THREE.Mesh(boatGeo("#e9e4d8","#2f5d8a"),VCD);yb.position.set(-6,Y+1.15,47);yb.rotation.y=.4;yb.castShadow=true;scene.add(yb);
+  for(const s of[-1.2,1.2])parts.push(colored(tr(new THREE.BoxGeometry(.3,1,2.6),-6+s*.4,Y+.5,47+s*1.1),"#6b5137"));
+  BOXES.push({x0:-9.5,x1:-2.5,z0:44,z1:50});
+  // virkesstapel, tunnor, båtar på land
+  for(let i=0;i<5;i++)parts.push(colored(tr(new THREE.BoxGeometry(3.6,.22,.4),-13,Y+.12+i*.24,36+i*.05),i%2?"#c49a66":"#b88b58"));
+  BOXES.push({x0:-15,x1:-11,z0:35,z1:37.5});
+  for(let i=0;i<3;i++)parts.push(colored(tr(new THREE.CylinderGeometry(.42,.42,1.05,10),12+i*.95,Y+.52,40),i==1?"#2f5d8a":"#a33a2a"));
+  BOXES.push({x0:11.4,x1:14.8,z0:39.4,z1:40.6});
+  // flaggstång
+  parts.push(colored(tr(new THREE.CylinderGeometry(.07,.09,9,6),-3,Y+4.5,56),"#f2efe8"));
+  COLL.push({x:-3,z:56,r:.3});
+  const m=new THREE.Mesh(merge(parts),VC);m.castShadow=true;m.receiveShadow=true;scene.add(m);
+  // svensk flagga
+  const fl=new THREE.Group();fl.add(new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.5),new THREE.MeshLambertMaterial({color:"#1f5aa6",side:THREE.DoubleSide})));
+  const y1=new THREE.Mesh(new THREE.PlaneGeometry(2.4,.3),new THREE.MeshLambertMaterial({color:"#f3c316",side:THREE.DoubleSide}));y1.position.z=.01;fl.add(y1);
+  const y2=new THREE.Mesh(new THREE.PlaneGeometry(.3,1.5),new THREE.MeshLambertMaterial({color:"#f3c316",side:THREE.DoubleSide}));y2.position.set(-.3,0,.01);fl.add(y2);
+  fl.position.set(-1.8,Y+8.1,56);scene.add(fl);scene.userData.flag=fl;
+  // båt som guppar vid bryggan
+  bobBoat=new THREE.Mesh(boatGeo("#f4f1ea","#a33a2a"),VCD);bobBoat.position.set(jx-3.6,.15,80);bobBoat.rotation.y=Math.PI/2;bobBoat.castShadow=true;scene.add(bobBoat);
+  // stuga på grannön
+  const c=[];const I=ISLANDS[1],hx=I.x-8,hz=I.z+10,hy=H(hx,hz);c.push(colored(tr(new THREE.BoxGeometry(6,3,5),hx,hy+1.5,hz),"#b8392b"));c.push(...gable(hx,hy+3,hz,6,5,1.7,"#3b3f45","#b8392b"));
+  const cm=new THREE.Mesh(merge(c),VC);cm.castShadow=true;scene.add(cm);BOXES.push({x0:hx-3.3,x1:hx+3.3,z0:hz-2.8,z1:hz+2.8});
+  // fyrlykta på den lilla ön
+  const L=ISLANDS[3],ly=H(L.x,L.z);const lt=merge([colored(tr(new THREE.CylinderGeometry(.9,1.2,6,10),L.x,ly+3,L.z),"#f2efe8"),colored(tr(new THREE.CylinderGeometry(1.25,1.25,1.2,10),L.x,ly+2,L.z),"#c0392b"),colored(tr(new THREE.CylinderGeometry(.7,.7,1,8),L.x,ly+6.5,L.z),"#ffe9a0"),colored(tr(new THREE.ConeGeometry(1,1.2,10),L.x,ly+7.6,L.z),"#c0392b")]);
+  const lm=new THREE.Mesh(lt,VC);lm.castShadow=true;scene.add(lm)}
+// sadeltak: två lutande takskivor + gavelspetsar
+function gable(x,y,z,W,D,rise,cRoof,cWall){const half=D/2+.45,len=Math.hypot(half,rise)+.1,ang=Math.atan2(rise,half),out=[];
+  for(const s of[-1,1]){const b=new THREE.BoxGeometry(W+.8,.18,len);b.rotateX(s*ang);b.translate(x,y+rise/2+.05,z+s*half/2);out.push(colored(b,cRoof))}
+  const sh=new THREE.Shape();sh.moveTo(-D/2,0);sh.lineTo(D/2,0);sh.lineTo(0,rise);sh.closePath();
+  for(const s of[-1,1]){const g=new THREE.ExtrudeGeometry(sh,{depth:.15,bevelEnabled:false});g.rotateY(Math.PI/2);g.translate(x+s*W/2-(s>0?.15:0),y,z);out.push(colored(g,cWall))}
+  return out}
+function boatGeo(c1,c2){// enkel snipa: halv ellipsoid + list
+  const g=new THREE.SphereGeometry(1,16,8,0,Math.PI*2,Math.PI/2,Math.PI/2);g.scale(1.25,.85,3.2);const p=g.attributes.position;for(let i=0;i<p.count;i++){const z=p.getZ(i);if(z>0)p.setX(i,p.getX(i)*(1-z/3.2*.75))}g.computeVertexNormals();
+  const top=new THREE.TorusGeometry(1,.07,5,24);top.rotateX(Math.PI/2);top.scale(1.25,1,3.2);const tp=top.attributes.position;for(let i=0;i<tp.count;i++){const z=tp.getZ(i);if(z>0)tp.setX(i,tp.getX(i)*(1-z/3.2*.75))}
+  const seat=new THREE.BoxGeometry(2.1,.1,.5);seat.translate(0,-.25,0);
+  return merge([colored(g,c1),colored(top,c2),colored(seat,"#9a7a55")])}
+
+// ================= Spelaren =================
+const player={pos:new THREE.Vector3(2,0,50),vel:new THREE.Vector3(),yaw:0,walk:0,speed:0,grounded:true,vy:0};
+const P=new THREE.Group();scene.add(P);
+const limb={};
+{const skin="#f1c7a4",shirt="#2f5d8a",pants="#3b3f45",cap="#ffc21a";const M=c=>new THREE.MeshLambertMaterial({color:c});
+  const body=new THREE.Mesh(new THREE.CapsuleGeometry(.36,.55,4,10),M(shirt));body.position.y=1.12;P.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.3,16,12),M(skin));head.position.y=1.82;P.add(head);
+  const capm=new THREE.Mesh(new THREE.SphereGeometry(.31,14,8,0,Math.PI*2,0,Math.PI/2),M(cap));capm.position.y=1.86;P.add(capm);
+  const brim=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.04,12),M(cap));brim.scale.set(1,1,.9);brim.position.set(0,1.88,.28);P.add(brim);
+  for(const s of[-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),M("#2a2a2a"));eye.position.set(s*.11,1.84,.27);P.add(eye)}
+  const beard=new THREE.Mesh(new THREE.SphereGeometry(.22,12,8,0,Math.PI*2,Math.PI*.45,Math.PI*.55),M("#8a4a2a"));beard.position.set(0,1.78,.1);P.add(beard);
+  const mk=(name,len,rad,col,x,y)=>{const piv=new THREE.Group();piv.position.set(x,y,0);const m=new THREE.Mesh(new THREE.CapsuleGeometry(rad,len,3,8),M(col));m.position.y=-len/2-rad*.5;piv.add(m);P.add(piv);limb[name]=piv};
+  mk("la",.42,.11,shirt,-.46,1.42);mk("ra",.42,.11,shirt,.46,1.42);mk("ll",.5,.14,pants,-.17,.72);mk("rl",.5,.14,pants,.17,.72);
+  P.traverse(o=>{if(o.isMesh)o.castShadow=true})}
+
+// ================= Inmatning =================
+const input={mx:0,mz:0,keys:{}};const camS={yaw:Math.PI,pitch:.38,dist:8.5,tYaw:Math.PI,tPitch:.38};
+const joy=document.getElementById("joy"),knob=document.getElementById("knob");let joyId=null,joyO={x:0,y:0},lookId=null,lookP={x:0,y:0};
+const R=60;
+cv.addEventListener("pointerdown",e=>{if(e.clientX<innerWidth*.45&&joyId===null){joyId=e.pointerId;joyO={x:e.clientX,y:e.clientY};joy.style.display="block";joy.style.left=e.clientX+"px";joy.style.top=e.clientY+"px";knob.style.transform="";hideHint()}
+  else if(lookId===null){lookId=e.pointerId;lookP={x:e.clientX,y:e.clientY};hideHint()}cv.setPointerCapture(e.pointerId)});
+cv.addEventListener("pointermove",e=>{if(e.pointerId===joyId){let dx=e.clientX-joyO.x,dy=e.clientY-joyO.y;const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}knob.style.transform=`translate(${dx}px,${dy}px)`;input.mx=dx/R;input.mz=dy/R}
+  else if(e.pointerId===lookId){const dx=e.clientX-lookP.x,dy=e.clientY-lookP.y;lookP={x:e.clientX,y:e.clientY};camS.tYaw-=dx*.006;camS.tPitch=clamp(camS.tPitch+dy*.004,.08,1.25)}});
+const endP=e=>{if(e.pointerId===joyId){joyId=null;input.mx=input.mz=0;joy.style.display="none"}if(e.pointerId===lookId)lookId=null};
+cv.addEventListener("pointerup",endP);cv.addEventListener("pointercancel",endP);
+cv.addEventListener("wheel",e=>{camS.dist=clamp(camS.dist+e.deltaY*.01,4,18)},{passive:true});
+addEventListener("keydown",e=>{input.keys[e.code]=1;hideHint()});addEventListener("keyup",e=>{input.keys[e.code]=0});
+let hintT=0;function hideHint(){if(hintT)return;hintT=1;setTimeout(()=>document.getElementById("hint").style.opacity=0,2500)}
+
+// ================= Uppdatering =================
+const UP=new THREE.Vector3(0,1,0),tmp=new THREE.Vector3();
+function walkable(x,z){if(sampleGrid(x,z)<-.55)return false;for(const b of BOXES)if(x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1)return false;return true}
+// bryggan och dess ände är gångbara över vatten
+function onJetty(x,z){return(Math.abs(x-14)<1.6&&z>57&&z<91)||(Math.abs(x-14)<4&&z>89&&z<92.5)}
+function groundAt(x,z){const g=sampleGrid(x,z);return onJetty(x,z)?Math.max(g,1.45):g}
+function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.ArrowUp)mz=-1;if(k.KeyS||k.ArrowDown)mz=1;if(k.KeyA||k.ArrowLeft)mx=-1;if(k.KeyD||k.ArrowRight)mx=1;
+  if(k.KeyQ)camS.tYaw+=dt*1.8;if(k.KeyE)camS.tYaw-=dt*1.8;
+  const mag=Math.min(1,Math.hypot(mx,mz));const run=mag>.85||k.ShiftLeft;const sp=(run?6.2:3.4)*mag;
+  if(mag>.08){const F=-mz/Math.max(mag,1e-3),Rt=mx/Math.max(mag,1e-3),cy_=Math.cos(camS.yaw),sy_=Math.sin(camS.yaw);const vx=sy_*F-cy_*Rt,vz=cy_*F+sy_*Rt;const a=Math.atan2(vx,vz);const tx=Math.sin(a)*sp,tz=Math.cos(a)*sp;
+    const dyaw=Math.atan2(Math.sin(a-player.yaw),Math.cos(a-player.yaw));player.yaw+=dyaw*Math.min(1,dt*12);
+    const nx=player.pos.x+tx*dt,nz=player.pos.z+tz*dt;
+    const ok=(x,z)=>(walkable(x,z)||onJetty(x,z))&&!COLL.some(c=>Math.abs(c.x-x)<c.r+.35&&Math.abs(c.z-z)<c.r+.35&&Math.hypot(c.x-x,c.z-z)<c.r+.35)&&(groundAt(x,z)-groundAt(player.pos.x,player.pos.z))<.9*Math.max(dt*sp,.05)+.35;
+    if(ok(nx,nz)){player.pos.x=nx;player.pos.z=nz}else if(ok(nx,player.pos.z))player.pos.x=nx;else if(ok(player.pos.x,nz))player.pos.z=nz;
+    player.speed=sp}else player.speed=0;
+  const g=groundAt(player.pos.x,player.pos.z);player.pos.y+=(g-player.pos.y)*Math.min(1,dt*18);
+  player.walk+=dt*player.speed*2.1;const sw=Math.sin(player.walk)*Math.min(1,player.speed/3)*.75;
+  limb.la.rotation.x=sw;limb.ra.rotation.x=-sw;limb.ll.rotation.x=-sw;limb.rl.rotation.x=sw;
+  P.position.copy(player.pos);P.position.y+=Math.abs(Math.cos(player.walk))*.06*Math.min(1,player.speed/3);P.rotation.y=player.yaw;
+  // kamera
+  camS.yaw+=(camS.tYaw-camS.yaw)*Math.min(1,dt*10);camS.pitch+=(camS.tPitch-camS.pitch)*Math.min(1,dt*10);
+  const tgt=tmp.set(player.pos.x,player.pos.y+1.5,player.pos.z);let d=camS.dist;
+  const cx=()=>tgt.x-Math.sin(camS.yaw)*Math.cos(camS.pitch)*d,cz=()=>tgt.z-Math.cos(camS.yaw)*Math.cos(camS.pitch)*d,cy=()=>tgt.y+Math.sin(camS.pitch)*d;
+  for(let i=0;i<6;i++){const gy=Math.max(sampleGrid(cx(),cz()),0)+.6;if(cy()>gy)break;d*=.82}
+  camera.position.set(cx(),Math.max(cy(),Math.max(sampleGrid(cx(),cz()),.3)+.6),cz());camera.lookAt(tgt);
+  // sol och skugga följer spelaren
+  sun.position.set(player.pos.x+60,player.pos.y+90,player.pos.z+40);sun.target.position.copy(player.pos);
+  scene.userData.sky.position.copy(camera.position);
+  // plats-text
+  const L=locName(player.pos.x,player.pos.z);if(L!==curLoc){curLoc=L;document.getElementById("loc").textContent=L}}
+let curLoc="";
+function locName(x,z){if(Math.hypot(x-YARD.x,z-YARD.z)<YARD.r+8||onJetty(x,z))return"Varvet";if(Math.hypot(x-ISLANDS[1].x,z-ISLANDS[1].z)<60)return"Grannön";return"Varvsön"}
+
+// ================= Kvalitet, storlek, prestanda =================
+let Q;function applyQuality(){Q=QUAL[SET.q];const dpr=Math.min(devicePixelRatio||1,Q.dpr);renderer.setPixelRatio(dpr);renderer.shadowMap.enabled=!!Q.shadow;sun.castShadow=!!Q.shadow;
+  if(Q.shadow){sun.shadow.mapSize.set(Q.smap,Q.smap);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
+  scene.traverse(o=>{if(o.material&&o.material.needsUpdate!==undefined)o.material.needsUpdate=true});resize()}
+function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.fov=innerWidth<innerHeight?68:55;camera.updateProjectionMatrix()}
+addEventListener("resize",resize);
+const perfEl=document.getElementById("perf");let fT=0,fN=0,fAcc=0,fpsShow=0,msShow=0,cpuAcc=0;
+function perfTick(dt,cpu){fN++;fAcc+=dt;cpuAcc+=cpu;if(fAcc>=.5){fpsShow=fN/fAcc;msShow=cpuAcc/fN;fN=0;fAcc=0;cpuAcc=0;
+  if(SET.perf){const i=renderer.info;perfEl.textContent=`FPS   ${fpsShow.toFixed(0)} / ${SET.fps}\nCPU   ${msShow.toFixed(1)} ms\nAnrop ${i.render.calls}\nTrian ${(i.render.triangles/1000).toFixed(0)}k\nDPR   ${renderer.getPixelRatio()}\nKval  ${["Låg","Medel","Hög"][SET.q]}`}}}
+
+// ================= Loop =================
+let last=performance.now(),acc=0,running=false;
+function frame(now){requestAnimationFrame(frame);const minDt=1000/SET.fps-1.5;const el=now-last;if(el<minDt)return;const dt=Math.min(.05,el/1000);last=now;
+  const t0=performance.now();if(running)update(dt);
+  const t=now/1000;water.material.uniforms.t.value=t;if(bobBoat){bobBoat.position.y=.5+Math.sin(t*1.3)*.08;bobBoat.rotation.z=Math.sin(t*1.1)*.04}
+  const fl=scene.userData.flag;if(fl)fl.rotation.y=Math.sin(t*1.7)*.25;
+  if(!running){camS.tYaw+=dt*.08;camS.yaw=camS.tYaw;const r=60,cx=Math.sin(t*.05)*r,cz=50+Math.cos(t*.05)*r;camera.position.set(cx,22,cz);camera.lookAt(0,2,36);scene.userData.sky.position.copy(camera.position)}
+  renderer.render(scene,camera);perfTick(dt,performance.now()-t0)}
+
+// ================= Meny =================
+const $=id=>document.getElementById(id);
+function segInit(id,key,cb){const el=$(id);const upd=()=>el.querySelectorAll("button").forEach(b=>b.classList.toggle("on",+b.dataset.v===SET[key]));el.querySelectorAll("button").forEach(b=>b.onclick=()=>{SET[key]=+b.dataset.v;saveSet();upd();cb&&cb()});upd()}
+segInit("sQ","q",applyQuality);segInit("sF","fps");segInit("sP","perf",()=>perfEl.style.display=SET.perf?"block":"none");
+perfEl.style.display=SET.perf?"block":"none";
+const openSet=()=>{$("menu").style.display="flex";$("mainCard").style.display="none";$("settings").style.display="block"};
+$("bSet").onclick=openSet;$("bSet2").onclick=openSet;
+$("bClose").onclick=()=>{$("settings").style.display="none";if(running)$("menu").style.display="none";else $("mainCard").style.display="block"};
+$("bPerf").onclick=()=>{SET.perf=SET.perf?0:1;saveSet();perfEl.style.display=SET.perf?"block":"none";segInit("sP","perf")};
+$("bPlay").onclick=()=>{running=true;$("menu").style.display="none";camS.yaw=camS.tYaw=player.yaw;
+  try{if(document.documentElement.requestFullscreen&&innerWidth<900)document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}};
+
+// ================= Start =================
+function boot(){Q=QUAL[SET.q];buildTerrain();buildWater();buildYard();buildNature(Q);player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
+window.VARVET={player,camS,input,SET,renderer,scene,update,start:()=>$("bPlay").onclick()};
+setTimeout(boot,30);
+</script>
+<script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script></body>
+</html>

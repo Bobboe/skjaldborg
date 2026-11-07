@@ -131,7 +131,9 @@ const GAMES=[
   desc:"Försvara byn mot Ulvklanen i tre år. Bygg torn, led din jarl och hird i strid och fatta val som formar berättelsen.",
   levels:SKJ_CH},
  {id:"verkstad",name:"Verkstadsbråket",url:"/verkstadsbraket/",cover:"/img/verkstad-cover.webp",genre:"Fighting · EBO-personal",locked:true,
-  desc:"EBO-personalen gör upp i verkstaden. Arkadstege mot datorn eller två spelare på samma tangentbord."}
+  desc:"EBO-personalen gör upp i verkstaden. Arkadstege mot datorn eller två spelare på samma tangentbord."},
+ {id:"varvet",name:"Varvet",url:"/varvet/",cover:"/img/varvet-cover.webp",genre:"3D · Bygg & story · Demo",simple:true,
+  desc:"Du har ärvt ett förfallet båtvarv på en ö i Bohuslän. Utforska skärgården, bygg upp varvet och ta jobb från öborna."}
 ];
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 function skjLocal(){const stars={};for(const[k]of SKJ_CH){const v=+lsGet("skj_"+k)||0;if(v)stars[k]=v}
@@ -169,7 +171,7 @@ $("accOutBtn").onclick=async()=>{await sb.auth.signOut();user=null;profile=null;
 const starStr=n=>`<span class="st">${"★".repeat(n)}<span class="o">${"★".repeat(3-n)}</span></span>`;
 function viewGames(){const S=skjStats();const pct=Math.round(S.done/SKJ_CH.length*100);const cont=S.save&&S.save.ch!=null;
   return`<h1>Välkommen${user?", "+esc(displayName()):""}</h1><p class="lead">Välj ett spel. ${user?"Dina framsteg sparas i ditt konto.":"Logga in för att spara framsteg i molnet och synas på topplistorna."}</p>
-  <div class="grid">${GAMES.map(g=>g.id==="verkstad"?vbCard(g):g.soon?`<div class="card game soon"><div class="cov"><span>?</span><div class="tag">${esc(g.genre)}</div></div><div class="body"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p><div class="act"><button class="btn ghost" disabled>Kommer snart</button></div></div></div>`:
+  <div class="grid">${GAMES.map(g=>g.id==="verkstad"?vbCard(g):g.simple?`<div class="card game"><div class="cov" style="background-image:url(${g.cover})"><div class="tag">${esc(g.genre)}</div></div><div class="body"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p><div class="act"><a class="btn" href="${g.url}">Spela demo</a></div></div></div>`:g.soon?`<div class="card game soon"><div class="cov"><span>?</span><div class="tag">${esc(g.genre)}</div></div><div class="body"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p><div class="act"><button class="btn ghost" disabled>Kommer snart</button></div></div></div>`:
    `<div class="card game"><div class="cov" style="background-image:url(${g.cover})"><div class="tag">${esc(g.genre)}</div></div><div class="body"><h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p>
     <div class="prog"><span><b>${S.done}/${SKJ_CH.length}</b> kapitel</span><span><b>${S.tot}/${S.max}</b> stjärnor</span>${cont?`<span>Nu: <b>kap ${S.save.ch+1}</b></span>`:""}</div><div class="pbar"><i style="width:${pct}%"></i></div>
     <div class="act"><a class="btn" href="${g.url}">${cont?"Fortsätt":"Spela"}</a><a class="btn ghost" href="#/profil">Statistik</a></div></div></div>`).join("")}</div>`}
