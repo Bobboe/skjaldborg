@@ -34,6 +34,13 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .seg button.on{background:var(--acc);color:#111}
 .lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-top:12px}
 #settings{display:none}
+#dlg{position:fixed;z-index:12;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(560px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--acc);border-radius:16px;padding:14px 16px;display:none;backdrop-filter:blur(6px)}
+#dlgWho{color:var(--acc);font:800 13px system-ui;text-transform:uppercase;letter-spacing:.08em}#dlgTxt{font-size:16px;line-height:1.45;margin-top:4px}
+#game{position:fixed;inset:0;z-index:15;background:#0d0f12;display:none;flex-direction:column;padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+.gtop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}#gTitle{font:800 18px system-ui;color:var(--acc)}#gHelp{font-size:13px;color:var(--mut)}
+#gcv{flex:1;width:100%;min-height:0;border-radius:12px;touch-action:none}.gbar{height:10px;background:#1d2026;border-radius:6px;margin-top:8px;overflow:hidden}.gbar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+#compass{top:calc(max(10px,env(safe-area-inset-top)) + 34px);left:50%;transform:translateX(-50%);display:none;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--acc);border-radius:20px;padding:4px 12px;font:700 13px system-ui}#cArrow{color:var(--acc);font-size:20px;transition:transform .1s}
+#fade{position:fixed;inset:0;z-index:25;background:#0d0f12;opacity:0;pointer-events:none;transition:opacity .45s}
 #res{top:max(10px,env(safe-area-inset-top));left:calc(max(10px,env(safe-area-inset-left)) + 112px);display:flex;gap:8px}
 #res span{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:700 14px system-ui}
 #obj{top:calc(max(10px,env(safe-area-inset-top)) + 52px);right:max(10px,env(safe-area-inset-right));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12.5px;line-height:1.6;color:var(--mut);max-width:220px}
@@ -64,6 +71,10 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="acts" class="hud"><button class="btn" id="bBuild">Bygg</button><button class="btn acc" id="bAct" style="display:none">Plocka</button></div>
 <div id="bWhy" class="hud"></div>
 <div id="bar" class="hud"></div>
+<div id="dlg"><div id="dlgWho"></div><div id="dlgTxt"></div><div class="row" style="justify-content:flex-end;margin:10px 0 0"><button class="btn" id="dlgNo">Inte nu</button><button class="btn acc" id="dlgNext">Fortsätt</button></div></div>
+<div id="game"><div class="gtop"><div><div id="gTitle"></div><div id="gHelp"></div></div><button class="btn" id="gX">Avbryt</button></div><canvas id="gcv"></canvas><div class="gbar"><i id="gBar"></i></div></div>
+<div id="fade"></div>
+<div id="compass" class="hud"><div id="cArrow">➤</div><span id="cDist"></span></div>
 <div id="menu">
   <div class="card" id="mainCard">
     <h1>VAR<span>VET</span></h1>
@@ -225,7 +236,7 @@ function buildYard(){const parts=[];const Y=YARD.h;
   parts.push(colored(tr(new THREE.BoxGeometry(4.6,3.4,.2),bx,Y+1.7,bz+D/2+.05),"#6e1f17"));
   parts.push(colored(tr(new THREE.BoxGeometry(4.9,.22,.3),bx,Y+3.5,bz+D/2+.1),"#f2efe8"));
   for(const wx of[-4,4])parts.push(colored(tr(new THREE.BoxGeometry(1.3,1.1,.15),bx+wx,Y+2.4,bz+D/2+.04),"#cfe6f2"),colored(tr(new THREE.BoxGeometry(1.5,.12,.25),bx+wx,Y+1.8,bz+D/2+.08),"#f2efe8"));
-  BOXES.push({x0:bx-W/2-.3,x1:bx+W/2+.3,z0:bz-D/2-.3,z1:bz+D/2+.3});
+  BOXES.push({x0:bx-W/2-.3,x1:bx+W/2+.3,z0:bz-D/2-.3,z1:bz+D/2+.3,top:Y+7});
   // brygga
   const jx=14,jz0=58,jz1=90;parts.push(colored(tr(new THREE.BoxGeometry(3.2,.3,jz1-jz0),jx,1.3,(jz0+jz1)/2),"#9a7a55"));
   for(let z=jz0+1;z<jz1;z+=3)for(const s of[-1.4,1.4])parts.push(colored(tr(new THREE.CylinderGeometry(.16,.16,4.5,6),jx+s,-1.2,z),"#5e4630"));
@@ -236,12 +247,12 @@ function buildYard(){const parts=[];const Y=YARD.h;
   // gammal båt på bockar på planen
   const yb=new THREE.Mesh(boatGeo("#e9e4d8","#2f5d8a"),VCD);yb.position.set(-6,Y+1.15,47);yb.rotation.y=.4;yb.castShadow=true;scene.add(yb);
   for(const s of[-1.2,1.2])parts.push(colored(tr(new THREE.BoxGeometry(.3,1,2.6),-6+s*.4,Y+.5,47+s*1.1),"#6b5137"));
-  BOXES.push({x0:-9.5,x1:-2.5,z0:44,z1:50});
+  BOXES.push({x0:-9.5,x1:-2.5,z0:44,z1:50,top:Y+2});
   // virkesstapel, tunnor, båtar på land
   for(let i=0;i<5;i++)parts.push(colored(tr(new THREE.BoxGeometry(3.6,.22,.4),-13,Y+.12+i*.24,36+i*.05),i%2?"#c49a66":"#b88b58"));
-  BOXES.push({x0:-15,x1:-11,z0:35,z1:37.5});
+  BOXES.push({x0:-15,x1:-11,z0:35,z1:37.5,top:Y+1.4});
   for(let i=0;i<3;i++)parts.push(colored(tr(new THREE.CylinderGeometry(.42,.42,1.05,10),12+i*.95,Y+.52,40),i==1?"#2f5d8a":"#a33a2a"));
-  BOXES.push({x0:11.4,x1:14.8,z0:39.4,z1:40.6});
+  BOXES.push({x0:11.4,x1:14.8,z0:39.4,z1:40.6,top:Y+1.2});
   // flaggstång
   parts.push(colored(tr(new THREE.CylinderGeometry(.07,.09,9,6),-3,Y+4.5,56),"#f2efe8"));
   COLL.push({x:-3,z:56,r:.3});
@@ -252,10 +263,10 @@ function buildYard(){const parts=[];const Y=YARD.h;
   const y2=new THREE.Mesh(new THREE.PlaneGeometry(.3,1.5),new THREE.MeshLambertMaterial({color:"#f3c316",side:THREE.DoubleSide}));y2.position.set(-.3,0,.01);fl.add(y2);
   fl.position.set(-1.8,Y+8.1,56);scene.add(fl);scene.userData.flag=fl;
   // båt som guppar vid bryggan
-  bobBoat=new THREE.Mesh(boatGeo("#f4f1ea","#a33a2a"),VCD);bobBoat.position.set(jx-3.6,.15,80);bobBoat.rotation.y=Math.PI/2;bobBoat.castShadow=true;scene.add(bobBoat);
+  bobBoat=new THREE.Mesh(boatGeo("#f4f1ea","#a33a2a"),VCD);bobBoat.position.set(jx-3.6,.15,80);bobBoat.rotation.y=0;bobBoat.castShadow=true;scene.add(bobBoat);
   // stuga på grannön
   const c=[];const I=ISLANDS[1],hx=I.x-8,hz=I.z+10,hy=H(hx,hz);c.push(colored(tr(new THREE.BoxGeometry(6,3,5),hx,hy+1.5,hz),"#b8392b"));c.push(...gable(hx,hy+3,hz,6,5,1.7,"#3b3f45","#b8392b"));
-  const cm=new THREE.Mesh(merge(c),VC);cm.castShadow=true;scene.add(cm);BOXES.push({x0:hx-3.3,x1:hx+3.3,z0:hz-2.8,z1:hz+2.8});
+  const cm=new THREE.Mesh(merge(c),VC);cm.castShadow=true;scene.add(cm);BOXES.push({x0:hx-3.3,x1:hx+3.3,z0:hz-2.8,z1:hz+2.8,top:hy+5.5});
   // fyrlykta på den lilla ön
   const L=ISLANDS[3],ly=H(L.x,L.z);const lt=merge([colored(tr(new THREE.CylinderGeometry(.9,1.2,6,10),L.x,ly+3,L.z),"#f2efe8"),colored(tr(new THREE.CylinderGeometry(1.25,1.25,1.2,10),L.x,ly+2,L.z),"#c0392b"),colored(tr(new THREE.CylinderGeometry(.7,.7,1,8),L.x,ly+6.5,L.z),"#ffe9a0"),colored(tr(new THREE.ConeGeometry(1,1.2,10),L.x,ly+7.6,L.z),"#c0392b")]);
   const lm=new THREE.Mesh(lt,VC);lm.castShadow=true;scene.add(lm)}
@@ -308,6 +319,8 @@ function onJetty(x,z){return(Math.abs(x-14)<1.6&&z>57&&z<91)||(Math.abs(x-14)<4&
 function groundAt(x,z){let g=sampleGrid(x,z);if(onJetty(x,z))g=Math.max(g,1.45);if(typeof ST!=="undefined"&&ST.pieces.length){const f=floorTopAt(x,z);if(f!=null)g=Math.max(g,f)}return g}
 function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.ArrowUp)mz=-1;if(k.KeyS||k.ArrowDown)mz=1;if(k.KeyA||k.ArrowLeft)mx=-1;if(k.KeyD||k.ArrowRight)mx=1;
   if(k.KeyQ)camS.tYaw+=dt*1.8;if(k.KeyE)camS.tYaw-=dt*1.8;
+  if(GAMEON||DLG){mx=mz=0}
+  if(BOATM.on){boatDrive(dt,mx,mz)}else{
   const mag=Math.min(1,Math.hypot(mx,mz));const run=mag>.85||k.ShiftLeft;const sp=(run?6.2:3.4)*mag;
   if(mag>.08){const F=-mz/Math.max(mag,1e-3),Rt=mx/Math.max(mag,1e-3),cy_=Math.cos(camS.yaw),sy_=Math.sin(camS.yaw);const vx=sy_*F-cy_*Rt,vz=cy_*F+sy_*Rt;const a=Math.atan2(vx,vz);const tx=Math.sin(a)*sp,tz=Math.cos(a)*sp;
     const dyaw=Math.atan2(Math.sin(a-player.yaw),Math.cos(a-player.yaw));player.yaw+=dyaw*Math.min(1,dt*12);
@@ -318,14 +331,14 @@ function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.
   const g=groundAt(player.pos.x,player.pos.z);player.pos.y+=(g-player.pos.y)*Math.min(1,dt*18);
   player.walk+=dt*player.speed*2.1;const sw=Math.sin(player.walk)*Math.min(1,player.speed/3)*.75;
   limb.la.rotation.x=sw;limb.ra.rotation.x=-sw;limb.ll.rotation.x=-sw;limb.rl.rotation.x=sw;
-  P.position.copy(player.pos);P.position.y+=Math.abs(Math.cos(player.walk))*.06*Math.min(1,player.speed/3);P.rotation.y=player.yaw;
+  P.position.copy(player.pos);P.position.y+=Math.abs(Math.cos(player.walk))*.06*Math.min(1,player.speed/3);P.rotation.y=player.yaw;}
   // kamera
   camS.yaw+=(camS.tYaw-camS.yaw)*Math.min(1,dt*10);camS.pitch+=(camS.tPitch-camS.pitch)*Math.min(1,dt*10);
   const tgt=tmp.set(player.pos.x,player.pos.y+1.5,player.pos.z);let d=camS.dist;
   const cx=()=>tgt.x-Math.sin(camS.yaw)*Math.cos(camS.pitch)*d,cz=()=>tgt.z-Math.cos(camS.yaw)*Math.cos(camS.pitch)*d,cy=()=>tgt.y+Math.sin(camS.pitch)*d;
   for(let i=0;i<6;i++){const gy=Math.max(sampleGrid(cx(),cz()),0)+.6;if(cy()>gy)break;d*=.82}
   {const D0=d;for(let s=1;s<=12;s++){const f=s/12;d=D0*f;const x=cx(),z=cz(),y=cy();let hit=false;for(const b of DBOX)if(x>b.x0-.35&&x<b.x1+.35&&z>b.z0-.35&&z<b.z1+.35&&y<b.y1+1.3&&y>b.y0-.5){hit=true;break}
-    if(!hit)for(const b of BOXES)if(x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1&&y<6.5){hit=true;break}if(!hit&&s>3)for(const c of COLL)if(c.r<.5&&y<c.y6&&Math.abs(c.x-x)<1.4&&Math.abs(c.z-z)<1.4&&Math.hypot(c.x-x,c.z-z)<1.3){hit=true;break}if(hit){d=Math.max(1.2,D0*(s-1)/12);break}d=D0}}
+    if(!hit)for(const b of BOXES)if(x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1&&y<(b.top||6.5)){hit=true;break}if(!hit&&s>3)for(const c of COLL)if(c.r<.5&&y<c.y6&&Math.abs(c.x-x)<1.4&&Math.abs(c.z-z)<1.4&&Math.hypot(c.x-x,c.z-z)<1.3){hit=true;break}if(hit){d=Math.max(1.2,D0*(s-1)/12);break}d=D0}}
   camera.position.set(cx(),Math.max(cy(),Math.max(sampleGrid(cx(),cz()),.3)+.6),cz());camera.lookAt(tgt);
   // sol och skugga följer spelaren
   sun.position.set(player.pos.x+60,player.pos.y+90,player.pos.z+40);sun.target.position.copy(player.pos);
@@ -349,7 +362,7 @@ function perfTick(dt,cpu){fN++;fAcc+=dt;cpuAcc+=cpu;if(fAcc>=.5){fpsShow=fN/fAcc
 // ================= Loop =================
 let last=performance.now(),acc=0,running=false;
 function frame(now){requestAnimationFrame(frame);const minDt=1000/SET.fps-1.5;const el=now-last;if(el<minDt)return;const dt=Math.min(.05,el/1000);last=now;
-  const t0=performance.now();if(running){update(dt);nodesTick(dt,now/1000)}
+  const t0=performance.now();if(running){update(dt);nodesTick(dt,now/1000);interTick(now/1000)}
   const t=now/1000;water.material.uniforms.t.value=t;if(bobBoat){bobBoat.position.y=.5+Math.sin(t*1.3)*.08;bobBoat.rotation.z=Math.sin(t*1.1)*.04}
   const fl=scene.userData.flag;if(fl)fl.rotation.y=Math.sin(t*1.7)*.25;
   if(!running){camS.tYaw+=dt*.08;camS.yaw=camS.tYaw;const r=60,cx=Math.sin(t*.05)*r,cz=50+Math.cos(t*.05)*r;camera.position.set(cx,22,cz);camera.lookAt(0,2,36);scene.userData.sky.position.copy(camera.position)}
@@ -368,7 +381,7 @@ $("bPlay").onclick=()=>{running=true;$("menu").style.display="none";camS.yaw=cam
   try{if(document.documentElement.requestFullscreen&&innerWidth<900)document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}};
 
 // ================= Resurser & byggande =================
-const ST={virke:4,skrot:0,picked:0,pieces:[],obj:0,digs:[]};// sparat tillstånd
+const ST={virke:4,skrot:0,picked:0,pieces:[],obj:0,digs:[],kr:0,job:0,jobOn:0};// sparat tillstånd
 const DBOX=[];// kollisioner från byggda väggar
 const CELL=2,WALLH=2.6;
 const PIECES={
@@ -478,35 +491,162 @@ let nearNode=null;
 function nodesTick(dt,t){let ch=false;for(const n of NODES)if(n.gone>0){n.gone-=dt;if(n.gone<=0){ch=true}}if(ch)refreshNodes();
   nearNode=null;let bd=2.4;for(const n of NODES){if(n.gone>0)continue;const d=Math.hypot(n.x-player.pos.x,n.z-player.pos.z);if(d<bd){bd=d;nearNode=n}}
   const mk=nodeIM.marker;mk.visible=!!nearNode&&!buildMode;if(nearNode){mk.position.set(nearNode.x,nearNode.y+1.6+Math.sin(t*3)*.12,nearNode.z);mk.rotation.y=t*2}
-  const b=$("bAct");if(buildMode){b.style.display="block";b.textContent="Placera"}else if(nearNode){b.style.display="block";b.textContent=nearNode.type==="log"?"Plocka virke":"Plocka skrot"}else b.style.display="none"}
+  const b=$("bAct");$("bBuild").style.display=BOATM.on||DLG?"none":"block";if(DLG){b.style.display="none";return}if(buildMode){b.style.display="block";b.textContent="Placera"}else if(typeof nearI!=="undefined"&&nearI){b.style.display="block";b.textContent=nearI.label}else if(BOATM.on){b.style.display="none"}else if(nearNode){b.style.display="block";b.textContent=nearNode.type==="log"?"Plocka virke":"Plocka skrot"}else b.style.display="none"}
 function gather(){if(!nearNode)return;const n=nearNode;if(n.type==="log"){ST.virke+=2;ST.picked+=2;pop("+2 virke")}else{ST.skrot+=1;pop("+1 skrot")}n.gone=120;refreshNodes();updHud();objCheck();save();SFX("pick")}
 
 // --- uppdrag ---
 const OBJ=[{txt:"Plocka 10 virke",ok:()=>ST.picked>=10},{txt:"Lägg 4 golv",ok:()=>cnt("floor")>=4},{txt:"Bygg 6 väggar (en med dörr)",ok:()=>cnt("wall")>=6&&ST.pieces.some(p=>p.t==="dorr")},{txt:"Lägg tak över bygget",ok:()=>cnt("roof")>=2}];
 const cnt=k=>ST.pieces.filter(p=>PIECES[p.t].kind===k).length;
 function objCheck(){while(ST.obj<OBJ.length&&OBJ[ST.obj].ok()){ST.obj++;if(ST.obj<OBJ.length)pop("Klart! Nästa: "+OBJ[ST.obj].txt,2600);else pop("Första bygget står klart! 🎉",3500);SFX("done")}renderObj()}
-function renderObj(){const el=$("obj");el.innerHTML=`<b>Första bygget</b>`+OBJ.map((o,i)=>`<div class="${i<ST.obj?"done":i===ST.obj?"now":""}">${i<ST.obj?"✓":i===ST.obj?"›":"·"} ${o.txt}</div>`).join("")}
-function updHud(){$("res").innerHTML=`<span>🪵 ${ST.virke}</span><span>⚙️ ${ST.skrot}</span>`;
+function renderObj(){const el=$("obj");const J=typeof jobState==="function"?jobState():null;el.innerHTML=(ST.obj<OBJ.length?`<b>Första bygget</b>`+OBJ.map((o,i)=>`<div class="${i<ST.obj?"done":i===ST.obj?"now":""}">${i<ST.obj?"✓":i===ST.obj?"›":"·"} ${o.txt}</div>`).join(""):`<b>Första bygget</b><div class="done">✓ Klart</div>`)+`<b style="display:block;margin-top:6px">Jobb</b>`+(J?(ST.jobOn?`<div class="now">› ${J.title}</div><div>${J.where}</div>`:`<div class="now">› Prata med Sven på bryggan</div>`):`<div class="done">✓ Alla jobb klara</div>`)}
+function updHud(){$("res").innerHTML=`<span>🪵 ${ST.virke}</span><span>⚙️ ${ST.skrot}</span><span>💰 ${ST.kr} kr</span>`;
   document.querySelectorAll("#bar .pc[data-t]").forEach(b=>{const P=PIECES[b.dataset.t];const can=Object.entries(P.cost).every(([r,n])=>ST[r]>=n);b.classList.toggle("on",b.dataset.t===cur.t);b.classList.toggle("dim",!can)})}
 let popT=0;function pop(t,ms=1400){const el=$("pop");el.textContent=t;el.style.opacity=1;clearTimeout(popT);popT=setTimeout(()=>el.style.opacity=0,ms)}
 // enkla ljud
 let AC=null;function SFX(k){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
-  const f={pick:[520,780,.12],place:[180,120,.16],rip:[140,70,.18],no:[200,160,.12],done:[523,1046,.35]}[k];o.type=k==="place"||k==="rip"?"square":"triangle";o.frequency.setValueAtTime(f[0],t);o.frequency.exponentialRampToValueAtTime(f[1],t+f[2]);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+f[2]+.05);o.start(t);o.stop(t+f[2]+.06)}catch(e){}}
+  const f={pick:[520,780,.12],place:[180,120,.16],rip:[140,70,.18],no:[200,160,.12],done:[523,1046,.35],tick:[70,55,.05]}[k];o.type=k==="place"||k==="rip"?"square":"triangle";o.frequency.setValueAtTime(f[0],t);o.frequency.exponentialRampToValueAtTime(f[1],t+f[2]);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+f[2]+.05);o.start(t);o.stop(t+f[2]+.06)}catch(e){}}
 // sparning
-function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,digs:ST.digs,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[],digs:d.digs||[]});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
-function setBuild(on){buildMode=on;if(on)$("hint").style.opacity=0;$("bar").style.display=on?"flex":"none";$("bBuild").textContent=on?"Klar":"Bygg";$("bBuild").classList.toggle("acc",on);$("bWhy").style.display=on?"block":"none";if(on)camS.tPitch=Math.max(camS.tPitch,.55);updHud()}
+function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,digs:ST.digs,kr:ST.kr,job:ST.job,jobOn:ST.jobOn,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[],digs:d.digs||[],kr:d.kr||0,job:d.job||0,jobOn:d.jobOn||0});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
+function act(){if(buildMode)place();else if(nearI)nearI.fn();else gather()}
+function setBuild(on){if(on&&(BOATM.on||GAMEON))return;buildMode=on;if(on)$("hint").style.opacity=0;$("bar").style.display=on?"flex":"none";$("bBuild").textContent=on?"Klar":"Bygg";$("bBuild").classList.toggle("acc",on);$("bWhy").style.display=on?"block":"none";if(on)camS.tPitch=Math.max(camS.tPitch,.55);updHud()}
 function uiInit(){const bar=$("bar");bar.innerHTML=ORDER.map(t=>`<button class="pc" data-t="${t}"><i>${{golv:"▭",vagg:"▮",fonster:"▣",dorr:"⌂",tak:"◭"}[t]}</i>${PIECES[t].name}<small>${costTxt(PIECES[t].cost).replace(/virke/g,"🪵").replace(/skrot/g,"⚙️")}</small></button>`).join("")+`<button class="pc" id="bRot"><i>↻</i>Vrid</button><button class="pc" id="bRip"><i>✕</i>Riv</button>`;
   bar.querySelectorAll(".pc[data-t]").forEach(b=>b.onclick=()=>{cur.t=b.dataset.t;cur.r=0;updHud()});$("bRot").onclick=()=>{cur.r=(cur.r+1)%4};$("bRip").onclick=demolish;
-  $("bBuild").onclick=()=>setBuild(!buildMode);$("bAct").onclick=()=>buildMode?place():gather();
-  addEventListener("keydown",e=>{if(!running)return;if(e.code==="KeyB")setBuild(!buildMode);if(e.code==="KeyR")cur.r=(cur.r+1)%4;if(e.code==="KeyX"&&buildMode)demolish();if(e.code==="Space"||e.code==="KeyF"){e.preventDefault();buildMode?place():gather()}
+  $("bBuild").onclick=()=>setBuild(!buildMode);$("dlgNext").onclick=()=>dlgNext(true);$("dlgNo").onclick=()=>{$("dlg").style.display="none";DLG=null};$("gX").onclick=()=>endGame(false);$("bAct").onclick=act;
+  addEventListener("keydown",e=>{if(!running)return;if(e.code==="KeyB")setBuild(!buildMode);if(e.code==="KeyR")cur.r=(cur.r+1)%4;if(e.code==="KeyX"&&buildMode)demolish();if(e.code==="Space"||e.code==="KeyF"){e.preventDefault();if(DLG)dlgNext();else act()}
     if(buildMode&&/^Digit[1-5]$/.test(e.code)){cur.t=ORDER[+e.code.slice(5)-1];updHud()}});
   renderObj()}
 setInterval(()=>{if(running)save()},5000);
 
+// ================= Personer, jobb och minispel =================
+function makePerson(c){const G=new THREE.Group(),M=x=>new THREE.MeshLambertMaterial({color:x});
+  const body=new THREE.Mesh(new THREE.CapsuleGeometry(.38,.5,4,10),M(c.shirt));body.position.y=1.1;G.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.3,16,12),M(c.skin||"#f1c7a4"));head.position.y=1.8;G.add(head);
+  if(c.hat){const h=new THREE.Mesh(new THREE.SphereGeometry(.31,14,8,0,Math.PI*2,0,Math.PI/2),M(c.hat));h.position.y=1.84;G.add(h)}
+  if(c.hair){const h=new THREE.Mesh(new THREE.SphereGeometry(.32,14,10,0,Math.PI*2,0,Math.PI*.62),M(c.hair));h.position.y=1.82;h.rotation.x=-.25;G.add(h)}
+  if(c.beard){const b=new THREE.Mesh(new THREE.SphereGeometry(.23,12,8,0,Math.PI*2,Math.PI*.45,Math.PI*.55),M(c.beard));b.position.set(0,1.76,.1);G.add(b)}
+  for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),M("#2a2a2a"));e.position.set(s*.11,1.82,.27);G.add(e)}
+  for(const[x,y,l,r,col]of[[-.48,1.4,.42,.11,c.shirt],[.48,1.4,.42,.11,c.shirt],[-.17,.7,.5,.14,c.pants],[.17,.7,.5,.14,c.pants]]){const m=new THREE.Mesh(new THREE.CapsuleGeometry(r,l,3,8),M(col));m.position.set(x,y-l/2-r*.5,0);G.add(m)}
+  G.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(G);return G}
+const NPC={};const MARK=new THREE.Mesh(new THREE.ConeGeometry(.22,.5,4),new THREE.MeshBasicMaterial({color:"#ffc21a"}));MARK.rotation.x=Math.PI;scene.add(MARK);
+const TGT=new THREE.Mesh(new THREE.TorusGeometry(1.3,.12,6,28),new THREE.MeshBasicMaterial({color:"#ffc21a"}));TGT.rotation.x=Math.PI/2;TGT.visible=false;scene.add(TGT);
+let NJ=null;// Grannöns brygga
+function jobsWorldInit(){
+  NPC.sven=makePerson({shirt:"#3f6e4a",pants:"#2b3a52",hat:"#1f2a44",beard:"#d9d4cc",skin:"#efc2a0"});NPC.sven.position.set(12.2,1.45,62);NPC.sven.rotation.y=Math.PI*.15;
+  // Grannöns brygga: från stranden ut mot Varvsön
+  const I=ISLANDS[1];let dx=-.74,dz=.67,x=I.x,z=I.z;for(let s=0;s<120;s++){x+=dx;z+=dz;if(sampleGrid(x,z)<-.4)break}
+  const ex=x+dx*9,ez=z+dz*9,ang=Math.atan2(dx,dz);NJ={x0:x-dx*2,z0:z-dz*2,x1:ex,z1:ez,ang,boatX:ex+dz*3.2,boatZ:ez-dx*3.2};
+  const parts=[];const len=Math.hypot(ex-NJ.x0,ez-NJ.z0);const g=new THREE.BoxGeometry(2.6,.28,len);g.rotateY(ang);g.translate((NJ.x0+ex)/2,1.2,(NJ.z0+ez)/2);parts.push(colored(g,"#9a7a55"));
+  for(let t=1;t<len;t+=3)for(const s of[-1.1,1.1]){const px=NJ.x0+dx*t+dz*s,pz=NJ.z0+dz*t-dx*s;parts.push(colored(tr(new THREE.CylinderGeometry(.15,.15,5,6),px,-1.2,pz),"#5e4630"))}
+  const m=new THREE.Mesh(merge(parts),VC);m.castShadow=true;scene.add(m);
+  NPC.majken=makePerson({shirt:"#c0392b",pants:"#2b2f36",hair:"#c9c2b8",skin:"#f2cdb0"});NPC.majken.position.set(ex-dx*1.5,1.35,ez-dz*1.5);NPC.majken.rotation.y=ang+Math.PI;
+  // utombordsmotor på motorbåten
+  const mo=new THREE.Group();const a=new THREE.Mesh(new THREE.BoxGeometry(.45,.55,.5),new THREE.MeshLambertMaterial({color:"#1d1f24"}));a.position.y=.55;mo.add(a);
+  const sh=new THREE.Mesh(new THREE.BoxGeometry(.12,.8,.14),new THREE.MeshLambertMaterial({color:"#2b2f36"}));sh.position.y=-.05;mo.add(sh);mo.position.set(0,.1,-3.05);bobBoat.add(mo);
+  if(ST.job>2){bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.y=ang}}
+
+// --- jobblista ---
+const JOBS=[
+ {from:"sven",title:"Slipa Svens eka",reward:400,where:"Ekan på bockarna vid boden",
+  offer:["Hej grannen! Kul att någon tar hand om varvet igen.","Min gamla eka står på bockarna där borta. Botten är full av havstulpaner och gammal färg.","Kan du slipa den ren? Jag betalar 400 kronor."],
+  done:"Fint jobbat! Hon ser ut som ny. Här har du 400 kronor.",target:()=>({x:-6,z:47,r:4.6,label:"Slipa skrovet"}),game:"sand"},
+ {from:"sven",title:"Byt propeller",reward:600,where:"Motorbåten vid bryggan",
+  offer:["Nästa sak: propellern på motorbåten vid bryggan gick i en sten i somras.","Jag har köpt en ny. Kan du byta den? 600 kronor."],
+  done:"Perfekt, nu går hon som ett spjut igen! 600 kronor till dig.",target:()=>({x:bobBoat.position.x+1.8,z:bobBoat.position.z-2.6,r:3,label:"Byt propellern"}),game:"prop"},
+ {from:"sven",title:"Leverera båten till Grannön",reward:800,where:"Kör motorbåten till Majkens brygga",
+  offer:["Jag har sålt motorbåten till Majken på Grannön.","Kan du köra över den till hennes brygga? Hon skjutsar dig tillbaka. 800 kronor!"],
+  done:"",target:()=>({x:bobBoat.position.x+1.4,z:bobBoat.position.z,r:3.2,label:"Kör båten"}),game:"drive"}];
+// ST.job = index för aktuellt jobb, ST.jobOn = antaget
+function jobState(){return ST.job<JOBS.length?JOBS[ST.job]:null}
+function npcPos(id){return NPC[id].position}
+// --- interaktioner ---
+let nearI=null;
+function interactables(){const L=[];const J=jobState();
+  if(J&&!ST.jobOn){const p=npcPos(J.from);L.push({x:p.x,z:p.z,r:2.6,label:"Prata med "+(J.from==="sven"?"Sven":"Majken"),fn:()=>talk(J)})}
+  else if(J&&ST.jobOn){const t=J.target();L.push({x:t.x,z:t.z,r:t.r,label:t.label,fn:()=>startGame(J)})}
+  if(!J||ST.jobOn){const p=npcPos("sven");L.push({x:p.x,z:p.z,r:2.2,label:"Prata med Sven",fn:()=>dialog("Sven",[J?(ST.jobOn?"Du har ett jobb på gång: "+J.title.toLowerCase()+". "+J.where+".":""):"Det var allt för den här gången. Mer jobb kommer!"],null)})}
+  return L}
+function interTick(t){nearI=null;if(buildMode||BOATM.on||GAMEON)return;let bd=99;for(const it of interactables()){const d=Math.hypot(it.x-player.pos.x,it.z-player.pos.z);if(d<it.r&&d<bd){bd=d;nearI=it}}
+  const J=jobState();let mp=null;if(J&&!ST.jobOn){mp=npcPos(J.from).clone();mp.y+=2.6}else if(J&&ST.jobOn&&J.game!=="drive"){const q=J.target();mp=new THREE.Vector3(q.x,groundAt(q.x,q.z)+2.6,q.z)}else if(J&&ST.jobOn){mp=bobBoat.position.clone();mp.y+=2.4}
+  MARK.visible=!!mp;if(mp){MARK.position.copy(mp);MARK.position.y+=Math.sin(t*3)*.15;MARK.rotation.y=t*2}
+  for(const id in NPC){const n=NPC[id];n.children[0].scale.y=1+Math.sin(t*2+id.length)*.015;const d=Math.hypot(n.position.x-player.pos.x,n.position.z-player.pos.z);if(d<6){const a=Math.atan2(player.pos.x-n.position.x,player.pos.z-n.position.z);n.rotation.y+=Math.atan2(Math.sin(a-n.rotation.y),Math.cos(a-n.rotation.y))*.08}}}
+// --- dialog ---
+let DLG=null;
+function dialog(who,lines,onEnd,accept){DLG={who,lines:lines.filter(Boolean),i:0,onEnd,accept};$("dlg").style.display="block";dlgShow()}
+function dlgShow(){const d=DLG;$("dlgWho").textContent=d.who;$("dlgTxt").textContent=d.lines[d.i];const last=d.i>=d.lines.length-1;$("dlgNext").textContent=last?(d.accept?"Ta jobbet":"OK"):"Fortsätt";$("dlgNo").style.display=last&&d.accept?"inline-block":"none"}
+function dlgNext(ok=true){const d=DLG;if(!d)return;if(d.i<d.lines.length-1){d.i++;dlgShow();return}$("dlg").style.display="none";DLG=null;if(ok&&d.onEnd)d.onEnd()}
+function talk(J){dialog(J.from==="sven"?"Sven":"Majken",J.offer,()=>{ST.jobOn=1;pop("Nytt jobb: "+J.title,2200);renderObj();save();SFX("done")},true)}
+function jobDone(){const J=jobState();ST.kr+=J.reward;ST.job++;ST.jobOn=0;updHud();renderObj();save();SFX("done");pop(`+${J.reward} kr`,2000)}
+
+// --- minispel ---
+let GAMEON=null;
+const gcv=()=>$("gcv");
+function startGame(J){if(J.game==="drive"){boatStart();return}GAMEON={J,t:0};$("game").style.display="flex";input.mx=input.mz=0;
+  const c=gcv(),r=c.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);c.width=r.width*dpr;c.height=r.height*dpr;GAMEON.dpr=dpr;
+  if(J.game==="sand")sandInit();else propInit();requestAnimationFrame(gameLoop)}
+function endGame(ok){const G=GAMEON;GAMEON=null;$("game").style.display="none";if(!ok)return;const J=G.J;dialog(J.from==="sven"?"Sven":"Majken",[J.done],jobDone)}
+function gameLoop(){if(!GAMEON)return;requestAnimationFrame(gameLoop);GAMEON.draw()}
+function gPt(e){const c=gcv(),r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*GAMEON.dpr,y:(e.clientY-r.top)*GAMEON.dpr}}
+// Slipa skrov: dra fingret över påväxten tills skrovet är rent
+function sandInit(){const c=gcv(),W=c.width,H=c.height,x=c.getContext("2d");$("gTitle").textContent="Slipa skrovet";$("gHelp").textContent="Dra fingret över påväxten tills botten är ren";
+  const hull=new Path2D();const cx=W/2,cy=H*.42,hw=W*.42,hh=H*.3;hull.moveTo(cx-hw,cy-hh*.3);hull.lineTo(cx+hw*.95,cy-hh*.45);hull.quadraticCurveTo(cx+hw*1.05,cy+hh*.4,cx+hw*.55,cy+hh*.8);hull.quadraticCurveTo(cx,cy+hh*1.05,cx-hw*.8,cy+hh*.6);hull.quadraticCurveTo(cx-hw*1.02,cy+hh*.2,cx-hw,cy-hh*.3);hull.closePath();
+  const dirt=document.createElement("canvas");dirt.width=W;dirt.height=H;const d=dirt.getContext("2d");d.save();d.clip(hull);const rnd=mulberry(5);
+  d.fillStyle="#6b7d4a";d.fillRect(0,0,W,H);for(let i=0;i<260;i++){d.fillStyle=["#55663a","#7d8f55","#8a7a5a","#a39a86","#4b5a33"][i%5];d.beginPath();d.arc(rnd()*W,cy-hh*.2+rnd()*hh*1.3,(6+rnd()*22)*GAMEON.dpr,0,7);d.fill()}
+  for(let i=0;i<120;i++){d.fillStyle="#e8e2d2";d.beginPath();d.arc(rnd()*W,cy+rnd()*hh*.9,(2+rnd()*4)*GAMEON.dpr,0,7);d.fill()}d.restore();
+  const S={hull,dirt,d,W,H,cx,cy,hw,hh,last:null,prog:0,parts:[],total:0};
+  // räkna ursprunglig smuts
+  const cnt=()=>{const im=d.getImageData(0,0,W,H).data;let n=0;for(let i=3;i<im.length;i+=4*97)if(im[i]>40)n++;return n};S.total=cnt();
+  const brush=(p)=>{d.globalCompositeOperation="destination-out";d.lineCap="round";d.lineWidth=46*GAMEON.dpr;d.beginPath();d.moveTo((S.last||p).x,(S.last||p).y);d.lineTo(p.x,p.y);d.stroke();d.globalCompositeOperation="source-over";S.last=p;
+    for(let i=0;i<2;i++)S.parts.push({x:p.x,y:p.y,vx:(Math.random()-.5)*6,vy:-Math.random()*4,l:1})};
+  c.onpointerdown=e=>{S.last=gPt(e);brush(S.last);c.setPointerCapture(e.pointerId);SFX("pick")};c.onpointermove=e=>{if(S.last)brush(gPt(e))};c.onpointerup=c.onpointercancel=()=>{S.last=null};
+  let chk=0;GAMEON.draw=()=>{x.fillStyle="#cfe3ec";x.fillRect(0,0,W,H);x.fillStyle="#b9a789";x.fillRect(0,H*.82,W,H*.18);
+    x.fillStyle="#6b5137";for(const s of[-.45,.4])x.fillRect(cx+hw*s-12*GAMEON.dpr,cy+hh*.6,24*GAMEON.dpr,H*.82-(cy+hh*.6));
+    x.fillStyle="#f4f1ea";x.fill(hull);x.save();x.clip(hull);x.fillStyle="#2f5d8a";x.fillRect(0,cy-hh*.5,W,hh*.22);x.restore();x.lineWidth=3*GAMEON.dpr;x.strokeStyle="#5b5f66";x.stroke(hull);
+    x.drawImage(dirt,0,0);for(const p of S.parts){p.x+=p.vx;p.y+=p.vy;p.vy+=.35;p.l-=.03;x.fillStyle=`rgba(200,190,160,${p.l})`;x.fillRect(p.x,p.y,4*GAMEON.dpr,4*GAMEON.dpr)}S.parts=S.parts.filter(p=>p.l>0);
+    if(++chk%12===0){S.prog=1-cnt()/S.total;$("gBar").style.width=Math.min(100,S.prog/.92*100)+"%";if(S.prog>=.92){c.onpointerdown=c.onpointermove=null;setTimeout(()=>endGame(true),400)}}}}
+// Byta propeller: lossa mutter, ta av, sätt på ny, dra åt
+function propInit(){const c=gcv(),W=c.width,H=c.height,x=c.getContext("2d"),k=GAMEON.dpr;const cx=W*.45,cy=H*.48;
+  const S={st:0,acc:0,lastA:null,drag:null,old:{x:cx,y:cy,on:true,rot:0},nw:{x:W*.85,y:H*.75,on:false,rot:0},nut:0};
+  const steps=["Lossa muttern – snurra moturs runt propellern","Dra av den gamla propellern","Dra den nya propellern till axeln","Dra åt muttern – snurra medurs"];
+  $("gTitle").textContent="Byt propeller";const help=()=>{$("gHelp").textContent=`${S.st+1}/4: ${steps[S.st]}`;$("gBar").style.width=(S.st/4*100)+"%"};help();
+  const ang=p=>Math.atan2(p.y-cy,p.x-cx);
+  c.onpointerdown=e=>{const p=gPt(e);c.setPointerCapture(e.pointerId);if(S.st===0||S.st===3){S.lastA=ang(p)}else if(S.st===1&&Math.hypot(p.x-S.old.x,p.y-S.old.y)<110*k)S.drag="old";else if(S.st===2&&Math.hypot(p.x-S.nw.x,p.y-S.nw.y)<110*k)S.drag="nw"};
+  c.onpointermove=e=>{const p=gPt(e);if(S.lastA!==null){const a=ang(p);let da=a-S.lastA;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;S.lastA=a;const dir=S.st===0?-1:1;if(da*dir>0){S.acc+=Math.abs(da);S.nut+=da;if(Math.random()<.15)SFX("pick")}
+      const need=Math.PI*2*2.5;$("gBar").style.width=((S.st+Math.min(1,S.acc/need))/4*100)+"%";if(S.acc>=need){S.acc=0;S.lastA=null;if(S.st===0){S.st=1;help()}else{c.onpointerdown=c.onpointermove=null;$("gBar").style.width="100%";setTimeout(()=>endGame(true),500)}}}
+    if(S.drag){const o=S[S.drag];o.x=p.x;o.y=p.y}};
+  c.onpointerup=c.onpointercancel=()=>{S.lastA=null;if(S.drag==="old"){if(Math.hypot(S.old.x-cx,S.old.y-cy)>200*k){S.old.on=false;S.st=2;S.nw.on=true;help();SFX("place")}else{S.old.x=cx;S.old.y=cy}}
+    if(S.drag==="nw"){if(Math.hypot(S.nw.x-cx,S.nw.y-cy)<60*k){S.nw.x=cx;S.nw.y=cy;S.st=3;help();SFX("place")}}S.drag=null};
+  const drawProp=(p,col,rot)=>{x.save();x.translate(p.x,p.y);x.rotate(rot);x.fillStyle=col;for(let i=0;i<3;i++){x.rotate(Math.PI*2/3);x.beginPath();x.ellipse(0,-48*k,24*k,48*k,.35,0,7);x.fill()}x.fillStyle="#5b5f66";x.beginPath();x.arc(0,0,18*k,0,7);x.fill();x.restore()};
+  GAMEON.draw=()=>{x.fillStyle="#2a5a72";x.fillRect(0,0,W,H);x.fillStyle="#f4f1ea";x.beginPath();x.moveTo(0,0);x.lineTo(W*.32,0);x.quadraticCurveTo(W*.36,H*.25,W*.2,H*.4);x.lineTo(0,H*.42);x.fill();
+    x.fillStyle="#1d1f24";x.fillRect(W*.18,H*.05,38*k,cy-H*.05);x.fillStyle="#3a3f47";x.fillRect(W*.18,cy-10*k,cx-W*.18,20*k);
+    if(S.old.on)drawProp(S.old,"#b88b3a",S.nut*.3);if(S.nw.on)drawProp(S.nw,"#e2c25a",S.st===3?S.nut*.3:0);
+    if(S.st===2&&!S.drag){x.fillStyle="rgba(255,255,255,.75)";x.font=`${14*k}px system-ui`;x.textAlign="center";x.fillText("Ny propeller",S.nw.x,S.nw.y+80*k)}
+    if(S.st===0||S.st===3){x.save();x.translate(cx,cy);x.rotate(S.nut);x.fillStyle="#c0c6cc";x.beginPath();for(let i=0;i<6;i++){const a=i/6*Math.PI*2;x.lineTo(Math.cos(a)*16*k,Math.sin(a)*16*k)}x.fill();x.restore();
+      x.strokeStyle="rgba(255,194,26,.8)";x.lineWidth=4*k;x.beginPath();const dir=S.st===0?-1:1;x.arc(cx,cy,95*k,-Math.PI/2,-Math.PI/2+dir*1.6,dir<0);x.stroke()}
+    if(S.st===1){x.strokeStyle="rgba(255,194,26,.6)";x.setLineDash([8*k,8*k]);x.beginPath();x.arc(cx,cy,200*k,0,7);x.stroke();x.setLineDash([])}}}
+
+// --- båtkörning ---
+const BOATM={on:false,v:0,yaw:0};
+function boatStart(){BOATM.on=true;BOATM.v=0;BOATM.yaw=bobBoat.rotation.y;P.visible=true;$("hint").style.opacity=1;$("hint").textContent="Vänster tumme: gasa och styr · Kör till den gula ringen vid Grannön";TGT.visible=true;TGT.position.set(NJ.boatX,.35,NJ.boatZ);pop("Kör till Majkens brygga!",2200)}
+function boatDrive(dt,mx,mz){const thr=-mz,st=mx;BOATM.v+=(thr*11-BOATM.v)*Math.min(1,dt*(thr?0.9:.5));BOATM.yaw-=st*dt*1.3*clamp(Math.abs(BOATM.v)/4,.25,1)*Math.sign(BOATM.v||1);
+  const nx=bobBoat.position.x+Math.sin(BOATM.yaw)*BOATM.v*dt,nz=bobBoat.position.z+Math.cos(BOATM.yaw)*BOATM.v*dt;
+  const free=(x,z)=>sampleGrid(x,z)<-.3&&!(Math.abs(x-14)<2&&z>57&&z<92)&&Math.abs(x)<WS/2-10&&Math.abs(z)<WS/2-10;
+  const bow=(x,z)=>free(x+Math.sin(BOATM.yaw)*2.8,z+Math.cos(BOATM.yaw)*2.8);
+  const stuck=!free(bobBoat.position.x,bobBoat.position.z);if((free(nx,nz)&&bow(nx,nz))||(stuck&&sampleGrid(nx,nz)<=sampleGrid(bobBoat.position.x,bobBoat.position.z))){bobBoat.position.x=nx;bobBoat.position.z=nz}else{BOATM.v*=-.3}
+  bobBoat.rotation.y=BOATM.yaw;bobBoat.rotation.x=-clamp(BOATM.v/11,0,1)*.08;
+  player.pos.set(bobBoat.position.x,bobBoat.position.y+.1,bobBoat.position.z);player.yaw=BOATM.yaw;P.position.set(bobBoat.position.x-Math.sin(BOATM.yaw)*2,bobBoat.position.y-.45,bobBoat.position.z-Math.cos(BOATM.yaw)*2);P.rotation.y=BOATM.yaw;
+  // kameran bakom båten
+  camS.tYaw+=Math.atan2(Math.sin(BOATM.yaw-camS.tYaw),Math.cos(BOATM.yaw-camS.tYaw))*Math.min(1,dt*1.5);
+  if(Math.random()<Math.abs(BOATM.v)*.02)SFX("tick");
+  {const dx=NJ.boatX-bobBoat.position.x,dz=NJ.boatZ-bobBoat.position.z;const a=Math.atan2(dx,dz)-camS.yaw;$("compass").style.display="flex";$("cArrow").style.transform=`rotate(${-a*180/Math.PI-90}deg)`;$("cDist").textContent=Math.round(Math.hypot(dx,dz))+" m"}
+  if(Math.hypot(bobBoat.position.x-NJ.boatX,bobBoat.position.z-NJ.boatZ)<4.5&&Math.abs(BOATM.v)<6){boatArrive()}}
+function boatArrive(){BOATM.on=false;$("compass").style.display="none";BOATM.v=0;TGT.visible=false;bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.set(0,NJ.ang,0);$("hint").style.opacity=0;
+  dialog("Majken",["Åh, där är hon! Tack ska du ha, den är ju fin som snus.","Sven sa att du skulle ha 800 kronor. Hoppa in i min eka så skjutsar jag dig hem."],()=>{jobDone();fade(()=>{player.pos.set(14,1.45,70);player.yaw=Math.PI;camS.tYaw=camS.yaw=Math.PI;dialog("Sven",["Där är du ju! Bra jobbat idag.","Det var allt för demon – resten av varvets historia kommer snart."],null)})})}
+function fade(mid){const f=$("fade");f.style.opacity=1;setTimeout(()=>{mid();setTimeout(()=>f.style.opacity=0,300)},500)}
+
 // ================= Start =================
-function boot(){Q=QUAL[SET.q];TER=buildTerrain();buildWater();buildYard();buildNature(Q);load();initBuild();uiInit();player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
-window.VARVET={player,camS,input,SET,renderer,scene,update,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
+function boot(){Q=QUAL[SET.q];TER=buildTerrain();buildWater();buildYard();buildNature(Q);load();jobsWorldInit();initBuild();uiInit();player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
+window.VARVET={player,camS,input,SET,renderer,scene,update,act,dlgNext,BOATM,JOBS,startGame,endGame,jobState,get nearI(){return nearI},get GAMEON(){return GAMEON},get NJ(){return NJ},bobBoat:()=>bobBoat,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
 setTimeout(boot,30);
 </script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script></body>
