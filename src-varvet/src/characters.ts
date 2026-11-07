@@ -91,3 +91,19 @@ export const MAJKEN: CharDef = {
   file: "majken.glb", height: 1.66,
   anims: { idle: "Idle_6", talk: "Talk_with_Left_Hand_on_Hip", walk: "Walking", stroll: "Thoughtful_Walk", run: "Running", sit: "Chair_Sit_Idle_F" },
 };
+
+/** Statisk modell (båt, hus, föremål) som ersätter en kodform. `fit` = längd i meter längs modellens längsta axel. */
+export function attachProp(holder: THREE.Mesh | THREE.Object3D, file: string, opt: { fit: number; rotY?: number; y?: number; hideChildren?: boolean }): void {
+  loader.load(import.meta.env.BASE_URL + "models/" + file, gltf => {
+    const root = gltf.scene;
+    root.traverse(o => { const m = o as THREE.Mesh; if (!m.isMesh) return; const src = m.material as THREE.MeshStandardMaterial;
+      m.material = new THREE.MeshLambertMaterial({ map: src.map, side: THREE.DoubleSide }); m.castShadow = true; m.receiveShadow = true; });
+    const box = new THREE.Box3().setFromObject(root), sz = box.getSize(new THREE.Vector3());
+    root.scale.setScalar(opt.fit / Math.max(sz.x, sz.z));
+    if (opt.rotY) root.rotation.y = opt.rotY;
+    root.position.y = opt.y || 0;
+    if (opt.hideChildren) for (const c of holder.children) c.visible = false;
+    const h = holder as THREE.Mesh; if (h.isMesh) { h.geometry = new THREE.BufferGeometry(); }
+    holder.add(root); holder.userData.realModel = true;
+  }, undefined, err => console.warn("Kunde inte ladda", file, err));
+}

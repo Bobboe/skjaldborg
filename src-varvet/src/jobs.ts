@@ -1,6 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
-import { attachCharacter, play, SVEN, MAJKEN } from "./characters";
+import { attachCharacter, attachProp, play, SVEN, MAJKEN } from "./characters";
 import { INTERACT_PROVIDERS } from "./hooks";
 import { pop } from "./build";
 import { camS } from "./input";
@@ -40,7 +40,7 @@ function jobsWorldInit(){
   NPC.majken=makePerson({shirt:"#c0392b",pants:"#2b2f36",hair:"#c9c2b8",skin:"#f2cdb0"});NPC.majken.position.set(ex-dx*1.5,1.35,ez-dz*1.5);NPC.majken.rotation.y=ang+Math.PI;NPC.majken.position.y=Math.max(1.34,groundAt(NPC.majken.position.x,NPC.majken.position.z));attachCharacter(NPC.majken,MAJKEN);
   // utombordsmotor på motorbåten
   const mo=new THREE.Group();const a=new THREE.Mesh(new THREE.BoxGeometry(.45,.55,.5),new THREE.MeshLambertMaterial({color:"#1d1f24"}));a.position.y=.55;mo.add(a);
-  const sh=new THREE.Mesh(new THREE.BoxGeometry(.12,.8,.14),new THREE.MeshLambertMaterial({color:"#2b2f36"}));sh.position.y=-.05;mo.add(sh);mo.position.set(0,.1,-3.05);bobBoat.add(mo);
+  const sh=new THREE.Mesh(new THREE.BoxGeometry(.12,.8,.14),new THREE.MeshLambertMaterial({color:"#2b2f36"}));sh.position.y=-.05;mo.add(sh);mo.position.set(0,.1,-3.05);bobBoat.add(mo);attachProp(bobBoat,"motorbat.glb",{fit:5.8,rotY:Math.PI/2,y:.05,hideChildren:true});
   if(ST.job>2){bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.y=ang}}
 
 // --- jobblista ---
@@ -134,7 +134,7 @@ function boatDrive(dt,mx,mz){const thr=-mz,st=mx;BOATM.v+=(thr*11-BOATM.v)*Math.
   const bow=(x,z)=>free(x+Math.sin(BOATM.yaw)*2.8,z+Math.cos(BOATM.yaw)*2.8);
   const stuck=!free(bobBoat.position.x,bobBoat.position.z);if((free(nx,nz)&&bow(nx,nz))||(stuck&&sampleGrid(nx,nz)<=sampleGrid(bobBoat.position.x,bobBoat.position.z))){bobBoat.position.x=nx;bobBoat.position.z=nz}else{BOATM.v*=-.3}
   bobBoat.rotation.y=BOATM.yaw;bobBoat.rotation.x=-clamp(BOATM.v/11,0,1)*.08;
-  player.pos.set(bobBoat.position.x,bobBoat.position.y+.1,bobBoat.position.z);player.yaw=BOATM.yaw;P.position.set(bobBoat.position.x-Math.sin(BOATM.yaw)*2,bobBoat.position.y-(P.userData.realModel?.62:.45),bobBoat.position.z-Math.cos(BOATM.yaw)*2);P.rotation.y=BOATM.yaw;
+  player.pos.set(bobBoat.position.x,bobBoat.position.y+.1,bobBoat.position.z);player.yaw=BOATM.yaw;P.position.set(bobBoat.position.x-Math.sin(BOATM.yaw)*1.7,bobBoat.position.y-(P.userData.realModel?(bobBoat.userData.realModel?.18:.62):.45),bobBoat.position.z-Math.cos(BOATM.yaw)*1.7);P.rotation.y=BOATM.yaw;
   // kameran bakom båten
   camS.tYaw+=Math.atan2(Math.sin(BOATM.yaw-camS.tYaw),Math.cos(BOATM.yaw-camS.tYaw))*Math.min(1,dt*1.5);
   if(Math.random()<Math.abs(BOATM.v)*.02)SFX("tick");
