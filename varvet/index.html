@@ -34,6 +34,18 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .seg button.on{background:var(--acc);color:#111}
 .lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-top:12px}
 #settings{display:none}
+#res{top:max(10px,env(safe-area-inset-top));left:calc(max(10px,env(safe-area-inset-left)) + 112px);display:flex;gap:8px}
+#res span{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:700 14px system-ui}
+#obj{top:calc(max(10px,env(safe-area-inset-top)) + 52px);right:max(10px,env(safe-area-inset-right));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12.5px;line-height:1.6;color:var(--mut);max-width:220px}
+#obj b{color:var(--acc);font-size:11px;text-transform:uppercase;letter-spacing:.08em}#obj .done{color:#7fd38a;text-decoration:line-through}#obj .now{color:var(--txt);font-weight:600}
+#pop{top:30%;left:50%;transform:translateX(-50%);background:rgba(16,18,22,.8);border:1px solid var(--acc);color:var(--txt);border-radius:12px;padding:8px 16px;font:700 15px system-ui;opacity:0;transition:opacity .3s;white-space:nowrap}
+#acts{right:max(14px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+#acts .btn{min-width:96px;padding:13px 16px;font-size:15px}#bAct{min-width:140px!important;padding:18px 18px!important;font-size:16px!important;border-radius:16px}
+#bar{left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));display:none;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;pointer-events:auto;max-width:calc(100vw - 190px);overflow-x:auto}
+#bar .pc{background:transparent;border:1px solid transparent;border-radius:10px;color:var(--txt);padding:5px 8px;font:600 11px system-ui;display:flex;flex-direction:column;align-items:center;min-width:52px}
+#bar .pc i{font-style:normal;font-size:18px;line-height:1.1}#bar .pc small{color:var(--mut);font-size:10px;font-weight:500}
+#bar .pc.on{border-color:var(--acc);background:rgba(255,194,26,.12)}#bar .pc.dim{opacity:.45}
+#bWhy{left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 66px);font:700 13px system-ui;text-shadow:0 1px 4px rgba(0,0,0,.8);display:none}
 #loading{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:var(--bg);font:600 15px system-ui;color:var(--mut)}
 </style>
 </head>
@@ -46,6 +58,12 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="loc" class="hud">Varvsön</div>
 <div id="hint" class="hud">Vänster tumme: gå · Höger tumme: titta runt</div>
 <div id="joy"><div id="knob"></div></div>
+<div id="res" class="hud"></div>
+<div id="obj" class="hud"></div>
+<div id="pop" class="hud"></div>
+<div id="acts" class="hud"><button class="btn" id="bBuild">Bygg</button><button class="btn acc" id="bAct" style="display:none">Plocka</button></div>
+<div id="bWhy" class="hud"></div>
+<div id="bar" class="hud"></div>
 <div id="menu">
   <div class="card" id="mainCard">
     <h1>VAR<span>VET</span></h1>
@@ -287,14 +305,14 @@ const UP=new THREE.Vector3(0,1,0),tmp=new THREE.Vector3();
 function walkable(x,z){if(sampleGrid(x,z)<-.55)return false;for(const b of BOXES)if(x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1)return false;return true}
 // bryggan och dess ände är gångbara över vatten
 function onJetty(x,z){return(Math.abs(x-14)<1.6&&z>57&&z<91)||(Math.abs(x-14)<4&&z>89&&z<92.5)}
-function groundAt(x,z){const g=sampleGrid(x,z);return onJetty(x,z)?Math.max(g,1.45):g}
+function groundAt(x,z){let g=sampleGrid(x,z);if(onJetty(x,z))g=Math.max(g,1.45);if(typeof ST!=="undefined"&&ST.pieces.length){const f=floorTopAt(x,z);if(f!=null)g=Math.max(g,f)}return g}
 function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.ArrowUp)mz=-1;if(k.KeyS||k.ArrowDown)mz=1;if(k.KeyA||k.ArrowLeft)mx=-1;if(k.KeyD||k.ArrowRight)mx=1;
   if(k.KeyQ)camS.tYaw+=dt*1.8;if(k.KeyE)camS.tYaw-=dt*1.8;
   const mag=Math.min(1,Math.hypot(mx,mz));const run=mag>.85||k.ShiftLeft;const sp=(run?6.2:3.4)*mag;
   if(mag>.08){const F=-mz/Math.max(mag,1e-3),Rt=mx/Math.max(mag,1e-3),cy_=Math.cos(camS.yaw),sy_=Math.sin(camS.yaw);const vx=sy_*F-cy_*Rt,vz=cy_*F+sy_*Rt;const a=Math.atan2(vx,vz);const tx=Math.sin(a)*sp,tz=Math.cos(a)*sp;
     const dyaw=Math.atan2(Math.sin(a-player.yaw),Math.cos(a-player.yaw));player.yaw+=dyaw*Math.min(1,dt*12);
     const nx=player.pos.x+tx*dt,nz=player.pos.z+tz*dt;
-    const ok=(x,z)=>(walkable(x,z)||onJetty(x,z))&&!COLL.some(c=>Math.abs(c.x-x)<c.r+.35&&Math.abs(c.z-z)<c.r+.35&&Math.hypot(c.x-x,c.z-z)<c.r+.35)&&(groundAt(x,z)-groundAt(player.pos.x,player.pos.z))<.9*Math.max(dt*sp,.05)+.35;
+    const ok=(x,z)=>(walkable(x,z)||onJetty(x,z))&&!hitDyn(x,z,player.pos.y)&&!COLL.some(c=>Math.abs(c.x-x)<c.r+.35&&Math.abs(c.z-z)<c.r+.35&&Math.hypot(c.x-x,c.z-z)<c.r+.35)&&(groundAt(x,z)-groundAt(player.pos.x,player.pos.z))<.9*Math.max(dt*sp,.05)+.35;
     if(ok(nx,nz)){player.pos.x=nx;player.pos.z=nz}else if(ok(nx,player.pos.z))player.pos.x=nx;else if(ok(player.pos.x,nz))player.pos.z=nz;
     player.speed=sp}else player.speed=0;
   const g=groundAt(player.pos.x,player.pos.z);player.pos.y+=(g-player.pos.y)*Math.min(1,dt*18);
@@ -306,10 +324,13 @@ function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.
   const tgt=tmp.set(player.pos.x,player.pos.y+1.5,player.pos.z);let d=camS.dist;
   const cx=()=>tgt.x-Math.sin(camS.yaw)*Math.cos(camS.pitch)*d,cz=()=>tgt.z-Math.cos(camS.yaw)*Math.cos(camS.pitch)*d,cy=()=>tgt.y+Math.sin(camS.pitch)*d;
   for(let i=0;i<6;i++){const gy=Math.max(sampleGrid(cx(),cz()),0)+.6;if(cy()>gy)break;d*=.82}
+  {const D0=d;for(let s=1;s<=12;s++){const f=s/12;d=D0*f;const x=cx(),z=cz(),y=cy();let hit=false;for(const b of DBOX)if(x>b.x0-.35&&x<b.x1+.35&&z>b.z0-.35&&z<b.z1+.35&&y<b.y1+1.3&&y>b.y0-.5){hit=true;break}
+    if(!hit)for(const b of BOXES)if(x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1&&y<6.5){hit=true;break}if(hit){d=Math.max(1.2,D0*(s-1)/12);break}d=D0}}
   camera.position.set(cx(),Math.max(cy(),Math.max(sampleGrid(cx(),cz()),.3)+.6),cz());camera.lookAt(tgt);
   // sol och skugga följer spelaren
   sun.position.set(player.pos.x+60,player.pos.y+90,player.pos.z+40);sun.target.position.copy(player.pos);
   scene.userData.sky.position.copy(camera.position);
+  buildTick();
   // plats-text
   const L=locName(player.pos.x,player.pos.z);if(L!==curLoc){curLoc=L;document.getElementById("loc").textContent=L}}
 let curLoc="";
@@ -328,7 +349,7 @@ function perfTick(dt,cpu){fN++;fAcc+=dt;cpuAcc+=cpu;if(fAcc>=.5){fpsShow=fN/fAcc
 // ================= Loop =================
 let last=performance.now(),acc=0,running=false;
 function frame(now){requestAnimationFrame(frame);const minDt=1000/SET.fps-1.5;const el=now-last;if(el<minDt)return;const dt=Math.min(.05,el/1000);last=now;
-  const t0=performance.now();if(running)update(dt);
+  const t0=performance.now();if(running){update(dt);nodesTick(dt,now/1000)}
   const t=now/1000;water.material.uniforms.t.value=t;if(bobBoat){bobBoat.position.y=.5+Math.sin(t*1.3)*.08;bobBoat.rotation.z=Math.sin(t*1.1)*.04}
   const fl=scene.userData.flag;if(fl)fl.rotation.y=Math.sin(t*1.7)*.25;
   if(!running){camS.tYaw+=dt*.08;camS.yaw=camS.tYaw;const r=60,cx=Math.sin(t*.05)*r,cz=50+Math.cos(t*.05)*r;camera.position.set(cx,22,cz);camera.lookAt(0,2,36);scene.userData.sky.position.copy(camera.position)}
@@ -346,9 +367,131 @@ $("bPerf").onclick=()=>{SET.perf=SET.perf?0:1;saveSet();perfEl.style.display=SET
 $("bPlay").onclick=()=>{running=true;$("menu").style.display="none";camS.yaw=camS.tYaw=player.yaw;
   try{if(document.documentElement.requestFullscreen&&innerWidth<900)document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}};
 
+// ================= Resurser & byggande =================
+const ST={virke:4,skrot:0,picked:0,pieces:[],obj:0};// sparat tillstånd
+const DBOX=[];// kollisioner från byggda väggar
+const CELL=2,WALLH=2.6;
+const PIECES={
+ golv:{name:"Golv",cost:{virke:2},kind:"floor"},
+ vagg:{name:"Vägg",cost:{virke:2},kind:"wall"},
+ fonster:{name:"Fönster",cost:{virke:2,skrot:1},kind:"wall"},
+ dorr:{name:"Dörr",cost:{virke:2,skrot:1},kind:"wall"},
+ tak:{name:"Tak",cost:{virke:3},kind:"roof"}};
+const ORDER=["golv","vagg","fonster","dorr","tak"];
+const DIRS=[[0,1],[1,0],[0,-1],[-1,0]];// r: 0=+z 1=+x 2=-z 3=-x
+const cellOf=v=>Math.floor(v/CELL);
+const cellC=i=>i*CELL+CELL/2;
+function terrainBase(i,k){const x0=i*CELL,z0=k*CELL;let mx=-99,mn=99;for(const[a,b]of[[0,0],[CELL,0],[0,CELL],[CELL,CELL],[CELL/2,CELL/2]]){const g=groundAt(x0+a,z0+b);mx=Math.max(mx,g);mn=Math.min(mn,g)}return{top:Math.round((mx+.12)*10)/10,mn,mx}}
+const floorAt=(i,k)=>ST.pieces.find(p=>p.t==="golv"&&p.i===i&&p.k===k);
+function baseY(i,k){const f=floorAt(i,k);return f?f.y:terrainBase(i,k).top}
+function normEdge(i,k,r){if(r===2)return[i,k-1,0];if(r===3)return[i-1,k,1];return[i,k,r]}
+function pieceKey(p){return PIECES[p.t].kind==="wall"?`w${p.i},${p.k},${p.r}`:PIECES[p.t].kind+p.i+","+p.k}
+// --- geometrier (centrerade så att y=0 är underkant) ---
+const plank="#a47c52",plank2="#8f6a45",wallC="#b8392b",trim="#f2efe8",glass="#bfe2f0",roofC="#3b3f45";
+function geoFor(t){const L=CELL+.04,T=.22,H=WALLH;
+  if(t==="golv"){const g=[colored(tr(new THREE.BoxGeometry(CELL,2.6,CELL),0,-1.3,0),"#6b5137")];for(let i=0;i<5;i++)g.push(colored(tr(new THREE.BoxGeometry(CELL/5-.03,.06,CELL),-CELL/2+CELL/10+i*CELL/5,.01,0),i%2?plank:plank2));return merge(g)}
+  if(t==="vagg"){return merge([colored(tr(new THREE.BoxGeometry(L,H,T),0,H/2,0),wallC),colored(tr(new THREE.BoxGeometry(L,.12,T+.04),0,H-.06,0),trim)])}
+  if(t==="fonster"){return merge([colored(tr(new THREE.BoxGeometry(L,.9,T),0,.45,0),wallC),colored(tr(new THREE.BoxGeometry(L,.6,T),0,H-.3,0),wallC),
+    colored(tr(new THREE.BoxGeometry(.5,1.1,T),-L/2+.25,1.45,0),wallC),colored(tr(new THREE.BoxGeometry(.5,1.1,T),L/2-.25,1.45,0),wallC),
+    colored(tr(new THREE.BoxGeometry(1.04,1.1,.06),0,1.45,0),glass),colored(tr(new THREE.BoxGeometry(1.14,.1,T+.08),0,.9,0),trim),colored(tr(new THREE.BoxGeometry(1.14,.1,T+.08),0,2,0),trim),
+    colored(tr(new THREE.BoxGeometry(.08,1.1,T+.08),0,1.45,0),trim),colored(tr(new THREE.BoxGeometry(L,.12,T+.04),0,H-.06,0),trim)])}
+  if(t==="dorr"){return merge([colored(tr(new THREE.BoxGeometry(.55,H,T),-L/2+.275,H/2,0),wallC),colored(tr(new THREE.BoxGeometry(.55,H,T),L/2-.275,H/2,0),wallC),colored(tr(new THREE.BoxGeometry(L-1.1,.5,T),0,H-.25,0),wallC),
+    colored(tr(new THREE.BoxGeometry(.1,2.15,T+.08),-.47,1.07,0),trim),colored(tr(new THREE.BoxGeometry(.1,2.15,T+.08),.47,1.07,0),trim),colored(tr(new THREE.BoxGeometry(1.04,.1,T+.08),0,2.15,0),trim),colored(tr(new THREE.BoxGeometry(L,.12,T+.04),0,H-.06,0),trim)])}
+  if(t==="tak"){const rise=1.1,len=Math.hypot(CELL,rise)+.06,a=Math.atan2(rise,CELL);const b=new THREE.BoxGeometry(CELL+.3,.16,len);b.rotateX(-a);b.translate(0,rise/2+.08,0);
+    const sh=new THREE.Shape();sh.moveTo(-CELL/2,0);sh.lineTo(CELL/2,0);sh.lineTo(CELL/2,rise);sh.closePath();const out=[colored(b,roofC)];
+    for(const s of[-1,1]){const g=new THREE.ExtrudeGeometry(sh,{depth:.12,bevelEnabled:false});g.rotateY(-Math.PI/2);g.translate(s*CELL/2+(s<0?.12:0),0,0);out.push(colored(g,wallC))}
+    return merge(out)}}
+const IM={};const IMCAP=400;
+function initBuild(){for(const t of ORDER){const m=new THREE.InstancedMesh(geoFor(t),VC,IMCAP);m.count=0;m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;scene.add(m);IM[t]=m}
+  ghostInit();nodesInit();refreshBuilt();updHud()}
+const _M=new THREE.Matrix4(),_Q=new THREE.Quaternion(),_E=new THREE.Euler(),_S=new THREE.Vector3(1,1,1),_T=new THREE.Vector3();
+function pieceXform(p,M){const k=PIECES[p.t].kind;let x=cellC(p.i),z=cellC(p.k),ry=0;
+  if(k==="wall"){const d=DIRS[p.r];x+=d[0]*CELL/2;z+=d[1]*CELL/2;ry=(p.r%2)?Math.PI/2:0}
+  if(k==="roof"){ry=-p.r*Math.PI/2}
+  _E.set(0,ry,0);_Q.setFromEuler(_E);_T.set(x,p.y,z);M.compose(_T,_Q,_S);return M}
+function refreshBuilt(){const cnt={};for(const t of ORDER)cnt[t]=0;
+  for(const p of ST.pieces){const m=IM[p.t];if(cnt[p.t]>=IMCAP)continue;m.setMatrixAt(cnt[p.t]++,pieceXform(p,_M))}
+  for(const t of ORDER){IM[t].count=cnt[t];IM[t].instanceMatrix.needsUpdate=true;IM[t].computeBoundingSphere&&IM[t].computeBoundingSphere()}
+  DBOX.length=0;for(const p of ST.pieces){if(PIECES[p.t].kind!=="wall")continue;const d=DIRS[p.r],x=cellC(p.i)+d[0]*CELL/2,z=cellC(p.k)+d[1]*CELL/2,hor=p.r%2===0,th=.22;
+    const seg=(a,b)=>{if(hor)DBOX.push({x0:x+a,x1:x+b,z0:z-th,z1:z+th,y0:p.y,y1:p.y+WALLH});else DBOX.push({x0:x-th,x1:x+th,z0:z+a,z1:z+b,y0:p.y,y1:p.y+WALLH})};
+    if(p.t==="dorr"){seg(-1.02,-.5);seg(.5,1.02)}else seg(-1.02,1.02)}}
+function hitDyn(x,z,y){for(const b of DBOX)if(x>b.x0-.25&&x<b.x1+.25&&z>b.z0-.25&&z<b.z1+.25&&y<b.y1-.2&&y>b.y0-1.5)return true;return false}
+function floorTopAt(x,z){const f=floorAt(cellOf(x),cellOf(z));return f?f.y:null}
+
+// --- spöke (förhandsvisning) ---
+let ghost,ghostOK=false,cur={t:"golv",r:0},buildMode=false,gp=null;
+const gMatOK=new THREE.MeshBasicMaterial({color:"#7dff8a",transparent:true,opacity:.45,depthWrite:false}),gMatNo=new THREE.MeshBasicMaterial({color:"#ff5a4a",transparent:true,opacity:.45,depthWrite:false});
+const GG={};function ghostInit(){for(const t of ORDER)GG[t]=geoFor(t);ghost=new THREE.Mesh(GG.golv,gMatOK);ghost.visible=false;ghost.renderOrder=3;scene.add(ghost)}
+function targetPiece(){const fx=Math.sin(player.yaw),fz=Math.cos(player.yaw);const kind=PIECES[cur.t].kind;
+  let i,k,r=cur.r;
+  if(kind==="wall"){// stå i rutan och titta mot kanten du vill bygga på
+    const px=player.pos.x+fx*.9,pz=player.pos.z+fz*.9;i=cellOf(px);k=cellOf(pz);
+    r=Math.abs(fx)>Math.abs(fz)?(fx>0?1:3):(fz>0?0:2);r=(r+cur.r)%4;const n=normEdge(i,k,r);i=n[0];k=n[1];r=n[2]}
+  else{const px=player.pos.x+fx*2.2,pz=player.pos.z+fz*2.2;i=cellOf(px);k=cellOf(pz);if(kind==="roof"){const a=Math.abs(fx)>Math.abs(fz)?(fx>0?1:3):(fz>0?0:2);r=(a+cur.r)%4}}
+  const p={t:cur.t,i,k,r:kind==="floor"?0:r};p.y=kind==="roof"?baseY(i,k)+WALLH:baseY(i,k);return p}
+function canPlace(p){const kind=PIECES[p.t].kind;const c=PIECES[p.t].cost;for(const r in c)if(ST[r]<c[r])return"Saknar "+r;
+  const key=pieceKey(p);if(ST.pieces.some(q=>pieceKey(q)===key))return"Upptaget";
+  const x0=p.i*CELL,z0=p.k*CELL,x1=x0+CELL,z1=z0+CELL;
+  if(kind==="floor"){const tb=terrainBase(p.i,p.k);if(tb.mx<-.2)return"För djupt vatten";if(tb.mx-tb.mn>1.8)return"För brant";
+    for(const b of BOXES)if(b.x0<x1&&b.x1>x0&&b.z0<z1&&b.z1>z0)return"I vägen";for(const c of COLL)if(c.x>x0-.3&&c.x<x1+.3&&c.z>z0-.3&&c.z<z1+.3)return"Träd eller sten i vägen"}
+  if(kind==="wall"){const d=DIRS[p.r],mx=cellC(p.i)+d[0],mz=cellC(p.k)+d[1];if(groundAt(mx,mz)<-.3&&!floorAt(p.i,p.k))return"För djupt vatten";
+    for(const c of COLL)if(Math.hypot(c.x-mx,c.z-mz)<c.r+.9)return"Träd eller sten i vägen";for(const b of BOXES)if(mx>b.x0-.3&&mx<b.x1+.3&&mz>b.z0-.3&&mz<b.z1+.3)return"I vägen"}
+  if(kind==="roof"){const walls=ST.pieces.filter(q=>PIECES[q.t].kind==="wall"&&[[p.i,p.k,0],[p.i,p.k,1],normEdge(p.i,p.k,2),normEdge(p.i,p.k,3)].some(e=>e[0]===q.i&&e[1]===q.k&&e[2]===q.r));
+    const nb=ST.pieces.some(q=>q.t==="tak"&&Math.abs(q.i-p.i)+Math.abs(q.k-p.k)===1);if(!walls.length&&!nb)return"Taket behöver en vägg under sig"}
+  return""}
+function buildTick(){if(!buildMode){ghost.visible=false;return}gp=targetPiece();ghost.geometry=GG[gp.t];pieceXform(gp,_M);_M.decompose(ghost.position,ghost.quaternion,ghost.scale);ghost.position.y+=.02;
+  const why=canPlace(gp);ghostOK=!why;ghost.material=ghostOK?gMatOK:gMatNo;ghost.visible=true;const el=$("bWhy");el.textContent=why||PIECES[gp.t].name+" – "+costTxt(PIECES[gp.t].cost);el.style.color=why?"#ff8a7a":"#9fe8a6"}
+const costTxt=c=>Object.entries(c).map(([r,n])=>`${n} ${r}`).join(" + ");
+function place(){gp=targetPiece();const why=canPlace(gp);ghostOK=!why;if(!ghostOK){SFX("no");pop(why);return}const c=PIECES[gp.t].cost;for(const r in c)ST[r]-=c[r];ST.pieces.push({t:gp.t,i:gp.i,k:gp.k,r:gp.r,y:gp.y});refreshBuilt();updHud();objCheck();save();SFX("place");pop("+"+PIECES[gp.t].name)}
+function demolish(){gp=targetPiece();pieceXform(gp,_M);const pos=new THREE.Vector3().setFromMatrixPosition(_M);let best=null,bd=2.2;for(const p of ST.pieces){pieceXform(p,_M);_T.setFromMatrixPosition(_M);const d=Math.hypot(_T.x-pos.x,_T.z-pos.z)+(PIECES[p.t].kind===PIECES[cur.t].kind?0:.8);if(d<bd){bd=d;best=p}}
+  if(!best){pop("Inget att riva");return}ST.pieces.splice(ST.pieces.indexOf(best),1);const c=PIECES[best.t].cost;for(const r in c)ST[r]+=c[r];refreshBuilt();updHud();save();SFX("rip");pop("Rev "+PIECES[best.t].name.toLowerCase())}
+
+// --- resursnoder: drivved och skrothögar ---
+const NODES=[];let nodeIM={};
+function nodesInit(){const rnd=mulberry(77);const add=(type,n,ok)=>{let tries=0,c=0;while(c<n&&tries<n*60){tries++;const x=(rnd()-.5)*WS*.8,z=(rnd()-.5)*WS*.8,h=groundAt(x,z);if(!ok(x,z,h))continue;if(COLL.some(q=>Math.hypot(q.x-x,q.z-z)<q.r+1.4))continue;if(BOXES.some(b=>x>b.x0-1&&x<b.x1+1&&z>b.z0-1&&z<b.z1+1))continue;if(NODES.some(q=>Math.hypot(q.x-x,q.z-z)<5))continue;NODES.push({type,x,z,y:h,ry:rnd()*6.28,gone:0});c++}};
+  add("log",8,(x,z,h)=>Math.hypot(x-YARD.x,z-YARD.z)<34&&h>.6);
+  add("log",26,(x,z,h)=>h>.25&&h<9);
+  add("scrap",4,(x,z,h)=>Math.hypot(x-YARD.x,z-YARD.z)<30&&h>.6);
+  add("scrap",8,(x,z,h)=>h>.2&&h<2.5);
+  const logG=merge([colored(tr(new THREE.CylinderGeometry(.22,.26,2.2,8).rotateZ(Math.PI/2),0,.24,0),"#8a6646"),colored(tr(new THREE.CylinderGeometry(.18,.2,1.6,7).rotateZ(Math.PI/2),.2,.62,.1,.5),"#9a7552"),colored(tr(new THREE.CylinderGeometry(.21,.21,.04,8).rotateZ(Math.PI/2),1.11,.24,0),"#d9b98a")]);
+  const scrG=merge([colored(tr(new THREE.BoxGeometry(.9,.5,.7),0,.25,0,.3),"#7b8189"),colored(tr(new THREE.CylinderGeometry(.28,.28,.7,10),.5,.35,.3),"#a0522d"),colored(tr(new THREE.BoxGeometry(.6,.3,.5),-.3,.62,-.1,.9),"#5b6168"),colored(tr(new THREE.TorusGeometry(.3,.08,6,12).rotateX(Math.PI/2),-.5,.1,.4),"#2b2b2b")]);
+  for(const[type,g]of[["log",logG],["scrap",scrG]]){const list=NODES.filter(n=>n.type===type);const m=new THREE.InstancedMesh(g,VC,list.length);m.castShadow=true;scene.add(m);nodeIM[type]={m,list}}
+  // markör ovanför närmaste nod
+  const mk=new THREE.Mesh(new THREE.OctahedronGeometry(.22),new THREE.MeshBasicMaterial({color:"#ffc21a"}));mk.visible=false;scene.add(mk);nodeIM.marker=mk;refreshNodes()}
+function refreshNodes(){for(const type of["log","scrap"]){const{m,list}=nodeIM[type];list.forEach((n,i)=>{_E.set(0,n.ry,0);_Q.setFromEuler(_E);_S.setScalar(n.gone>0?0:1);_T.set(n.x,n.y-.05,n.z);_M.compose(_T,_Q,_S);m.setMatrixAt(i,_M)});m.instanceMatrix.needsUpdate=true}_S.setScalar(1)}
+let nearNode=null;
+function nodesTick(dt,t){let ch=false;for(const n of NODES)if(n.gone>0){n.gone-=dt;if(n.gone<=0){ch=true}}if(ch)refreshNodes();
+  nearNode=null;let bd=2.4;for(const n of NODES){if(n.gone>0)continue;const d=Math.hypot(n.x-player.pos.x,n.z-player.pos.z);if(d<bd){bd=d;nearNode=n}}
+  const mk=nodeIM.marker;mk.visible=!!nearNode&&!buildMode;if(nearNode){mk.position.set(nearNode.x,nearNode.y+1.6+Math.sin(t*3)*.12,nearNode.z);mk.rotation.y=t*2}
+  const b=$("bAct");if(buildMode){b.style.display="block";b.textContent="Placera"}else if(nearNode){b.style.display="block";b.textContent=nearNode.type==="log"?"Plocka virke":"Plocka skrot"}else b.style.display="none"}
+function gather(){if(!nearNode)return;const n=nearNode;if(n.type==="log"){ST.virke+=2;ST.picked+=2;pop("+2 virke")}else{ST.skrot+=1;pop("+1 skrot")}n.gone=120;refreshNodes();updHud();objCheck();save();SFX("pick")}
+
+// --- uppdrag ---
+const OBJ=[{txt:"Plocka 10 virke",ok:()=>ST.picked>=10},{txt:"Lägg 4 golv",ok:()=>cnt("floor")>=4},{txt:"Bygg 6 väggar (en med dörr)",ok:()=>cnt("wall")>=6&&ST.pieces.some(p=>p.t==="dorr")},{txt:"Lägg tak över bygget",ok:()=>cnt("roof")>=2}];
+const cnt=k=>ST.pieces.filter(p=>PIECES[p.t].kind===k).length;
+function objCheck(){while(ST.obj<OBJ.length&&OBJ[ST.obj].ok()){ST.obj++;if(ST.obj<OBJ.length)pop("Klart! Nästa: "+OBJ[ST.obj].txt,2600);else pop("Första bygget står klart! 🎉",3500);SFX("done")}renderObj()}
+function renderObj(){const el=$("obj");el.innerHTML=`<b>Första bygget</b>`+OBJ.map((o,i)=>`<div class="${i<ST.obj?"done":i===ST.obj?"now":""}">${i<ST.obj?"✓":i===ST.obj?"›":"·"} ${o.txt}</div>`).join("")}
+function updHud(){$("res").innerHTML=`<span>🪵 ${ST.virke}</span><span>⚙️ ${ST.skrot}</span>`;
+  document.querySelectorAll("#bar .pc[data-t]").forEach(b=>{const P=PIECES[b.dataset.t];const can=Object.entries(P.cost).every(([r,n])=>ST[r]>=n);b.classList.toggle("on",b.dataset.t===cur.t);b.classList.toggle("dim",!can)})}
+let popT=0;function pop(t,ms=1400){const el=$("pop");el.textContent=t;el.style.opacity=1;clearTimeout(popT);popT=setTimeout(()=>el.style.opacity=0,ms)}
+// enkla ljud
+let AC=null;function SFX(k){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+  const f={pick:[520,780,.12],place:[180,120,.16],rip:[140,70,.18],no:[200,160,.12],done:[523,1046,.35]}[k];o.type=k==="place"||k==="rip"?"square":"triangle";o.frequency.setValueAtTime(f[0],t);o.frequency.exponentialRampToValueAtTime(f[1],t+f[2]);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+f[2]+.05);o.start(t);o.stop(t+f[2]+.06)}catch(e){}}
+// sparning
+function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[]});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
+function setBuild(on){buildMode=on;if(on)$("hint").style.opacity=0;$("bar").style.display=on?"flex":"none";$("bBuild").textContent=on?"Klar":"Bygg";$("bBuild").classList.toggle("acc",on);$("bWhy").style.display=on?"block":"none";if(on)camS.tPitch=Math.max(camS.tPitch,.55);updHud()}
+function uiInit(){const bar=$("bar");bar.innerHTML=ORDER.map(t=>`<button class="pc" data-t="${t}"><i>${{golv:"▭",vagg:"▮",fonster:"▣",dorr:"⌂",tak:"◭"}[t]}</i>${PIECES[t].name}<small>${costTxt(PIECES[t].cost).replace(/virke/g,"🪵").replace(/skrot/g,"⚙️")}</small></button>`).join("")+`<button class="pc" id="bRot"><i>↻</i>Vrid</button><button class="pc" id="bRip"><i>✕</i>Riv</button>`;
+  bar.querySelectorAll(".pc[data-t]").forEach(b=>b.onclick=()=>{cur.t=b.dataset.t;cur.r=0;updHud()});$("bRot").onclick=()=>{cur.r=(cur.r+1)%4};$("bRip").onclick=demolish;
+  $("bBuild").onclick=()=>setBuild(!buildMode);$("bAct").onclick=()=>buildMode?place():gather();
+  addEventListener("keydown",e=>{if(!running)return;if(e.code==="KeyB")setBuild(!buildMode);if(e.code==="KeyR")cur.r=(cur.r+1)%4;if(e.code==="KeyX"&&buildMode)demolish();if(e.code==="Space"||e.code==="KeyF"){e.preventDefault();buildMode?place():gather()}
+    if(buildMode&&/^Digit[1-5]$/.test(e.code)){cur.t=ORDER[+e.code.slice(5)-1];updHud()}});
+  renderObj()}
+setInterval(()=>{if(running)save()},5000);
+
 // ================= Start =================
-function boot(){Q=QUAL[SET.q];buildTerrain();buildWater();buildYard();buildNature(Q);player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
-window.VARVET={player,camS,input,SET,renderer,scene,update,start:()=>$("bPlay").onclick()};
+function boot(){Q=QUAL[SET.q];buildTerrain();buildWater();buildYard();buildNature(Q);load();initBuild();uiInit();player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
+window.VARVET={player,camS,input,SET,renderer,scene,update,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
 setTimeout(boot,30);
 </script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script></body>
