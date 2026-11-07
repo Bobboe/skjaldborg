@@ -1,6 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
-import { attachCharacter, play, SVEN } from "./characters";
+import { attachCharacter, play, SVEN, MAJKEN } from "./characters";
 import { INTERACT_PROVIDERS } from "./hooks";
 import { pop } from "./build";
 import { camS } from "./input";
@@ -37,7 +37,7 @@ function jobsWorldInit(){
   const parts=[];const len=Math.hypot(ex-NJ.x0,ez-NJ.z0);const g=new THREE.BoxGeometry(2.6,.28,len);g.rotateY(ang);g.translate((NJ.x0+ex)/2,1.2,(NJ.z0+ez)/2);parts.push(colored(g,"#9a7a55"));
   for(let t=1;t<len;t+=3)for(const s of[-1.1,1.1]){const px=NJ.x0+dx*t+dz*s,pz=NJ.z0+dz*t-dx*s;parts.push(colored(tr(new THREE.CylinderGeometry(.15,.15,5,6),px,-1.2,pz),"#5e4630"))}
   const m=new THREE.Mesh(merge(parts),VC);m.castShadow=true;scene.add(m);
-  NPC.majken=makePerson({shirt:"#c0392b",pants:"#2b2f36",hair:"#c9c2b8",skin:"#f2cdb0"});NPC.majken.position.set(ex-dx*1.5,1.35,ez-dz*1.5);NPC.majken.rotation.y=ang+Math.PI;
+  NPC.majken=makePerson({shirt:"#c0392b",pants:"#2b2f36",hair:"#c9c2b8",skin:"#f2cdb0"});NPC.majken.position.set(ex-dx*1.5,1.35,ez-dz*1.5);NPC.majken.rotation.y=ang+Math.PI;NPC.majken.position.y=Math.max(1.34,groundAt(NPC.majken.position.x,NPC.majken.position.z));attachCharacter(NPC.majken,MAJKEN);
   // utombordsmotor på motorbåten
   const mo=new THREE.Group();const a=new THREE.Mesh(new THREE.BoxGeometry(.45,.55,.5),new THREE.MeshLambertMaterial({color:"#1d1f24"}));a.position.y=.55;mo.add(a);
   const sh=new THREE.Mesh(new THREE.BoxGeometry(.12,.8,.14),new THREE.MeshLambertMaterial({color:"#2b2f36"}));sh.position.y=-.05;mo.add(sh);mo.position.set(0,.1,-3.05);bobBoat.add(mo);

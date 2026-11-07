@@ -13,7 +13,7 @@ import { running } from "./menu";
 import { NODES, ST, act, cur, gather, initBuild, load, nodesTick, place, setBuild, uiInit } from "./build";
 import { Q, camera, perfTick, renderer, scene } from "./engine";
 import { input } from "./input";
-import { BOATM, GAMEON, JOBS, NJ, dlgNext, endGame, interTick, jobState, jobsWorldInit, nearI, startGame } from "./jobs";
+import { NPC, BOATM, GAMEON, JOBS, NJ, dlgNext, endGame, interTick, jobState, jobsWorldInit, nearI, startGame } from "./jobs";
 import { buildNature } from "./nature";
 import { player, P } from "./player";
 import { QUAL, SET } from "./settings";
@@ -34,7 +34,7 @@ function frame(now){requestAnimationFrame(frame);const minDt=1000/SET.fps-1.5;co
 
 // ================= Start =================
 function boot(){setTER(buildTerrain());buildWater();buildYard();buildNature(Q);load();jobsWorldInit();initBuild();uiInit();lifeInit();if(ST.char)attachCharacter(P,PLAYER_DEFS[ST.char]);player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();telemetryInit(renderer.getContext(),"webgl2");$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
-window.VARVET={P,life:()=>timeOf(),player,camS,input,SET,renderer,scene,update,act,dlgNext,BOATM,JOBS,startGame,endGame,jobState,get nearI(){return nearI},get GAMEON(){return GAMEON},get NJ(){return NJ},bobBoat:()=>bobBoat,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
+window.VARVET={NPC,P,life:()=>timeOf(),player,camS,input,SET,renderer,scene,update,act,dlgNext,BOATM,JOBS,startGame,endGame,jobState,get nearI(){return nearI},get GAMEON(){return GAMEON},get NJ(){return NJ},bobBoat:()=>bobBoat,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
 setTimeout(boot,30);
 
 

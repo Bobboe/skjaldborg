@@ -86,3 +86,8 @@ export const PLAYER_WOMAN: CharDef = {
     sit: "Chair_Sit_Idle_F", work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
 };
 export const PLAYER_DEFS: Record<string, CharDef> = { man: PLAYER_MAN, kvinna: PLAYER_WOMAN };
+
+export const MAJKEN: CharDef = {
+  file: "majken.glb", height: 1.66,
+  anims: { idle: "Idle_6", talk: "Talk_with_Left_Hand_on_Hip", walk: "Walking", stroll: "Thoughtful_Walk", run: "Running", sit: "Chair_Sit_Idle_F" },
+};
