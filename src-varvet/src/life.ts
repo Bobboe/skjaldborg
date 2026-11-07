@@ -42,7 +42,7 @@ export function lifeInit() {
   if (!L.fc) L.fc = [rollWx(L.day + 1), rollWx(L.day + 2), rollWx(L.day + 3)];
   buildRain(); buildCrate(); phoneInit();
   INTERACT_PROVIDERS.push(list => {
-    list.push({ x: 4, z: 39.4, r: 2.4, label: L.min >= 18 * 60 ? "Sova i boden" : "Vila till i morgon", fn: () => sleep(false) });
+    list.push({ x: 4, z: 41.6, r: 2.6, label: L.min >= 18 * 60 ? "Sova i boden" : "Vila till i morgon", fn: () => sleep(false) });
     if (L.delivery) list.push({ x: 14, z: 60, r: 2.6, label: "Hämta leverans", fn: takeDelivery });
   });
   applyWeather(true); clockHud();
@@ -76,7 +76,7 @@ function sleep(passedOut) {
     sleeping = false;
     if (passedOut) { const fee = Math.min(ST.kr, 150); ST.kr -= fee; pop(fee ? `Du somnade utomhus och vaknade stel och frusen (−${fee} kr för värktabletter och kaffe)` : "Du somnade utomhus och vaknade stel och frusen", 4200); }
     newDay();
-    player.pos.set(4, 1.3, 41); player.yaw = 0; camS.tYaw = camS.yaw = 0;
+    player.pos.set(4, 1.3, 42.4); player.yaw = 0; camS.tYaw = camS.yaw = 0;
     updHud(); save();
     setTimeout(() => pop(`${dateText()} · ${WX[L.wx].name}`, 3600), passedOut ? 4400 : 300);
   });

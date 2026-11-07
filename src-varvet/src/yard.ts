@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { attachProp } from "./characters";
 import { colored } from "./util";
 import { VCD } from "./util";
 import { VC } from "./util";
@@ -14,13 +15,15 @@ let bobBoat;
 function buildYard(){const parts=[];const Y=YARD.h;
   // Faluröd verkstadsbod med vita knutar och sadeltak
   const W=12,D=9,Hh=4.2,bx=4,bz=34;
-  parts.push(colored(tr(new THREE.BoxGeometry(W,Hh,D),bx,Y+Hh/2,bz),"#b8392b"));
-  for(const sx of[-1,1])for(const sz of[-1,1])parts.push(colored(tr(new THREE.BoxGeometry(.3,Hh,.3),bx+sx*W/2,Y+Hh/2,bz+sz*D/2),"#f2efe8"));
-  parts.push(...gable(bx,Y+Hh,bz,W,D,2.3,"#3b3f45","#b8392b"));
-  parts.push(colored(tr(new THREE.BoxGeometry(4.6,3.4,.2),bx,Y+1.7,bz+D/2+.05),"#6e1f17"));
-  parts.push(colored(tr(new THREE.BoxGeometry(4.9,.22,.3),bx,Y+3.5,bz+D/2+.1),"#f2efe8"));
-  for(const wx of[-4,4])parts.push(colored(tr(new THREE.BoxGeometry(1.3,1.1,.15),bx+wx,Y+2.4,bz+D/2+.04),"#cfe6f2"),colored(tr(new THREE.BoxGeometry(1.5,.12,.25),bx+wx,Y+1.8,bz+D/2+.08),"#f2efe8"));
-  BOXES.push({x0:bx-W/2-.3,x1:bx+W/2+.3,z0:bz-D/2-.3,z1:bz+D/2+.3,top:Y+7});
+  {const bp=[];  bp.push(colored(tr(new THREE.BoxGeometry(W,Hh,D),bx,Y+Hh/2,bz),"#b8392b"));
+  for(const sx of[-1,1])for(const sz of[-1,1])bp.push(colored(tr(new THREE.BoxGeometry(.3,Hh,.3),bx+sx*W/2,Y+Hh/2,bz+sz*D/2),"#f2efe8"));
+  bp.push(...gable(bx,Y+Hh,bz,W,D,2.3,"#3b3f45","#b8392b"));
+  bp.push(colored(tr(new THREE.BoxGeometry(4.6,3.4,.2),bx,Y+1.7,bz+D/2+.05),"#6e1f17"));
+  bp.push(colored(tr(new THREE.BoxGeometry(4.9,.22,.3),bx,Y+3.5,bz+D/2+.1),"#f2efe8"));
+  for(const wx of[-4,4])bp.push(colored(tr(new THREE.BoxGeometry(1.3,1.1,.15),bx+wx,Y+2.4,bz+D/2+.04),"#cfe6f2"),colored(tr(new THREE.BoxGeometry(1.5,.12,.25),bx+wx,Y+1.8,bz+D/2+.08),"#f2efe8"));
+  const hold=new THREE.Group();const bm=new THREE.Mesh(merge(bp),VC);bm.castShadow=true;bm.receiveShadow=true;hold.add(bm);hold.position.set(bx,0,bz);bm.position.set(-bx,0,-bz);scene.add(hold);
+   attachProp(hold,"boden.glb",{fit:W+.4,rotY:0,ground:Y-.05,hideChildren:true,liner:.985})}
+  BOXES.push({x0:bx-4.6,x1:bx+4.6,z0:bz-6.4,z1:bz+6.4,top:Y+7});
   // brygga
   const jx=14,jz0=58,jz1=90;parts.push(colored(tr(new THREE.BoxGeometry(3.2,.3,jz1-jz0),jx,1.3,(jz0+jz1)/2),"#9a7a55"));
   for(let z=jz0+1;z<jz1;z+=3)for(const s of[-1.4,1.4])parts.push(colored(tr(new THREE.CylinderGeometry(.16,.16,4.5,6),jx+s,-1.2,z),"#5e4630"));

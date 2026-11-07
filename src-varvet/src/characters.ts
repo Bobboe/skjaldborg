@@ -93,7 +93,7 @@ export const MAJKEN: CharDef = {
 };
 
 /** Statisk modell (båt, hus, föremål) som ersätter en kodform. `fit` = längd i meter längs modellens längsta axel. */
-export function attachProp(holder: THREE.Mesh | THREE.Object3D, file: string, opt: { fit: number; rotY?: number; y?: number; hideChildren?: boolean; liner?: number; waterMask?: number }): void {
+export function attachProp(holder: THREE.Mesh | THREE.Object3D, file: string, opt: { fit: number; rotY?: number; y?: number; ground?: number; hideChildren?: boolean; liner?: number; waterMask?: number }): void {
   loader.load(import.meta.env.BASE_URL + "models/" + file, gltf => {
     const root = gltf.scene;
     root.traverse(o => { const m = o as THREE.Mesh; if (!m.isMesh) return; const src = m.material as THREE.MeshStandardMaterial;
@@ -102,6 +102,7 @@ export function attachProp(holder: THREE.Mesh | THREE.Object3D, file: string, op
     root.scale.setScalar(opt.fit / Math.max(sz.x, sz.z));
     if (opt.rotY) root.rotation.y = opt.rotY;
     root.position.y = opt.y || 0;
+    if (opt.ground != null) { root.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(root); root.position.y += opt.ground - bb.min.y; }
     if (opt.hideChildren) for (const c of holder.children) c.visible = false;
     const h = holder as THREE.Mesh; if (h.isMesh) { h.geometry = new THREE.BufferGeometry(); }
     holder.add(root); holder.userData.realModel = true;
