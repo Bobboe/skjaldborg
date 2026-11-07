@@ -93,7 +93,7 @@ export const MAJKEN: CharDef = {
 };
 
 /** Statisk modell (båt, hus, föremål) som ersätter en kodform. `fit` = längd i meter längs modellens längsta axel. */
-export function attachProp(holder: THREE.Mesh | THREE.Object3D, file: string, opt: { fit: number; rotY?: number; y?: number; hideChildren?: boolean }): void {
+export function attachProp(holder: THREE.Mesh | THREE.Object3D, file: string, opt: { fit: number; rotY?: number; y?: number; hideChildren?: boolean; liner?: number; waterMask?: number }): void {
   loader.load(import.meta.env.BASE_URL + "models/" + file, gltf => {
     const root = gltf.scene;
     root.traverse(o => { const m = o as THREE.Mesh; if (!m.isMesh) return; const src = m.material as THREE.MeshStandardMaterial;
@@ -105,5 +105,30 @@ export function attachProp(holder: THREE.Mesh | THREE.Object3D, file: string, op
     if (opt.hideChildren) for (const c of holder.children) c.visible = false;
     const h = holder as THREE.Mesh; if (h.isMesh) { h.geometry = new THREE.BufferGeometry(); }
     holder.add(root); holder.userData.realModel = true;
+    if (opt.waterMask != null) holder.add(waterMask(root, opt.waterMask));
+    if (opt.liner) { // inre kopia som täcker små hål i AI-modellens skal
+      const inner = root.clone(true); inner.scale.multiplyScalar(opt.liner); inner.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { m.castShadow = false; } });
+      const c = new THREE.Box3().setFromObject(root).getCenter(new THREE.Vector3()); holder.worldToLocal(c);
+      inner.position.y = root.position.y + (c.y - root.position.y) * (1 - opt.liner); holder.add(inner);
+    }
   }, undefined, err => console.warn("Kunde inte ladda", file, err));
+}
+
+/** Osynlig yta i relingshöjd som bara skriver djup, ritas före vattnet: hindrar havsytan från att synas inne i båten. */
+function waterMask(root: THREE.Object3D, y: number): THREE.Mesh {
+  root.updateMatrix(); const pts: [number, number][] = []; const v = new THREE.Vector3();
+  root.traverse(o => { const m = o as THREE.Mesh; if (!m.isMesh) return; const p = m.geometry.attributes.position; m.updateMatrix();
+    for (let i = 0; i < p.count; i += 3) { v.fromBufferAttribute(p, i).applyMatrix4(m.matrix).applyMatrix4(root.matrix); pts.push([v.x, v.z]); } });
+  // konvext hölje (monotone chain), krympt 4 % mot mitten
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo: [number, number][] = [], up: [number, number][] = [];
+  for (const p of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+  const hull = lo.slice(0, -1).concat(up.slice(0, -1));
+  const cx = hull.reduce((a, p) => a + p[0], 0) / hull.length, cz = hull.reduce((a, p) => a + p[1], 0) / hull.length;
+  const shape = new THREE.Shape(hull.map(([x, z]) => new THREE.Vector2(cx + (x - cx) * .96, -(cz + (z - cz) * .96))));
+  const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2); g.translate(0, y, 0);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, transparent: true, side: THREE.DoubleSide }));
+  m.renderOrder = 0.5; m.frustumCulled = false; return m;
 }

@@ -40,7 +40,7 @@ function jobsWorldInit(){
   NPC.majken=makePerson({shirt:"#c0392b",pants:"#2b2f36",hair:"#c9c2b8",skin:"#f2cdb0"});NPC.majken.position.set(ex-dx*1.5,1.35,ez-dz*1.5);NPC.majken.rotation.y=ang+Math.PI;NPC.majken.position.y=Math.max(1.34,groundAt(NPC.majken.position.x,NPC.majken.position.z));attachCharacter(NPC.majken,MAJKEN);
   // utombordsmotor på motorbåten
   const mo=new THREE.Group();const a=new THREE.Mesh(new THREE.BoxGeometry(.45,.55,.5),new THREE.MeshLambertMaterial({color:"#1d1f24"}));a.position.y=.55;mo.add(a);
-  const sh=new THREE.Mesh(new THREE.BoxGeometry(.12,.8,.14),new THREE.MeshLambertMaterial({color:"#2b2f36"}));sh.position.y=-.05;mo.add(sh);mo.position.set(0,.1,-3.05);bobBoat.add(mo);attachProp(bobBoat,"motorbat.glb",{fit:5.8,rotY:Math.PI/2,y:.05,hideChildren:true});
+  const sh=new THREE.Mesh(new THREE.BoxGeometry(.12,.8,.14),new THREE.MeshLambertMaterial({color:"#2b2f36"}));sh.position.y=-.05;mo.add(sh);mo.position.set(0,.1,-3.05);bobBoat.add(mo);attachProp(bobBoat,"motorbat.glb",{fit:5.8,rotY:Math.PI/2,y:.05,hideChildren:true,liner:.975,waterMask:-.12});
   if(ST.job>2){bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.y=ang}}
 
 // --- jobblista ---
@@ -128,19 +128,19 @@ function propInit(){const c=gcv(),W=c.width,H=c.height,x=c.getContext("2d"),k=GA
 // --- båtkörning ---
 const BOATM={on:false,v:0,yaw:0};
 function boatStart(){BOATM.on=true;BOATM.v=0;BOATM.yaw=bobBoat.rotation.y;P.visible=true;$("hint").style.opacity=1;$("hint").textContent="Vänster tumme: gasa och styr · Kör till den gula ringen vid Grannön";TGT.visible=true;TGT.position.set(NJ.boatX,.35,NJ.boatZ);pop("Kör till Majkens brygga!",2200)}
-function boatDrive(dt,mx,mz){const thr=-mz,st=mx;BOATM.v+=(thr*11-BOATM.v)*Math.min(1,dt*(thr?0.9:.5));BOATM.yaw-=st*dt*1.3*clamp(Math.abs(BOATM.v)/4,.25,1)*Math.sign(BOATM.v||1);
+function boatDrive(dt,mx,mz){const thr=-mz,st=mx;BOATM.steer=st;BOATM.v+=(thr*11-BOATM.v)*Math.min(1,dt*(thr?0.9:.5));BOATM.yaw-=st*dt*1.3*clamp(Math.abs(BOATM.v)/4,.25,1)*Math.sign(BOATM.v||1);
   const nx=bobBoat.position.x+Math.sin(BOATM.yaw)*BOATM.v*dt,nz=bobBoat.position.z+Math.cos(BOATM.yaw)*BOATM.v*dt;
   const free=(x,z)=>sampleGrid(x,z)<-.3&&!(Math.abs(x-14)<2&&z>57&&z<92)&&Math.abs(x)<WS/2-10&&Math.abs(z)<WS/2-10;
   const bow=(x,z)=>free(x+Math.sin(BOATM.yaw)*2.8,z+Math.cos(BOATM.yaw)*2.8);
   const stuck=!free(bobBoat.position.x,bobBoat.position.z);if((free(nx,nz)&&bow(nx,nz))||(stuck&&sampleGrid(nx,nz)<=sampleGrid(bobBoat.position.x,bobBoat.position.z))){bobBoat.position.x=nx;bobBoat.position.z=nz}else{BOATM.v*=-.3}
-  bobBoat.rotation.y=BOATM.yaw;bobBoat.rotation.x=-clamp(BOATM.v/11,0,1)*.08;
-  player.pos.set(bobBoat.position.x,bobBoat.position.y+.1,bobBoat.position.z);player.yaw=BOATM.yaw;P.position.set(bobBoat.position.x-Math.sin(BOATM.yaw)*1.7,bobBoat.position.y-(P.userData.realModel?(bobBoat.userData.realModel?.18:.62):.45),bobBoat.position.z-Math.cos(BOATM.yaw)*1.7);P.rotation.y=BOATM.yaw;
+  
+  player.pos.set(bobBoat.position.x,bobBoat.position.y+.1,bobBoat.position.z);player.yaw=BOATM.yaw;
   // kameran bakom båten
   camS.tYaw+=Math.atan2(Math.sin(BOATM.yaw-camS.tYaw),Math.cos(BOATM.yaw-camS.tYaw))*Math.min(1,dt*1.5);
   if(Math.random()<Math.abs(BOATM.v)*.02)SFX("tick");
   {const dx=NJ.boatX-bobBoat.position.x,dz=NJ.boatZ-bobBoat.position.z;const a=Math.atan2(dx,dz)-camS.yaw;$("compass").style.display="flex";$("cArrow").style.transform=`rotate(${-a*180/Math.PI-90}deg)`;$("cDist").textContent=Math.round(Math.hypot(dx,dz))+" m"}
   if(Math.hypot(bobBoat.position.x-NJ.boatX,bobBoat.position.z-NJ.boatZ)<4.5&&Math.abs(BOATM.v)<7.5){boatArrive()}}
-function boatArrive(){BOATM.on=false;$("compass").style.display="none";BOATM.v=0;TGT.visible=false;bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.set(0,NJ.ang,0);$("hint").style.opacity=0;
+function boatArrive(){BOATM.on=false;$("compass").style.display="none";BOATM.v=0;TGT.visible=false;bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.set(0,NJ.ang,0);bobBoat.userData.yaw=NJ.ang;$("hint").style.opacity=0;
   dialog("Majken",["Åh, där är hon! Tack ska du ha, den är ju fin som snus.","Sven sa att du skulle ha 800 kronor. Hoppa in i min eka så skjutsar jag dig hem."],()=>{jobDone();fade(()=>{player.pos.set(14,1.45,70);player.yaw=Math.PI;camS.tYaw=camS.yaw=Math.PI;dialog("Sven",["Där är du ju! Bra jobbat idag.","Det var allt för demon – resten av varvets historia kommer snart."],null)})})}
 function fade(mid){const f=$("fade");f.style.opacity=1;setTimeout(()=>{mid();setTimeout(()=>f.style.opacity=0,300)},500)}
 
