@@ -46,7 +46,7 @@ function jobsWorldInit(){
 // --- jobblista ---
 const JOBS=[
  {from:"sven",title:"Slipa Svens eka",reward:400,where:"Ekan på bockarna vid boden",
-  offer:["Hej grannen! Kul att någon tar hand om varvet igen.","Min gamla eka står på bockarna där borta. Botten är full av havstulpaner och gammal färg.","Kan du slipa den ren? Jag betalar 400 kronor."],
+  offer:["Så du är Edvins barnbarn. Jag ser det på ögonen. Jag heter Sven – jag bor på andra sidan viken.","Här är nyckeln. Den har legat i min kakburk i trettio år.","Varvet är i ett sorgligt skick, men det går att få liv i. Och börjar du ta jobb så kommer folket tillbaka.","Min gamla eka står på bockarna där borta. Botten är full av havstulpaner och gammal färg.","Kan du slipa den ren? Jag betalar 400 kronor."],
   done:"Fint jobbat! Hon ser ut som ny. Här har du 400 kronor.",target:()=>({x:-6,z:47,r:4.6,label:"Slipa skrovet"}),game:"sand"},
  {from:"sven",title:"Byt propeller",reward:600,where:"Motorbåten vid bryggan",
   offer:["Nästa sak: propellern på motorbåten vid bryggan gick i en sten i somras.","Jag har köpt en ny. Kan du byta den? 600 kronor."],
@@ -62,7 +62,7 @@ let nearI=null;
 function interactables(){const L=[];for(const f of INTERACT_PROVIDERS)f(L);const J=jobState();
   if(J&&!ST.jobOn){const p=npcPos(J.from);L.push({x:p.x,z:p.z,r:2.6,label:"Prata med "+(J.from==="sven"?"Sven":"Majken"),fn:()=>talk(J)})}
   else if(J&&ST.jobOn){const t=J.target();L.push({x:t.x,z:t.z,r:t.r,label:t.label,fn:()=>startGame(J)})}
-  if(!J||ST.jobOn){const p=npcPos("sven");L.push({x:p.x,z:p.z,r:2.2,label:"Prata med Sven",fn:()=>dialog("Sven",[J?(ST.jobOn?"Du har ett jobb på gång: "+J.title.toLowerCase()+". "+J.where+".":""):"Det var allt för den här gången. Mer jobb kommer!"],null)})}
+  if(!J||ST.jobOn){const p=npcPos("sven");L.push({x:p.x,z:p.z,r:2.2,label:"Prata med Sven",fn:()=>dialog("Sven",[J?(ST.jobOn?"Du har ett jobb på gång: "+J.title.toLowerCase()+". "+J.where+".":""):"Inga fler jobb från mig just nu. Men ryktet sprider sig – snart står folk i kö."],null)})}
   return L}
 function interTick(t){nearI=null;if(buildMode||BOATM.on||GAMEON)return;let bd=99;for(const it of interactables()){const d=Math.hypot(it.x-player.pos.x,it.z-player.pos.z);if(d<it.r&&d<bd){bd=d;nearI=it}}
   const J=jobState();let mp=null;if(J&&!ST.jobOn){mp=npcPos(J.from).clone();mp.y+=2.6}else if(J&&ST.jobOn&&J.game!=="drive"){const q=J.target();mp=new THREE.Vector3(q.x,groundAt(q.x,q.z)+2.6,q.z)}else if(J&&ST.jobOn){mp=bobBoat.position.clone();mp.y+=2.4}
@@ -72,7 +72,7 @@ function interTick(t){nearI=null;if(buildMode||BOATM.on||GAMEON)return;let bd=99
 let DLG=null;
 function closeDlg(){$("dlg").style.display="none";DLG=null}
 function dialog(who,lines,onEnd,accept){DLG={who,lines:lines.filter(Boolean),i:0,onEnd,accept};$("dlg").style.display="block";dlgShow()}
-const POR=n=>import.meta.env.BASE_URL+"ui/por_"+n.toLowerCase().replace(/å|ä/g,"a").replace(/ö/g,"o")+".png";
+const POR=n=>import.meta.env.BASE_URL+"ui/por_"+n.split(/[ (·]/)[0].toLowerCase().replace(/å|ä/g,"a").replace(/ö/g,"o")+".png";
 function dlgShow(){const d=DLG;$("dlgWho").textContent=d.who;const pi=$("dlgPor");if(pi.dataset.n!==d.who){pi.dataset.n=d.who;pi.style.display="none";pi.onload=()=>pi.style.display="block";pi.onerror=()=>pi.style.display="none";pi.src=POR(d.who)}$("dlgTxt").textContent=d.lines[d.i];const last=d.i>=d.lines.length-1;$("dlgNext").textContent=last?(d.accept?"Ta jobbet":"OK"):"Fortsätt";$("dlgNo").style.display=last&&d.accept?"inline-block":"none"}
 function dlgNext(ok=true){const d=DLG;if(!d)return;if(d.i<d.lines.length-1){d.i++;dlgShow();return}$("dlg").style.display="none";DLG=null;if(ok&&d.onEnd)d.onEnd()}
 function talk(J){dialog(J.from==="sven"?"Sven":"Majken",J.offer,()=>{ST.jobOn=1;pop("Nytt jobb: "+J.title,2200);renderObj();save();SFX("done")},true)}
@@ -141,7 +141,7 @@ function boatDrive(dt,mx,mz){const thr=-mz,st=mx;BOATM.steer=st;BOATM.v+=(thr*11
   {const dx=NJ.boatX-bobBoat.position.x,dz=NJ.boatZ-bobBoat.position.z;const a=Math.atan2(dx,dz)-camS.yaw;$("compass").style.display="flex";$("cArrow").style.transform=`rotate(${-a*180/Math.PI-90}deg)`;$("cDist").textContent=Math.round(Math.hypot(dx,dz))+" m"}
   if(Math.hypot(bobBoat.position.x-NJ.boatX,bobBoat.position.z-NJ.boatZ)<4.5&&Math.abs(BOATM.v)<7.5){boatArrive()}}
 function boatArrive(){BOATM.on=false;$("compass").style.display="none";BOATM.v=0;TGT.visible=false;bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.set(0,NJ.ang,0);bobBoat.userData.yaw=NJ.ang;$("hint").style.opacity=0;
-  dialog("Majken",["Åh, där är hon! Tack ska du ha, den är ju fin som snus.","Sven sa att du skulle ha 800 kronor. Hoppa in i min eka så skjutsar jag dig hem."],()=>{jobDone();fade(()=>{player.pos.set(14,1.45,70);player.yaw=Math.PI;camS.tYaw=camS.yaw=Math.PI;dialog("Sven",["Där är du ju! Bra jobbat idag.","Det var allt för demon – resten av varvets historia kommer snart."],null)})})}
+  dialog("Majken",["Åh, där är hon! Tack ska du ha, den är ju fin som snus.","Sven sa att du skulle ha 800 kronor. Hoppa in i min eka så skjutsar jag dig hem."],()=>{jobDone();fade(()=>{player.pos.set(14,1.45,70);player.yaw=Math.PI;camS.tYaw=camS.yaw=Math.PI;dialog("Sven",["Där är du ju! Majken ringde redan och skröt om båten. Bra jobbat."],null)})})}
 function fade(mid){const f=$("fade");f.style.opacity=1;setTimeout(()=>{mid();setTimeout(()=>f.style.opacity=0,300)},500)}
 
 

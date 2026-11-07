@@ -35,6 +35,12 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .seg button.on{background:var(--acc);color:#111}
 .lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-top:12px}
 #settings{display:none}
+#letter{position:fixed;inset:0;z-index:16;display:none;align-items:center;justify-content:center;background:rgba(10,12,14,.55);padding:12px}
+.letCard{width:min(520px,100%);max-height:100%;overflow:auto;background:#f3ecdc;color:#3a2e22;border-radius:6px;padding:20px 22px 18px;box-shadow:0 12px 40px rgba(0,0,0,.5);font-family:Georgia,'Times New Roman',serif;transform:rotate(-.6deg)}
+#letTitle{font:700 13px system-ui;letter-spacing:.1em;text-transform:uppercase;color:#7a5136;margin-bottom:10px}
+#letBody{white-space:pre-wrap;font-size:15.5px;line-height:1.5}.letCard .btn{width:100%;margin-top:14px}
+#chapter{position:fixed;inset:0;z-index:18;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,12,14,.6);transition:opacity .9s;pointer-events:none}
+#chTitle{font:italic 700 34px Georgia,serif;color:#f3ecdc;text-shadow:0 2px 10px rgba(0,0,0,.6)}#chSub{font:600 14px system-ui;letter-spacing:.2em;text-transform:uppercase;color:var(--acc);margin-top:8px}
 .pickc{flex:1;background:transparent;border:2px solid var(--line);border-radius:14px;padding:6px;color:var(--txt);font:600 14px system-ui;display:flex;flex-direction:column;align-items:center;gap:4px}.pickc img{width:100%;max-width:120px;aspect-ratio:1;border-radius:10px;object-fit:cover}.pickc.on{border-color:var(--acc);background:rgba(255,194,26,.12)}
 #pname{width:100%;margin:6px 0 12px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#14171b;color:var(--txt);font:15px system-ui;text-align:center}
 #clock{top:calc(max(16px,calc(env(safe-area-inset-top) + 6px)) + 20px);left:50%;transform:translateX(-50%);font:600 12px system-ui;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7);white-space:nowrap}
@@ -83,7 +89,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="perf" class="hud"></div>
 <div id="loc" class="hud">Varvsön</div>
 <div id="clock" class="hud"></div>
-<div id="phone"><div class="phCard"><div class="phHead"><div id="phTabs"><button data-t="shop">Beställ</button><button data-t="wx">Väder</button><button data-t="cal">Kalender</button></div><button class="btn" id="phX">✕</button></div><div id="phBody"></div></div></div>
+<div id="phone"><div class="phCard"><div class="phHead"><div id="phTabs"><button data-t="shop">Beställ</button><button data-t="wx">Väder</button><button data-t="cal">Kalender</button><button data-t="dag">Dagbok</button></div><button class="btn" id="phX">✕</button></div><div id="phBody"></div></div></div>
 <div id="hint" class="hud">Vänster tumme: gå · Höger tumme: titta runt</div>
 <div id="joy"><div id="knob"></div></div>
 <div id="res" class="hud"></div>
@@ -95,6 +101,8 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="dlg"><img id="dlgPor" alt=""><div id="dlgWho"></div><div id="dlgTxt"></div><div class="row" style="justify-content:flex-end;margin:10px 0 0"><button class="btn" id="dlgNo">Inte nu</button><button class="btn acc" id="dlgNext">Fortsätt</button></div></div>
 <div id="game"><div class="gtop"><div><div id="gTitle"></div><div id="gHelp"></div></div><button class="btn" id="gX">Avbryt</button></div><canvas id="gcv"></canvas><div class="gbar"><i id="gBar"></i></div></div>
 <div id="fade"></div>
+<div id="letter"><div class="letCard"><div id="letTitle"></div><div id="letBody"></div><button class="btn acc" id="letOk">Lägg undan brevet</button></div></div>
+<div id="chapter"><div id="chTitle"></div><div id="chSub"></div></div>
 <div id="compass" class="hud"><div id="cArrow">➤</div><span id="cDist"></span></div>
 <div id="menu">
   <div class="card" id="mainCard">

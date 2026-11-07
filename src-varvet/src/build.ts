@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { storyObjective } from "./story";
 import { once } from "./characters";
 import { camS } from "./input";
 import { HG } from "./terrain";
@@ -140,7 +141,11 @@ function gather(){if(!nearNode)return;const n=nearNode;once(P,'pick','idle',1600
 const OBJ=[{txt:"Plocka 10 virke",ok:()=>ST.picked>=10},{txt:"Lägg 4 golv",ok:()=>cnt("floor")>=4},{txt:"Bygg 6 väggar (en med dörr)",ok:()=>cnt("wall")>=6&&ST.pieces.some(p=>p.t==="dorr")},{txt:"Lägg tak över bygget",ok:()=>cnt("roof")>=2}];
 const cnt=k=>ST.pieces.filter(p=>PIECES[p.t].kind===k).length;
 function objCheck(){while(ST.obj<OBJ.length&&OBJ[ST.obj].ok()){ST.obj++;if(ST.obj<OBJ.length)pop("Klart! Nästa: "+OBJ[ST.obj].txt,2600);else pop("Första bygget står klart! 🎉",3500);SFX("done")}renderObj()}
-function renderObj(){const el=$("obj");const J=typeof jobState==="function"?jobState():null;el.innerHTML=(ST.obj<OBJ.length?`<b>Första bygget</b>`+OBJ.map((o,i)=>`<div class="${i<ST.obj?"done":i===ST.obj?"now":""}">${i<ST.obj?"✓":i===ST.obj?"›":"·"} ${o.txt}</div>`).join(""):`<b>Första bygget</b><div class="done">✓ Klart</div>`)+`<b style="display:block;margin-top:6px">Jobb</b>`+(J?(ST.jobOn?`<div class="now">› ${J.title}</div><div>${J.where}</div>`:`<div class="now">› Prata med Sven på bryggan</div>`):`<div class="done">✓ Alla jobb klara</div>`)}
+function renderObj(){const el=$("obj");const J=typeof jobState==="function"?jobState():null;const so=storyObjective();
+  const build=ST.obj<OBJ.length?OBJ.map((o,i)=>`<div class="${i<ST.obj?"done":i===ST.obj?"now":""}">${i<ST.obj?"✓":i===ST.obj?"›":"·"} ${o.txt}</div>`).join(""):"";
+  let h=so?`<b>Kapitel 1 · Arvet</b><div class="now">› ${so.text}</div>`+(so.list?build:""):(build?`<b>Första bygget</b>${build}`:"");
+  if(J&&ST.jobOn)h+=`<b style="display:block;margin-top:6px">Jobb</b><div class="now">› ${J.title}</div><div>${J.where}</div>`;
+  el.innerHTML=h;el.style.display=h?"block":"none"}
 const UI=import.meta.env.BASE_URL+"ui/";const ICO=(k,c="ico")=>`<img class="${c}" src="${UI}it_${k}.png" alt="">`;
 function updHud(){$("res").innerHTML=`<span>${ICO("virke")}${ST.virke}</span><span>${ICO("skrot")}${ST.skrot}</span><span>${ICO("kr")}${ST.kr} kr</span><span>${ICO("rykte")}${ST.rykte||0}</span>`;
   document.querySelectorAll("#bar .pc[data-t]").forEach(b=>{const P=PIECES[b.dataset.t];const can=Object.entries(P.cost).every(([r,n])=>ST[r]>=n);b.classList.toggle("on",b.dataset.t===cur.t);b.classList.toggle("dim",!can)})}

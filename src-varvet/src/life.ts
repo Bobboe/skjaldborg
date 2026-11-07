@@ -2,6 +2,7 @@
 // M2: tid (10 min per speldag, 06–22), sömn, dagsljus, väder med prognos, regn/snö,
 // telefonen (beställ material, väder, kalender), leveranser och marknadspriser.
 import * as THREE from "three";
+import { storyDiary } from "./story";
 import { scene, sun, hemi, camera } from "./engine";
 import { water } from "./water";
 import { ST, pop, SFX, updHud, save } from "./build";
@@ -196,6 +197,9 @@ function render() {
   } else if (tab === "wx") {
     const day = (d, k, lbl) => `<div class="phWx"><span>${ICON(k)}</span><div><b>${lbl}</b><small>${WX[k].name} – ${WX[k].info}</small></div></div>`;
     el.innerHTML = `<h3>Väder</h3>${day(L.day, L.wx, "I dag")}${L.fc.map((k, i) => day(L.day + i + 1, k, WEEK[(L.day + i + 1) % 7])).join("")}`;
+  } else if (tab === "dag") {
+    const D = storyDiary();
+    el.innerHTML = `<h3>Dagbok</h3>` + (D.length ? D.map(e => `<div class="phRow"><div><small>${dateText(e.d)}</small>${e.t}</div></div>`).join("") : `<p class="phNote">Inget skrivet än.</p>`);
   } else {
     const s = season(), d = L.day % SEASON_LEN;
     const ev = EVENTS.map(e => { let dd = (e.s - s) * SEASON_LEN + (e.d - 1 - d); if (dd < 0) dd += SEASON_LEN * 4; return { ...e, in: dd } }).sort((a, b) => a.in - b.in);
