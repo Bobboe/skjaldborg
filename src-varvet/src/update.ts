@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { isPhoneOpen } from "./life";
 import { camS } from "./input";
 import { player } from "./player";
 import { DBOX, ST, buildTick, floorTopAt, hitDyn } from "./build";
@@ -19,7 +20,7 @@ function onJetty(x,z){return(Math.abs(x-14)<1.6&&z>57&&z<91)||(Math.abs(x-14)<4&
 function groundAt(x,z){let g=sampleGrid(x,z);if(onJetty(x,z))g=Math.max(g,1.45);if(typeof ST!=="undefined"&&ST.pieces.length){const f=floorTopAt(x,z);if(f!=null)g=Math.max(g,f)}return g}
 function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.ArrowUp)mz=-1;if(k.KeyS||k.ArrowDown)mz=1;if(k.KeyA||k.ArrowLeft)mx=-1;if(k.KeyD||k.ArrowRight)mx=1;
   if(k.KeyQ)camS.tYaw+=dt*1.8;if(k.KeyE)camS.tYaw-=dt*1.8;
-  if(GAMEON||DLG){mx=mz=0}
+  if(GAMEON||DLG||isPhoneOpen()){mx=mz=0}
   if(BOATM.on){boatDrive(dt,mx,mz)}else{
   const mag=Math.min(1,Math.hypot(mx,mz));const run=mag>.85||k.ShiftLeft;const sp=(run?6.2:3.4)*mag;
   if(mag>.08){const F=-mz/Math.max(mag,1e-3),Rt=mx/Math.max(mag,1e-3),cy_=Math.cos(camS.yaw),sy_=Math.sin(camS.yaw);const vx=sy_*F-cy_*Rt,vz=cy_*F+sy_*Rt;const a=Math.atan2(vx,vz);const tx=Math.sin(a)*sp,tz=Math.cos(a)*sp;

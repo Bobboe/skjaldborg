@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { INTERACT_PROVIDERS } from "./hooks";
 import { pop } from "./build";
 import { camS } from "./input";
 import { SFX } from "./build";
@@ -57,7 +58,7 @@ function jobState(){return ST.job<JOBS.length?JOBS[ST.job]:null}
 function npcPos(id){return NPC[id].position}
 // --- interaktioner ---
 let nearI=null;
-function interactables(){const L=[];const J=jobState();
+function interactables(){const L=[];for(const f of INTERACT_PROVIDERS)f(L);const J=jobState();
   if(J&&!ST.jobOn){const p=npcPos(J.from);L.push({x:p.x,z:p.z,r:2.6,label:"Prata med "+(J.from==="sven"?"Sven":"Majken"),fn:()=>talk(J)})}
   else if(J&&ST.jobOn){const t=J.target();L.push({x:t.x,z:t.z,r:t.r,label:t.label,fn:()=>startGame(J)})}
   if(!J||ST.jobOn){const p=npcPos("sven");L.push({x:p.x,z:p.z,r:2.2,label:"Prata med Sven",fn:()=>dialog("Sven",[J?(ST.jobOn?"Du har ett jobb på gång: "+J.title.toLowerCase()+". "+J.where+".":""):"Det var allt för den här gången. Mer jobb kommer!"],null)})}

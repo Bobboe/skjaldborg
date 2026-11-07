@@ -10,10 +10,20 @@ import { N2, fbm, merge, mulberry, tr } from "./util";
 // ================= Natur: tallar, björkar, klippor (instansierade) =================
 const COLL=[];// cirkelkollisioner {x,z,r}
 function buildNature(q){const rnd=mulberry(42);
-  const pine=merge([colored(tr(new THREE.CylinderGeometry(.18,.28,2.4,7),0,1.2,0),"#7a5136"),
-    colored(tr(new THREE.ConeGeometry(1.7,2.6,9),0,2.6,0),"#2f6b3d"),colored(tr(new THREE.ConeGeometry(1.35,2.3,9),0,3.8,0),"#357a43"),colored(tr(new THREE.ConeGeometry(.95,1.9,9),0,4.9,0),"#3d8a4b")]);
-  const birch=merge([colored(tr(new THREE.CylinderGeometry(.13,.18,3.2,6),0,1.6,0),"#efece4"),
-    colored(tr(new THREE.IcosahedronGeometry(1.5,1),0,3.9,0),"#8cc35b"),colored(tr(new THREE.IcosahedronGeometry(1.1,1),.7,4.6,.3),"#9bcf66")]);
+  // Granvåning: kon med taggig, hängande kjol och ojämn radie
+  const tier=(r,h,y,seed)=>{const g=new THREE.ConeGeometry(r,h,16,3);const p=g.attributes.position;const v=new THREE.Vector3();
+    for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);const rad=Math.hypot(v.x,v.z);if(rad<1e-4)continue;const a=Math.atan2(v.z,v.x);const k=rad/r;
+      const bottom=v.y<-h/2+1e-3;const jag=bottom?(Math.round(a/(Math.PI*2)*16)%2?1.12:.82):1;
+      const f=(1+.13*Math.sin(a*5+seed)+.08*N2(Math.cos(a)*2+seed,Math.sin(a)*2+v.y))*jag;v.x*=f;v.z*=f;if(bottom)v.y-=.22*k+.12*Math.sin(a*3+seed);p.setXYZ(i,v.x,v.y,v.z)}
+    g.computeVertexNormals();return tr(g,0,y,0)};
+  const pine=merge([colored(tr(new THREE.CylinderGeometry(.16,.3,2.6,8),0,1.3,0),"#7a5136"),
+    colored(tier(1.8,2.4,2.4,1),"#2f6b3d"),colored(tier(1.45,2.2,3.5,2),"#357a43"),colored(tier(1.1,2,4.55,3),"#357a43"),colored(tier(.7,1.7,5.5,4),"#3d8a4b")]);
+  // Björkkrona: knöliga klumpar
+  const blob=(r,x,y,z,seed)=>{const g=new THREE.IcosahedronGeometry(r,2);const p=g.attributes.position;const v=new THREE.Vector3();
+    for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);const n=v.clone().normalize();const k=1+.22*N2(n.x*2.2+seed,n.y*2.2+n.z*1.7)+.1*N2(n.z*5+seed,n.x*5);v.multiplyScalar(k);v.y*=.85;p.setXYZ(i,v.x,v.y,v.z)}
+    g.computeVertexNormals();return tr(g,x,y,z)};
+  const birch=merge([colored(tr(new THREE.CylinderGeometry(.11,.18,3.4,7),0,1.7,0),"#efece4"),colored(tr(new THREE.CylinderGeometry(.05,.08,1.4,5).rotateZ(.7),.45,3.3,0),"#efece4"),
+    colored(blob(1.35,0,4,0,1),"#8cc35b"),colored(blob(1.0,.8,4.6,.3,2),"#9bcf66"),colored(blob(.95,-.6,4.7,-.4,3),"#9bcf66"),colored(blob(.8,.1,5.3,.5,4),"#8cc35b")]);
   const rockG=(()=>{const g=new THREE.IcosahedronGeometry(1,2);const p=g.attributes.position;for(let i=0;i<p.count;i++){const v=new THREE.Vector3().fromBufferAttribute(p,i);const k=1+.22*N2(v.x*1.7+3,v.z*1.7+v.y);v.multiplyScalar(k);v.y*=.62;p.setXYZ(i,v.x,v.y,v.z)}g.computeVertexNormals();return merge([colored(g,"#b8a29a")])})();
   const place=(cnt,ok)=>{const out=[];let tries=0;while(out.length<cnt&&tries<cnt*30){tries++;const x=(rnd()-.5)*WS*.9,z=(rnd()-.5)*WS*.9;const h=H(x,z);if(!ok(x,z,h))continue;if(Math.hypot(x-YARD.x,z-YARD.z)<YARD.r+6)continue;if(COLL.some(c=>Math.hypot(c.x-x,c.z-z)<c.r+1.2))continue;out.push({x,z,h})}return out};
   const slope=(x,z)=>{const e=1.5;return Math.hypot(H(x+e,z)-H(x-e,z),H(x,z+e)-H(x,z-e))/(2*e)};
