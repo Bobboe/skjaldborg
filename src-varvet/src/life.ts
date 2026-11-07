@@ -50,6 +50,7 @@ export function lifeInit() {
 export const timeOf = () => L;
 export function season() { return Math.floor(L.day / SEASON_LEN) % 4; }
 export function weather() { return WX[L.wx]; }
+const ICON = k => `<img class="wxi" src="${import.meta.env.BASE_URL}ui/wx_${k}.png" alt="${WX[k].name}">`;
 const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
 export function dateText(d = L.day) { return `${WEEK[d % 7]} · ${SEASONS[Math.floor(d / SEASON_LEN) % 4]} dag ${d % SEASON_LEN + 1}, år ${Math.floor(d / (SEASON_LEN * 4)) + 1}`; }
 
@@ -77,7 +78,7 @@ function sleep(passedOut) {
     newDay();
     player.pos.set(4, 1.3, 41); player.yaw = 0; camS.tYaw = camS.yaw = 0;
     updHud(); save();
-    setTimeout(() => pop(`${dateText()} · ${WX[L.wx].icon} ${WX[L.wx].name}`, 3600), passedOut ? 4400 : 300);
+    setTimeout(() => pop(`${dateText()} · ${WX[L.wx].name}`, 3600), passedOut ? 4400 : 300);
   });
 }
 function newDay() {
@@ -193,7 +194,7 @@ function render() {
       <div class="phTot">Summa <b>${cartTotal()} kr</b> · Saldo ${ST.kr} kr</div><button class="btn acc" data-buy="1" ${cartTotal() ? "" : "disabled"}>Beställ – levereras 07:00 i morgon</button>${pend}${wait}
       <p class="phNote">Priserna ändras varje dag. Köp när pilen pekar nedåt.</p>`;
   } else if (tab === "wx") {
-    const day = (d, k, lbl) => `<div class="phWx"><span>${WX[k].icon}</span><div><b>${lbl}</b><small>${WX[k].name} – ${WX[k].info}</small></div></div>`;
+    const day = (d, k, lbl) => `<div class="phWx"><span>${ICON(k)}</span><div><b>${lbl}</b><small>${WX[k].name} – ${WX[k].info}</small></div></div>`;
     el.innerHTML = `<h3>Väder</h3>${day(L.day, L.wx, "I dag")}${L.fc.map((k, i) => day(L.day + i + 1, k, WEEK[(L.day + i + 1) % 7])).join("")}`;
   } else {
     const s = season(), d = L.day % SEASON_LEN;
@@ -201,5 +202,5 @@ function render() {
     el.innerHTML = `<h3>Kalender</h3><p class="phNote">${dateText()}</p>${ev.map(e => `<div class="phRow"><div><b>${e.name}</b><small>${SEASONS[e.s]} dag ${e.d}</small></div><span>${e.in === 0 ? "i dag" : "om " + e.in + " d"}</span></div>`).join("")}`;
   }
 }
-function clockHud() { if (!L) return; $("clock").textContent = `${WEEK[L.day % 7]} ${hhmm(L.min)} · ${SEASONS[season()]} ${L.day % SEASON_LEN + 1} · ${WX[L.wx].icon}`; $("clock").classList.toggle("late", L.min >= DAY_END); }
+function clockHud() { if (!L) return; $("clock").innerHTML = `${WEEK[L.day % 7]} ${hhmm(L.min)} · ${SEASONS[season()]} ${L.day % SEASON_LEN + 1} ${ICON(L.wx)}`; $("clock").classList.toggle("late", L.min >= DAY_END); }
 export const isPhoneOpen = () => phoneOpen;
