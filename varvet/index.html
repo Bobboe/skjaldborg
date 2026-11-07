@@ -199,9 +199,9 @@ function buildNature(q){const rnd=mulberry(42);
   const place=(cnt,ok)=>{const out=[];let tries=0;while(out.length<cnt&&tries<cnt*30){tries++;const x=(rnd()-.5)*WS*.9,z=(rnd()-.5)*WS*.9;const h=H(x,z);if(!ok(x,z,h))continue;if(Math.hypot(x-YARD.x,z-YARD.z)<YARD.r+6)continue;if(COLL.some(c=>Math.hypot(c.x-x,c.z-z)<c.r+1.2))continue;out.push({x,z,h})}return out};
   const slope=(x,z)=>{const e=1.5;return Math.hypot(H(x+e,z)-H(x-e,z),H(x,z+e)-H(x,z-e))/(2*e)};
   const pines=place(Math.round(260*q.trees),(x,z,h)=>h>2.2&&slope(x,z)<.55&&fbm(x*.02,z*.02,2)>-.15);
-  for(const p of pines)COLL.push({x:p.x,z:p.z,r:.45});
+  for(const p of pines)COLL.push({x:p.x,z:p.z,r:.45,y6:p.h+6});
   const birches=place(Math.round(70*q.trees),(x,z,h)=>h>1.6&&h<7&&slope(x,z)<.4);
-  for(const p of birches)COLL.push({x:p.x,z:p.z,r:.35});
+  for(const p of birches)COLL.push({x:p.x,z:p.z,r:.35,y6:p.h+5.5});
   const rocks=place(140,(x,z,h)=>h>-.8&&h<9);
   const mk=(geo,list,scaleF,cast)=>{const m=new THREE.InstancedMesh(geo,VC,list.length);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
     list.forEach((p,i)=>{const s=scaleF();E.set(0,rnd()*6.28,0);Q.setFromEuler(E);S.set(s,s*(.85+rnd()*.3),s);T.set(p.x,p.h-.15,p.z);M.compose(T,Q,S);m.setMatrixAt(i,M)});m.castShadow=cast;m.receiveShadow=true;scene.add(m);return m};
@@ -325,7 +325,7 @@ function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.
   const cx=()=>tgt.x-Math.sin(camS.yaw)*Math.cos(camS.pitch)*d,cz=()=>tgt.z-Math.cos(camS.yaw)*Math.cos(camS.pitch)*d,cy=()=>tgt.y+Math.sin(camS.pitch)*d;
   for(let i=0;i<6;i++){const gy=Math.max(sampleGrid(cx(),cz()),0)+.6;if(cy()>gy)break;d*=.82}
   {const D0=d;for(let s=1;s<=12;s++){const f=s/12;d=D0*f;const x=cx(),z=cz(),y=cy();let hit=false;for(const b of DBOX)if(x>b.x0-.35&&x<b.x1+.35&&z>b.z0-.35&&z<b.z1+.35&&y<b.y1+1.3&&y>b.y0-.5){hit=true;break}
-    if(!hit)for(const b of BOXES)if(x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1&&y<6.5){hit=true;break}if(hit){d=Math.max(1.2,D0*(s-1)/12);break}d=D0}}
+    if(!hit)for(const b of BOXES)if(x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1&&y<6.5){hit=true;break}if(!hit&&s>3)for(const c of COLL)if(c.r<.5&&y<c.y6&&Math.abs(c.x-x)<1.4&&Math.abs(c.z-z)<1.4&&Math.hypot(c.x-x,c.z-z)<1.3){hit=true;break}if(hit){d=Math.max(1.2,D0*(s-1)/12);break}d=D0}}
   camera.position.set(cx(),Math.max(cy(),Math.max(sampleGrid(cx(),cz()),.3)+.6),cz());camera.lookAt(tgt);
   // sol och skugga följer spelaren
   sun.position.set(player.pos.x+60,player.pos.y+90,player.pos.z+40);sun.target.position.copy(player.pos);
@@ -368,7 +368,7 @@ $("bPlay").onclick=()=>{running=true;$("menu").style.display="none";camS.yaw=cam
   try{if(document.documentElement.requestFullscreen&&innerWidth<900)document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}};
 
 // ================= Resurser & byggande =================
-const ST={virke:4,skrot:0,picked:0,pieces:[],obj:0};// sparat tillstånd
+const ST={virke:4,skrot:0,picked:0,pieces:[],obj:0,digs:[]};// sparat tillstånd
 const DBOX=[];// kollisioner från byggda väggar
 const CELL=2,WALLH=2.6;
 const PIECES={
@@ -381,15 +381,20 @@ const ORDER=["golv","vagg","fonster","dorr","tak"];
 const DIRS=[[0,1],[1,0],[0,-1],[-1,0]];// r: 0=+z 1=+x 2=-z 3=-x
 const cellOf=v=>Math.floor(v/CELL);
 const cellC=i=>i*CELL+CELL/2;
-function terrainBase(i,k){const x0=i*CELL,z0=k*CELL;let mx=-99,mn=99;for(const[a,b]of[[0,0],[CELL,0],[0,CELL],[CELL,CELL],[CELL/2,CELL/2]]){const g=groundAt(x0+a,z0+b);mx=Math.max(mx,g);mn=Math.min(mn,g)}return{top:Math.round((mx+.12)*10)/10,mn,mx}}
+function terrainBase(i,k){const x0=i*CELL,z0=k*CELL;let mx=-99,mn=99;for(const[a,b]of[[0,0],[CELL,0],[0,CELL],[CELL,CELL],[CELL/2,CELL/2],[CELL/2,0],[0,CELL/2],[CELL,CELL/2],[CELL/2,CELL]]){let g=sampleGrid(x0+a,z0+b);if(onJetty(x0+a,z0+b))g=Math.max(g,1.45);mx=Math.max(mx,g);mn=Math.min(mn,g)}return{top:Math.round((mx*.6+Math.max(mn,-.1)*.4+.12)*10)/10,mn,mx}}
 const floorAt=(i,k)=>ST.pieces.find(p=>p.t==="golv"&&p.i===i&&p.k===k);
-function baseY(i,k){const f=floorAt(i,k);return f?f.y:terrainBase(i,k).top}
+// Byggnivå: ett nytt golv ärver höjden från ett angränsande golv, så hela byggnaden blir plan.
+function floorLevel(i,k){const f=floorAt(i,k);if(f)return f.y;let best=null;for(const[di,dk]of[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const n=floorAt(i+di,k+dk);if(n&&(best===null||n.y>best))best=n.y}return best!==null?best:terrainBase(i,k).top}
+function baseY(i,k){return floorLevel(i,k)}
+function wallBase(i,k,r){const d=DIRS[r],a=floorAt(i,k),b=floorAt(i+d[0],k+d[1]);if(a||b)return Math.max(a?a.y:-99,b?b.y:-99);return floorLevel(i,k)}
+function roofBase(i,k){let y=null;for(const e of[[i,k,0],[i,k,1],normEdge(i,k,2),normEdge(i,k,3)]){const w=ST.pieces.find(q=>PIECES[q.t].kind==="wall"&&q.i===e[0]&&q.k===e[1]&&q.r===e[2]);if(w&&(y===null||w.y>y))y=w.y}
+  if(y!==null)return y+WALLH;const f=floorAt(i,k);if(f)return f.y+WALLH;for(const[di,dk]of[[1,0],[-1,0],[0,1],[0,-1]]){const n=ST.pieces.find(q=>q.t==="tak"&&q.i===i+di&&q.k===k+dk);if(n)return n.y}return floorLevel(i,k)+WALLH}
 function normEdge(i,k,r){if(r===2)return[i,k-1,0];if(r===3)return[i-1,k,1];return[i,k,r]}
 function pieceKey(p){return PIECES[p.t].kind==="wall"?`w${p.i},${p.k},${p.r}`:PIECES[p.t].kind+p.i+","+p.k}
 // --- geometrier (centrerade så att y=0 är underkant) ---
 const plank="#a47c52",plank2="#8f6a45",wallC="#b8392b",trim="#f2efe8",glass="#bfe2f0",roofC="#3b3f45";
 function geoFor(t){const L=CELL+.04,T=.22,H=WALLH;
-  if(t==="golv"){const g=[colored(tr(new THREE.BoxGeometry(CELL,2.6,CELL),0,-1.3,0),"#6b5137")];for(let i=0;i<5;i++)g.push(colored(tr(new THREE.BoxGeometry(CELL/5-.03,.06,CELL),-CELL/2+CELL/10+i*CELL/5,.01,0),i%2?plank:plank2));return merge(g)}
+  if(t==="golv"){const g=[colored(tr(new THREE.BoxGeometry(CELL+.02,5,CELL+.02),0,-2.65,0),"#9c9690"),colored(tr(new THREE.BoxGeometry(CELL+.06,.12,CELL+.06),0,-.42,0),"#7f7a75"),colored(tr(new THREE.BoxGeometry(CELL+.08,.14,CELL+.08),0,-.08,0),"#6b5137")];for(let i=0;i<5;i++)g.push(colored(tr(new THREE.BoxGeometry(CELL/5-.03,.06,CELL),-CELL/2+CELL/10+i*CELL/5,.01,0),i%2?plank:plank2));return merge(g)}
   if(t==="vagg"){return merge([colored(tr(new THREE.BoxGeometry(L,H,T),0,H/2,0),wallC),colored(tr(new THREE.BoxGeometry(L,.12,T+.04),0,H-.06,0),trim)])}
   if(t==="fonster"){return merge([colored(tr(new THREE.BoxGeometry(L,.9,T),0,.45,0),wallC),colored(tr(new THREE.BoxGeometry(L,.6,T),0,H-.3,0),wallC),
     colored(tr(new THREE.BoxGeometry(.5,1.1,T),-L/2+.25,1.45,0),wallC),colored(tr(new THREE.BoxGeometry(.5,1.1,T),L/2-.25,1.45,0),wallC),
@@ -402,7 +407,17 @@ function geoFor(t){const L=CELL+.04,T=.22,H=WALLH;
     for(const s of[-1,1]){const g=new THREE.ExtrudeGeometry(sh,{depth:.12,bevelEnabled:false});g.rotateY(-Math.PI/2);g.translate(s*CELL/2+(s<0?.12:0),0,0);out.push(colored(g,wallC))}
     return merge(out)}}
 const IM={};const IMCAP=400;
-function initBuild(){for(const t of ORDER){const m=new THREE.InstancedMesh(geoFor(t),VC,IMCAP);m.count=0;m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;scene.add(m);IM[t]=m}
+// Markarbete: sänk marken under och runt ett golv så att inget sticker upp genom det.
+let TER=null;
+function dig(i,k,y,refresh){if(!TER)return;const g=TER.geometry,pos=g.attributes.position,col=g.attributes.color,step=WS/SEG,M=3.2;
+  const x0=i*CELL,x1=x0+CELL,z0=k*CELL,z1=z0+CELL;const a0=Math.max(0,Math.floor((x0-M+WS/2)/step)),a1=Math.min(SEG,Math.ceil((x1+M+WS/2)/step)),b0=Math.max(0,Math.floor((z0-M+WS/2)/step)),b1=Math.min(SEG,Math.ceil((z1+M+WS/2)/step));
+  const dirt=new THREE.Color("#a3916f"),c=new THREE.Color();let ch=false;
+  for(let iz=b0;iz<=b1;iz++)for(let ix=a0;ix<=a1;ix++){const x=-WS/2+ix*step,z=-WS/2+iz*step;const dx=Math.max(x0-x,0,x-x1),dz=Math.max(z0-z,0,z-z1),d=Math.hypot(dx,dz);if(d>M)continue;
+    const idx=iz*(SEG+1)+ix,h=HG[idx],tgt=y-.07+d*.6;if(h>tgt){HG[idx]=tgt;pos.setY(idx,tgt);c.fromBufferAttribute(col,idx).lerp(dirt,.6*(1-d/M));col.setXYZ(idx,c.r,c.g,c.b);ch=true}}
+  if(ch&&refresh)terrainRefresh()}
+function terrainRefresh(){const g=TER.geometry;g.attributes.position.needsUpdate=true;g.attributes.color.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();
+  if(water){const t=water.material.uniforms.hT.value;const nt=heightTex();t.image.data.set(nt.image.data);t.needsUpdate=true;nt.dispose()}}
+function initBuild(){for(const d of ST.digs)dig(d[0],d[1],d[2],false);if(ST.digs.length)terrainRefresh();for(const t of ORDER){const m=new THREE.InstancedMesh(geoFor(t),VC,IMCAP);m.count=0;m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;scene.add(m);IM[t]=m}
   ghostInit();nodesInit();refreshBuilt();updHud()}
 const _M=new THREE.Matrix4(),_Q=new THREE.Quaternion(),_E=new THREE.Euler(),_S=new THREE.Vector3(1,1,1),_T=new THREE.Vector3();
 function pieceXform(p,M){const k=PIECES[p.t].kind;let x=cellC(p.i),z=cellC(p.k),ry=0;
@@ -428,11 +443,11 @@ function targetPiece(){const fx=Math.sin(player.yaw),fz=Math.cos(player.yaw);con
     const px=player.pos.x+fx*.9,pz=player.pos.z+fz*.9;i=cellOf(px);k=cellOf(pz);
     r=Math.abs(fx)>Math.abs(fz)?(fx>0?1:3):(fz>0?0:2);r=(r+cur.r)%4;const n=normEdge(i,k,r);i=n[0];k=n[1];r=n[2]}
   else{const px=player.pos.x+fx*2.2,pz=player.pos.z+fz*2.2;i=cellOf(px);k=cellOf(pz);if(kind==="roof"){const a=Math.abs(fx)>Math.abs(fz)?(fx>0?1:3):(fz>0?0:2);r=(a+cur.r)%4}}
-  const p={t:cur.t,i,k,r:kind==="floor"?0:r};p.y=kind==="roof"?baseY(i,k)+WALLH:baseY(i,k);return p}
+  const p={t:cur.t,i,k,r:kind==="floor"?0:r};p.y=kind==="roof"?roofBase(i,k):kind==="wall"?wallBase(i,k,r):floorLevel(i,k);return p}
 function canPlace(p){const kind=PIECES[p.t].kind;const c=PIECES[p.t].cost;for(const r in c)if(ST[r]<c[r])return"Saknar "+r;
   const key=pieceKey(p);if(ST.pieces.some(q=>pieceKey(q)===key))return"Upptaget";
   const x0=p.i*CELL,z0=p.k*CELL,x1=x0+CELL,z1=z0+CELL;
-  if(kind==="floor"){const tb=terrainBase(p.i,p.k);if(tb.mx<-.2)return"För djupt vatten";if(tb.mx-tb.mn>1.8)return"För brant";
+  if(kind==="floor"){const tb=terrainBase(p.i,p.k);if(tb.mx<-.2)return"För djupt vatten";if(p.y-tb.mn>3.5)return"För högt över marken";if(tb.mx-p.y>1.6)return"Marken är för hög här";
     for(const b of BOXES)if(b.x0<x1&&b.x1>x0&&b.z0<z1&&b.z1>z0)return"I vägen";for(const c of COLL)if(c.x>x0-.3&&c.x<x1+.3&&c.z>z0-.3&&c.z<z1+.3)return"Träd eller sten i vägen"}
   if(kind==="wall"){const d=DIRS[p.r],mx=cellC(p.i)+d[0],mz=cellC(p.k)+d[1];if(groundAt(mx,mz)<-.3&&!floorAt(p.i,p.k))return"För djupt vatten";
     for(const c of COLL)if(Math.hypot(c.x-mx,c.z-mz)<c.r+.9)return"Träd eller sten i vägen";for(const b of BOXES)if(mx>b.x0-.3&&mx<b.x1+.3&&mz>b.z0-.3&&mz<b.z1+.3)return"I vägen"}
@@ -442,7 +457,7 @@ function canPlace(p){const kind=PIECES[p.t].kind;const c=PIECES[p.t].cost;for(co
 function buildTick(){if(!buildMode){ghost.visible=false;return}gp=targetPiece();ghost.geometry=GG[gp.t];pieceXform(gp,_M);_M.decompose(ghost.position,ghost.quaternion,ghost.scale);ghost.position.y+=.02;
   const why=canPlace(gp);ghostOK=!why;ghost.material=ghostOK?gMatOK:gMatNo;ghost.visible=true;const el=$("bWhy");el.textContent=why||PIECES[gp.t].name+" – "+costTxt(PIECES[gp.t].cost);el.style.color=why?"#ff8a7a":"#9fe8a6"}
 const costTxt=c=>Object.entries(c).map(([r,n])=>`${n} ${r}`).join(" + ");
-function place(){gp=targetPiece();const why=canPlace(gp);ghostOK=!why;if(!ghostOK){SFX("no");pop(why);return}const c=PIECES[gp.t].cost;for(const r in c)ST[r]-=c[r];ST.pieces.push({t:gp.t,i:gp.i,k:gp.k,r:gp.r,y:gp.y});refreshBuilt();updHud();objCheck();save();SFX("place");pop("+"+PIECES[gp.t].name)}
+function place(){gp=targetPiece();const why=canPlace(gp);ghostOK=!why;if(!ghostOK){SFX("no");pop(why);return}const c=PIECES[gp.t].cost;for(const r in c)ST[r]-=c[r];ST.pieces.push({t:gp.t,i:gp.i,k:gp.k,r:gp.r,y:gp.y});if(gp.t==="golv"){ST.digs.push([gp.i,gp.k,gp.y]);dig(gp.i,gp.k,gp.y,true)}refreshBuilt();updHud();objCheck();save();SFX("place");pop("+"+PIECES[gp.t].name)}
 function demolish(){gp=targetPiece();pieceXform(gp,_M);const pos=new THREE.Vector3().setFromMatrixPosition(_M);let best=null,bd=2.2;for(const p of ST.pieces){pieceXform(p,_M);_T.setFromMatrixPosition(_M);const d=Math.hypot(_T.x-pos.x,_T.z-pos.z)+(PIECES[p.t].kind===PIECES[cur.t].kind?0:.8);if(d<bd){bd=d;best=p}}
   if(!best){pop("Inget att riva");return}ST.pieces.splice(ST.pieces.indexOf(best),1);const c=PIECES[best.t].cost;for(const r in c)ST[r]+=c[r];refreshBuilt();updHud();save();SFX("rip");pop("Rev "+PIECES[best.t].name.toLowerCase())}
 
@@ -478,8 +493,8 @@ let popT=0;function pop(t,ms=1400){const el=$("pop");el.textContent=t;el.style.o
 let AC=null;function SFX(k){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
   const f={pick:[520,780,.12],place:[180,120,.16],rip:[140,70,.18],no:[200,160,.12],done:[523,1046,.35]}[k];o.type=k==="place"||k==="rip"?"square":"triangle";o.frequency.setValueAtTime(f[0],t);o.frequency.exponentialRampToValueAtTime(f[1],t+f[2]);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+f[2]+.05);o.start(t);o.stop(t+f[2]+.06)}catch(e){}}
 // sparning
-function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[]});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
+function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,digs:ST.digs,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[],digs:d.digs||[]});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
 function setBuild(on){buildMode=on;if(on)$("hint").style.opacity=0;$("bar").style.display=on?"flex":"none";$("bBuild").textContent=on?"Klar":"Bygg";$("bBuild").classList.toggle("acc",on);$("bWhy").style.display=on?"block":"none";if(on)camS.tPitch=Math.max(camS.tPitch,.55);updHud()}
 function uiInit(){const bar=$("bar");bar.innerHTML=ORDER.map(t=>`<button class="pc" data-t="${t}"><i>${{golv:"▭",vagg:"▮",fonster:"▣",dorr:"⌂",tak:"◭"}[t]}</i>${PIECES[t].name}<small>${costTxt(PIECES[t].cost).replace(/virke/g,"🪵").replace(/skrot/g,"⚙️")}</small></button>`).join("")+`<button class="pc" id="bRot"><i>↻</i>Vrid</button><button class="pc" id="bRip"><i>✕</i>Riv</button>`;
   bar.querySelectorAll(".pc[data-t]").forEach(b=>b.onclick=()=>{cur.t=b.dataset.t;cur.r=0;updHud()});$("bRot").onclick=()=>{cur.r=(cur.r+1)%4};$("bRip").onclick=demolish;
@@ -490,7 +505,7 @@ function uiInit(){const bar=$("bar");bar.innerHTML=ORDER.map(t=>`<button class="
 setInterval(()=>{if(running)save()},5000);
 
 // ================= Start =================
-function boot(){Q=QUAL[SET.q];buildTerrain();buildWater();buildYard();buildNature(Q);load();initBuild();uiInit();player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
+function boot(){Q=QUAL[SET.q];TER=buildTerrain();buildWater();buildYard();buildNature(Q);load();initBuild();uiInit();player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
 window.VARVET={player,camS,input,SET,renderer,scene,update,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
 setTimeout(boot,30);
 </script>
