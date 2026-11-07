@@ -50,6 +50,10 @@ export const TEX = {
   sand: () => paintedTex("sand", blotches("#e9d8ad", ["#dcc795", "#f3e6c4", "#cdb684"], 160, 4, 24), 13),
   dirt: () => paintedTex("dirt", blotches("#b39d7b", ["#9c8565", "#c9b592", "#8a7457", "#d6c6a5"], 220, 3, 18, 0.28), 14),
   planks: () => paintedTex("planks", blotches("#8d7a63", ["#7a6852", "#a08d74", "#6b5a47"], 160, 3, 20), 16),
+  needles: () => paintedTex("needles", blotches("#3f7a45", ["#2f6338", "#5a9455", "#26532f"], 220, 4, 18), 17),
+  leaves: () => paintedTex("leaves", blotches("#8cbf55", ["#6fa244", "#b2d671", "#5b8c3a"], 220, 4, 18), 18),
+  pinebark: () => paintedTex("pinebark", blotches("#9a5b3c", ["#7d4a33", "#b9704a", "#6e6058"], 160, 3, 14), 19),
+  birchbark: () => paintedTex("birchbark", blotches("#ece6da", ["#d9d0c0", "#f6f2ea", "#3b3734"], 120, 2, 10), 20),
   paper: () => paintedTex("paper", blotches("#f4efe4", ["#e9e1d0", "#fbf8f1", "#e2d8c4"], 300, 2, 16, 0.35), 15),
 };
 
@@ -145,13 +149,26 @@ export function patchWood(m: THREE.Material): void {
   const tex = TEX.planks();
   (m as THREE.MeshLambertMaterial).onBeforeCompile = sh => {
     sh.uniforms.tPlanks = { value: tex };
+    sh.uniforms.tNeedles = { value: TEX.needles() }; sh.uniforms.tLeaves = { value: TEX.leaves() };
+    sh.uniforms.tPineBark = { value: TEX.pinebark() }; sh.uniforms.tBirchBark = { value: TEX.birchbark() };
     sh.vertexShader = sh.vertexShader
       .replace("#include <common>", "#include <common>\nattribute float mat;\nvarying float vMat;\nvarying vec3 vWP2;\nvarying vec3 vWN2;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvMat = mat;\nvec4 wpI = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\nwpI = instanceMatrix * wpI;\n#endif\nvWP2 = (modelMatrix * wpI).xyz;\nvWN2 = normalize(mat3(modelMatrix) * objectNormal);");
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvMat = mat;\nvec4 wpI = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\nwpI = instanceMatrix * wpI;\n#endif\nvWP2 = (modelMatrix * wpI).xyz;\nvec3 nI = objectNormal;\n#ifdef USE_INSTANCING\nnI = mat3(instanceMatrix) * nI;\n#endif\nvWN2 = normalize(mat3(modelMatrix) * nI);");
     sh.fragmentShader = sh.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform sampler2D tPlanks;\nvarying float vMat;\nvarying vec3 vWP2;\nvarying vec3 vWN2;")
+      .replace("#include <common>", "#include <common>\nuniform sampler2D tPlanks, tNeedles, tLeaves, tPineBark, tBirchBark;\nvarying float vMat;\nvarying vec3 vWP2;\nvarying vec3 vWN2;\nvec3 tri(sampler2D s, float sc){ vec3 w = pow(abs(normalize(vWN2)), vec3(4.0)); w /= (w.x + w.y + w.z); return texture2D(s, vWP2.zy * sc).rgb * w.x + texture2D(s, vWP2.xz * sc).rgb * w.y + texture2D(s, vWP2.xy * sc).rgb * w.z; }")
       .replace("#include <color_fragment>", `#include <color_fragment>
-        if (vMat > 0.01) {
+        if (vMat > 1.5) {
+          // träd: 2 = barr, 3 = björklöv, 4 = tallbark, 5 = björkbark (målade texturer ersätter färgen)
+          vec3 n = abs(normalize(vWN2));
+          int id = int(vMat + 0.5);
+          vec2 side = vec2(n.x > n.z ? vWP2.z : vWP2.x, vWP2.y);
+          vec3 t;
+          if (id == 2) t = tri(tNeedles, 0.55);
+          else if (id == 3) t = tri(tLeaves, 0.5);
+          else if (id == 4) t = texture2D(tPineBark, side * vec2(1.4, 0.7)).rgb;
+          else t = texture2D(tBirchBark, side * vec2(1.4, 0.7)).rgb;
+          diffuseColor.rgb = t * 1.05;
+        } else if (vMat > 0.01) {
           vec3 n = abs(normalize(vWN2));
           float sc = 0.45;
           vec3 t = n.y > 0.6 ? texture2D(tPlanks, vWP2.xz * sc).rgb : (n.x > n.z ? texture2D(tPlanks, vec2(vWP2.z, vWP2.y) * sc).rgb : texture2D(tPlanks, vec2(vWP2.x, vWP2.y) * sc).rgb);
