@@ -186,7 +186,7 @@ function render() {
   document.querySelectorAll("#phTabs button").forEach(b => b.classList.toggle("on", b.dataset.t === tab));
   const el = $("phBody");
   if (tab === "shop") {
-    const row = (k, name, unit) => `<div class="phRow"><div><b>${name}</b><small>${price(k)} kr/${unit} ${trend(k)}</small></div>
+    const row = (k, name, unit) => `<div class="phRow"><img class="phIt" src="${import.meta.env.BASE_URL}ui/it_${k}.png" alt=""><div style="flex:1"><b>${name}</b><small>${price(k)} kr/${unit} ${trend(k)}</small></div>
       <div class="phQty"><button data-add="${k}:-5">−5</button><span>${cart[k]}</span><button data-add="${k}:5">+5</button><button data-add="${k}:10">+10</button></div></div>`;
     const pend = L.orders.virke || L.orders.skrot ? `<p class="phNote">Beställt till i morgon: ${L.orders.virke} virke, ${L.orders.skrot} skrot</p>` : "";
     const wait = L.delivery ? `<p class="phNote">En leverans väntar vid bryggan</p>` : "";
