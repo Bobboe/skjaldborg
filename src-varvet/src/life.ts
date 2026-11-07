@@ -43,7 +43,7 @@ export function lifeInit() {
   buildRain(); buildCrate(); phoneInit();
   INTERACT_PROVIDERS.push(list => {
     list.push({ x: 4, z: 41.6, r: 2.6, label: L.min >= 18 * 60 ? "Sova i boden" : "Vila till i morgon", fn: () => sleep(false) });
-    if (L.delivery) list.push({ x: 14, z: 60, r: 2.6, label: "Hämta leverans", fn: takeDelivery });
+    if (L.delivery) list.push({ x: 14.8, z: 58.4, r: 2.2, label: "Hämta leverans", fn: takeDelivery });
   });
   applyWeather(true); clockHud();
 }
@@ -158,7 +158,7 @@ function buildCrate() {
   crate = new THREE.Group();
   const box = new THREE.Mesh(new THREE.BoxGeometry(1.2, .8, .9), new THREE.MeshLambertMaterial({ color: "#a47c52" })); box.position.y = .4; crate.add(box);
   const top = new THREE.Mesh(new THREE.BoxGeometry(1.25, .08, .95), new THREE.MeshLambertMaterial({ color: "#7a5136" })); top.position.y = .82; crate.add(top);
-  crate.position.set(15.3, 1.45, 60.5); crate.traverse(o => { if (o.isMesh) o.castShadow = true }); scene.add(crate);
+  crate.position.set(15.2, 1.45, 58.4); crate.traverse(o => { if (o.isMesh) o.castShadow = true }); scene.add(crate);
 }
 function takeDelivery() {
   const d = L.delivery; if (!d) return;
