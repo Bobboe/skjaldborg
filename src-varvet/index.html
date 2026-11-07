@@ -51,6 +51,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .phNote{font-size:12.5px;color:#7d6a52;margin:8px 0 0}
 .phWx{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px dashed #cdbb98}.phWx span{font-size:26px}#res .ico{width:22px;height:22px;vertical-align:-6px;margin-right:4px}.icos{width:13px;height:13px;vertical-align:-2px}.icob{width:22px;height:22px;vertical-align:-6px;margin-right:6px}.phIt{width:36px;height:36px}.phWx .wxi{width:46px;height:46px}#clock .wxi{width:20px;height:20px;vertical-align:-5px;margin-left:2px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 #dlg{position:fixed;z-index:12;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(560px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--acc);border-radius:16px;padding:14px 16px;display:none;backdrop-filter:blur(6px)}
+#dlgPor{position:absolute;left:-8px;bottom:calc(100% - 26px);width:120px;height:120px;object-fit:cover;border-radius:14px;border:3px solid var(--acc);background:#f3ecdc;display:none;box-shadow:0 6px 18px rgba(0,0,0,.35)}
 #dlgWho{color:var(--acc);font:800 13px system-ui;text-transform:uppercase;letter-spacing:.08em}#dlgTxt{font-size:16px;line-height:1.45;margin-top:4px}
 #game{position:fixed;inset:0;z-index:15;background:#0d0f12;display:none;flex-direction:column;padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
 .gtop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}#gTitle{font:800 18px system-ui;color:var(--acc)}#gHelp{font-size:13px;color:var(--mut)}
@@ -89,7 +90,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="acts" class="hud"><button class="btn" id="bBuild"><img class="icob" src="/varvet/ui/it_verktyg.png" alt="">Bygg</button><button class="btn acc" id="bAct" style="display:none">Plocka</button></div>
 <div id="bWhy" class="hud"></div>
 <div id="bar" class="hud"></div>
-<div id="dlg"><div id="dlgWho"></div><div id="dlgTxt"></div><div class="row" style="justify-content:flex-end;margin:10px 0 0"><button class="btn" id="dlgNo">Inte nu</button><button class="btn acc" id="dlgNext">Fortsätt</button></div></div>
+<div id="dlg"><img id="dlgPor" alt=""><div id="dlgWho"></div><div id="dlgTxt"></div><div class="row" style="justify-content:flex-end;margin:10px 0 0"><button class="btn" id="dlgNo">Inte nu</button><button class="btn acc" id="dlgNext">Fortsätt</button></div></div>
 <div id="game"><div class="gtop"><div><div id="gTitle"></div><div id="gHelp"></div></div><button class="btn" id="gX">Avbryt</button></div><canvas id="gcv"></canvas><div class="gbar"><i id="gBar"></i></div></div>
 <div id="fade"></div>
 <div id="compass" class="hud"><div id="cArrow">➤</div><span id="cDist"></span></div>

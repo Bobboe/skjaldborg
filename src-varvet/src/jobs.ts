@@ -71,10 +71,11 @@ function interTick(t){nearI=null;if(buildMode||BOATM.on||GAMEON)return;let bd=99
 let DLG=null;
 function closeDlg(){$("dlg").style.display="none";DLG=null}
 function dialog(who,lines,onEnd,accept){DLG={who,lines:lines.filter(Boolean),i:0,onEnd,accept};$("dlg").style.display="block";dlgShow()}
-function dlgShow(){const d=DLG;$("dlgWho").textContent=d.who;$("dlgTxt").textContent=d.lines[d.i];const last=d.i>=d.lines.length-1;$("dlgNext").textContent=last?(d.accept?"Ta jobbet":"OK"):"Fortsätt";$("dlgNo").style.display=last&&d.accept?"inline-block":"none"}
+const POR=n=>import.meta.env.BASE_URL+"ui/por_"+n.toLowerCase().replace(/å|ä/g,"a").replace(/ö/g,"o")+".png";
+function dlgShow(){const d=DLG;$("dlgWho").textContent=d.who;const pi=$("dlgPor");if(pi.dataset.n!==d.who){pi.dataset.n=d.who;pi.style.display="none";pi.onload=()=>pi.style.display="block";pi.onerror=()=>pi.style.display="none";pi.src=POR(d.who)}$("dlgTxt").textContent=d.lines[d.i];const last=d.i>=d.lines.length-1;$("dlgNext").textContent=last?(d.accept?"Ta jobbet":"OK"):"Fortsätt";$("dlgNo").style.display=last&&d.accept?"inline-block":"none"}
 function dlgNext(ok=true){const d=DLG;if(!d)return;if(d.i<d.lines.length-1){d.i++;dlgShow();return}$("dlg").style.display="none";DLG=null;if(ok&&d.onEnd)d.onEnd()}
 function talk(J){dialog(J.from==="sven"?"Sven":"Majken",J.offer,()=>{ST.jobOn=1;pop("Nytt jobb: "+J.title,2200);renderObj();save();SFX("done")},true)}
-function jobDone(){const J=jobState();ST.kr+=J.reward;ST.job++;ST.jobOn=0;updHud();renderObj();save();SFX("done");pop(`+${J.reward} kr`,2000)}
+function jobDone(){const J=jobState();ST.kr+=J.reward;ST.rykte=(ST.rykte||0)+5;ST.job++;ST.jobOn=0;updHud();renderObj();save();SFX("done");pop(`+${J.reward} kr`,2000)}
 
 // --- minispel ---
 let GAMEON=null;
