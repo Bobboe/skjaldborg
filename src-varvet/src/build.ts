@@ -62,11 +62,11 @@ let TER=null;
 function setTER(m){TER=m}
 function dig(i,k,y,refresh){if(!TER)return;const g=TER.geometry,pos=g.attributes.position,col=g.attributes.color,step=WS/SEG,M=3.2;
   const x0=i*CELL,x1=x0+CELL,z0=k*CELL,z1=z0+CELL;const a0=Math.max(0,Math.floor((x0-M+WS/2)/step)),a1=Math.min(SEG,Math.ceil((x1+M+WS/2)/step)),b0=Math.max(0,Math.floor((z0-M+WS/2)/step)),b1=Math.min(SEG,Math.ceil((z1+M+WS/2)/step));
-  const dirt=new THREE.Color("#a3916f"),c=new THREE.Color();let ch=false;
+  const spl=g.attributes.splat;let ch=false;
   for(let iz=b0;iz<=b1;iz++)for(let ix=a0;ix<=a1;ix++){const x=-WS/2+ix*step,z=-WS/2+iz*step;const dx=Math.max(x0-x,0,x-x1),dz=Math.max(z0-z,0,z-z1),d=Math.hypot(dx,dz);if(d>M)continue;
-    const idx=iz*(SEG+1)+ix,h=HG[idx],tgt=y-.07+d*.6;if(h>tgt){HG[idx]=tgt;pos.setY(idx,tgt);c.fromBufferAttribute(col,idx).lerp(dirt,.6*(1-d/M));col.setXYZ(idx,c.r,c.g,c.b);ch=true}}
+    const idx=iz*(SEG+1)+ix,h=HG[idx],tgt=y-.07+d*.6;if(h>tgt){HG[idx]=tgt;pos.setY(idx,tgt);if(spl){const k=.75*(1-d/M);spl.setXYZW(idx,spl.getX(idx)*(1-k),spl.getY(idx)*(1-k),spl.getZ(idx)*(1-k),spl.getW(idx)+(1-spl.getW(idx))*k)}ch=true}}
   if(ch&&refresh)terrainRefresh()}
-function terrainRefresh(){const g=TER.geometry;g.attributes.position.needsUpdate=true;g.attributes.color.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();
+function terrainRefresh(){const g=TER.geometry;g.attributes.position.needsUpdate=true;g.attributes.color.needsUpdate=true;if(g.attributes.splat)g.attributes.splat.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();
   if(water){const t=water.material.uniforms.hT.value;const nt=heightTex();t.image.data.set(nt.image.data);t.needsUpdate=true;nt.dispose()}}
 function initBuild(){for(const d of ST.digs)dig(d[0],d[1],d[2],false);if(ST.digs.length)terrainRefresh();for(const t of ORDER){const m=new THREE.InstancedMesh(geoFor(t),VC,IMCAP);m.count=0;m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;scene.add(m);IM[t]=m}
   ghostInit();nodesInit();refreshBuilt();updHud()}

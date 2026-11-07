@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { terrainMaterial } from "./paint";
 import { clamp } from "./util";
 import { scene } from "./engine";
 import { N2, N3, fbm, lerp, sstep } from "./util";
@@ -24,15 +25,18 @@ function sampleGrid(x,z){const fx=(x+WS/2)/WS*SEG,fz=(z+WS/2)/WS*SEG;if(fx<0||fz
 function buildTerrain(){const g=new THREE.PlaneGeometry(WS,WS,SEG,SEG);g.rotateX(-Math.PI/2);const pos=g.attributes.position;const col=new Float32Array(pos.count*3);
   for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);const h=H(x,z);pos.setY(i,h);HG[i]=h}
   g.computeVertexNormals();const nor=g.attributes.normal;
-  const cSand=new THREE.Color("#e8d6a6"),cGrass=new THREE.Color("#7fb35a"),cGrass2=new THREE.Color("#5f9a47"),cRock=new THREE.Color("#b49a92"),cRock2=new THREE.Color("#8d7c7a"),cSea=new THREE.Color("#7a8f86"),cYard=new THREE.Color("#a99a7f"),c=new THREE.Color();
+  // splat = vikter för gräs, granit, sand, jord; färgen är bara en svag ton ovanpå texturerna
+  const spl=new Float32Array(pos.count*4);
   for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i),h=pos.getY(i),ny=nor.getY(i);const n=N3(x*.05,z*.05);
-    if(h<-.4)c.copy(cSea).lerp(cSand,clamp((h+3)/3,0,1));
-    else if(h<.9+n*.4)c.copy(cSand);
-    else{c.copy(cGrass).lerp(cGrass2,clamp(.5+n,0,1));const rock=clamp((.86-ny)*5+(h>9?.4:0)+N2(x*.04,z*.04)*.5,0,1);c.lerp(rock>.5?cRock:cRock2,sstep(.25,.6,rock))}
-    const dy=Math.hypot(x-YARD.x,z-YARD.z);if(dy<YARD.r+4&&h>.4)c.lerp(cYard,(1-sstep(YARD.r-10,YARD.r+2,dy))*.55*(.7+.3*N2(x*.15,z*.15)));
-    col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b}
-  g.setAttribute("color",new THREE.BufferAttribute(col,3));
-  const m=new THREE.MeshLambertMaterial({vertexColors:true});const mesh=new THREE.Mesh(g,m);mesh.receiveShadow=true;scene.add(mesh);return mesh}
+    let wg=0,wr=0,ws=0,wd=0;
+    if(h<-.4){ws=1;const k=clamp((-h-.4)/4,0,1);const t=1-k*.45;col[i*3]=t*.86;col[i*3+1]=t*.95;col[i*3+2]=t*.95}
+    else{const sandK=1-sstep(.5+n*.4,1.3+n*.4,h);const rock=clamp((.86-ny)*5+(h>9?.4:0)+N2(x*.04,z*.04)*.5,0,1);const rk=sstep(.3,.65,rock)*(1-sandK*.7);
+      ws=sandK*(1-rk);wr=rk;wg=(1-sandK)*(1-rk);
+      const dy=Math.hypot(x-YARD.x,z-YARD.z);if(dy<YARD.r+4&&h>.4){const yk=(1-sstep(YARD.r-10,YARD.r+2,dy))*.75*(.7+.3*N2(x*.15,z*.15));wd=yk;wg*=1-yk;ws*=1-yk}
+      const t=.9+.16*clamp(.5+n,0,1);col[i*3]=t;col[i*3+1]=t*(1.02-.04*wr);col[i*3+2]=t*(.96+.04*wr)}
+    spl[i*4]=wg;spl[i*4+1]=wr;spl[i*4+2]=ws;spl[i*4+3]=wd}
+  g.setAttribute("color",new THREE.BufferAttribute(col,3));g.setAttribute("splat",new THREE.BufferAttribute(spl,4));
+  const m=terrainMaterial();const mesh=new THREE.Mesh(g,m);mesh.receiveShadow=true;scene.add(mesh);return mesh}
 
 // höjdtextur för vattnet (djup, skum vid strand)
 function heightTex(){const R=256,d=new Uint8Array(R*R*4);for(let j=0;j<R;j++)for(let i=0;i<R;i++){const x=(i/(R-1)-.5)*WS,z=(j/(R-1)-.5)*WS;const h=sampleGrid(x,z);const v=clamp((h+8)/12,0,1);d[(j*R+i)*4]=v*255;d[(j*R+i)*4+3]=255}

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { renderFrame } from "./engine";
 import { qualityTick, qualityState } from "./quality";
 import { telemetryInit, telemetryFrame } from "./telemetry";
 import { camS } from "./input";
@@ -26,7 +27,7 @@ function frame(now){requestAnimationFrame(frame);const minDt=1000/SET.fps-1.5;co
   const t=now/1000;water.material.uniforms.t.value=t;if(bobBoat){bobBoat.position.y=.5+Math.sin(t*1.3)*.08;bobBoat.rotation.z=Math.sin(t*1.1)*.04}
   const fl=scene.userData.flag;if(fl)fl.rotation.y=Math.sin(t*1.7)*.25;
   if(!running){camS.tYaw+=dt*.08;camS.yaw=camS.tYaw;const r=60,cx=Math.sin(t*.05)*r,cz=50+Math.cos(t*.05)*r;camera.position.set(cx,22,cz);camera.lookAt(0,2,36);scene.userData.sky.position.copy(camera.position)}
-  renderer.render(scene,camera);perfTick(dt,performance.now()-t0);if(running){qualityTick(el/1000);telemetryFrame(el/1000,{...qualityState(),q:SET.q,goal:SET.fps})}}
+  renderFrame();perfTick(dt,performance.now()-t0);if(running){qualityTick(el/1000);telemetryFrame(el/1000,{...qualityState(),q:SET.q,goal:SET.fps})}}
 
 // ================= Start =================
 function boot(){setTER(buildTerrain());buildWater();buildYard();buildNature(Q);load();jobsWorldInit();initBuild();uiInit();player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();telemetryInit(renderer.getContext(),"webgl2");$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
