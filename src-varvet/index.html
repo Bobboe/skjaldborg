@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0f12">
+<title>Varvet</title>
+<script>window.SBCFG=/*SBCFG*/{url:"",key:""}</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+:root{--bg:#0d0f12;--panel:rgba(16,18,22,.86);--line:#2a2e35;--txt:#e9e6df;--mut:#9aa0a8;--acc:#ffc21a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hud{position:fixed;z-index:5;pointer-events:none}
+.btn{pointer-events:auto;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:10px 14px;font:600 14px system-ui;cursor:pointer}
+.btn:active{transform:scale(.96)}
+.btn.acc{background:var(--acc);color:#111;border-color:var(--acc)}
+#top{top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));display:flex;gap:8px}
+#back{top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left))}
+#perf{top:calc(max(10px,env(safe-area-inset-top)) + 52px);left:max(10px,env(safe-area-inset-left));background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:12px ui-monospace,Menlo,monospace;line-height:1.5;display:none;white-space:pre}
+#loc{top:max(16px,calc(env(safe-area-inset-top) + 6px));left:50%;transform:translateX(-50%);font:700 13px system-ui;letter-spacing:.08em;text-transform:uppercase;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);opacity:.9}
+#joy{position:fixed;z-index:6;width:120px;height:120px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18);display:none;pointer-events:none;transform:translate(-50%,-50%)}
+#knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,194,26,.85);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+#hint{bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-size:13px;color:var(--mut);text-align:center;transition:opacity .6s}
+#menu{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,rgba(13,15,18,.55),rgba(13,15,18,.92))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 24px;width:min(380px,calc(100vw - 32px));text-align:center;backdrop-filter:blur(6px)}
+.card h1{margin:0 0 4px;font-size:34px;letter-spacing:.04em}
+.card h1 span{color:var(--acc)}
+.card p{margin:6px 0 18px;color:var(--mut);font-size:14px;line-height:1.45}
+.row{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--mut);padding:8px 12px;font:600 13px system-ui}
+.seg button.on{background:var(--acc);color:#111}
+.lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-top:12px}
+#settings{display:none}
+#dlg{position:fixed;z-index:12;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(560px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--acc);border-radius:16px;padding:14px 16px;display:none;backdrop-filter:blur(6px)}
+#dlgWho{color:var(--acc);font:800 13px system-ui;text-transform:uppercase;letter-spacing:.08em}#dlgTxt{font-size:16px;line-height:1.45;margin-top:4px}
+#game{position:fixed;inset:0;z-index:15;background:#0d0f12;display:none;flex-direction:column;padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+.gtop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}#gTitle{font:800 18px system-ui;color:var(--acc)}#gHelp{font-size:13px;color:var(--mut)}
+#gcv{flex:1;width:100%;min-height:0;border-radius:12px;touch-action:none}.gbar{height:10px;background:#1d2026;border-radius:6px;margin-top:8px;overflow:hidden}.gbar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+#compass{top:calc(max(10px,env(safe-area-inset-top)) + 34px);left:50%;transform:translateX(-50%);display:none;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--acc);border-radius:20px;padding:4px 12px;font:700 13px system-ui}#cArrow{color:var(--acc);font-size:20px;transition:transform .1s}
+#fade{position:fixed;inset:0;z-index:25;background:#0d0f12;opacity:0;pointer-events:none;transition:opacity .45s}
+#res{top:max(10px,env(safe-area-inset-top));left:calc(max(10px,env(safe-area-inset-left)) + 112px);display:flex;gap:8px}
+#res span{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:700 14px system-ui}
+#obj{top:calc(max(10px,env(safe-area-inset-top)) + 52px);right:max(10px,env(safe-area-inset-right));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12.5px;line-height:1.6;color:var(--mut);max-width:220px}
+#obj b{color:var(--acc);font-size:11px;text-transform:uppercase;letter-spacing:.08em}#obj .done{color:#7fd38a;text-decoration:line-through}#obj .now{color:var(--txt);font-weight:600}
+#pop{top:30%;left:50%;transform:translateX(-50%);background:rgba(16,18,22,.8);border:1px solid var(--acc);color:var(--txt);border-radius:12px;padding:8px 16px;font:700 15px system-ui;opacity:0;transition:opacity .3s;white-space:nowrap}
+#acts{right:max(14px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+#acts .btn{min-width:96px;padding:13px 16px;font-size:15px}#bAct{min-width:140px!important;padding:18px 18px!important;font-size:16px!important;border-radius:16px}
+#bar{left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));display:none;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;pointer-events:auto;max-width:calc(100vw - 190px);overflow-x:auto}
+#bar .pc{background:transparent;border:1px solid transparent;border-radius:10px;color:var(--txt);padding:5px 8px;font:600 11px system-ui;display:flex;flex-direction:column;align-items:center;min-width:52px}
+#bar .pc i{font-style:normal;font-size:18px;line-height:1.1}#bar .pc small{color:var(--mut);font-size:10px;font-weight:500}
+#bar .pc.on{border-color:var(--acc);background:rgba(255,194,26,.12)}#bar .pc.dim{opacity:.45}
+#bWhy{left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 66px);font:700 13px system-ui;text-shadow:0 1px 4px rgba(0,0,0,.8);display:none}
+#loading{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:var(--bg);font:600 15px system-ui;color:var(--mut)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="loading">Bygger skärgården…</div>
+<a id="back" class="hud btn" href="/">← Arcade</a>
+<div id="top" class="hud"><button class="btn" id="bPerf">FPS</button><button class="btn" id="bSet">⚙</button></div>
+<div id="perf" class="hud"></div>
+<div id="loc" class="hud">Varvsön</div>
+<div id="hint" class="hud">Vänster tumme: gå · Höger tumme: titta runt</div>
+<div id="joy"><div id="knob"></div></div>
+<div id="res" class="hud"></div>
+<div id="obj" class="hud"></div>
+<div id="pop" class="hud"></div>
+<div id="acts" class="hud"><button class="btn" id="bBuild">Bygg</button><button class="btn acc" id="bAct" style="display:none">Plocka</button></div>
+<div id="bWhy" class="hud"></div>
+<div id="bar" class="hud"></div>
+<div id="dlg"><div id="dlgWho"></div><div id="dlgTxt"></div><div class="row" style="justify-content:flex-end;margin:10px 0 0"><button class="btn" id="dlgNo">Inte nu</button><button class="btn acc" id="dlgNext">Fortsätt</button></div></div>
+<div id="game"><div class="gtop"><div><div id="gTitle"></div><div id="gHelp"></div></div><button class="btn" id="gX">Avbryt</button></div><canvas id="gcv"></canvas><div class="gbar"><i id="gBar"></i></div></div>
+<div id="fade"></div>
+<div id="compass" class="hud"><div id="cArrow">➤</div><span id="cDist"></span></div>
+<div id="menu">
+  <div class="card" id="mainCard">
+    <h1>VAR<span>VET</span></h1>
+    <p>Du har ärvt ett förfallet båtvarv på en ö i Bohuslän.<br>Demo – steg 1: utforska ön.</p>
+    <button class="btn acc" id="bPlay" style="width:100%;padding:14px;font-size:16px">Spela</button>
+    <div class="row"><button class="btn" id="bSet2" style="flex:1">Inställningar</button></div>
+  </div>
+  <div class="card" id="settings">
+    <h1 style="font-size:24px">Inställningar</h1>
+    <div class="lbl">Grafik</div>
+    <div class="row"><div class="seg" id="sQ"><button data-v="0">Låg</button><button data-v="1">Medel</button><button data-v="2">Hög</button></div></div>
+    <div class="lbl">Bildfrekvens</div>
+    <div class="row"><div class="seg" id="sF"><button data-v="30">30 fps</button><button data-v="60">60 fps</button></div></div>
+    <div class="lbl">Prestandamätare</div>
+    <div class="row"><div class="seg" id="sP"><button data-v="0">Av</button><button data-v="1">På</button></div></div>
+    <button class="btn acc" id="bClose" style="width:100%;margin-top:14px">Klar</button>
+  </div>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
