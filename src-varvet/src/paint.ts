@@ -38,7 +38,7 @@ export function paintedTex(name: string, fallback: Painter, seed = 1, colorSpace
   const t = new THREE.Texture(canvasTex(fallback, seed));
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = colorSpace; t.anisotropy = 4; t.needsUpdate = true;
   cache.set(name, t);
-  const tryLoad = (ext: string, next?: () => void) => loader.load(BASE + name + ext, img => { t.image = img; t.needsUpdate = true; t.userData.real = true; }, undefined, () => next && next());
+  const tryLoad = (ext: string, next?: () => void) => loader.load(BASE + name + ext, img => { t.dispose(); t.image = img; t.needsUpdate = true; t.userData.real = true; }, undefined, () => next && next());
   tryLoad(".webp", () => tryLoad(".png"));
   return t;
 }
@@ -49,6 +49,7 @@ export const TEX = {
   granite: () => paintedTex("granite", blotches("#c4a69c", ["#a98a82", "#d8bdb2", "#8f7471", "#e6d3c9"], 200, 4, 26, 0.3), 12),
   sand: () => paintedTex("sand", blotches("#e9d8ad", ["#dcc795", "#f3e6c4", "#cdb684"], 160, 4, 24), 13),
   dirt: () => paintedTex("dirt", blotches("#b39d7b", ["#9c8565", "#c9b592", "#8a7457", "#d6c6a5"], 220, 3, 18, 0.28), 14),
+  planks: () => paintedTex("planks", blotches("#8d7a63", ["#7a6852", "#a08d74", "#6b5a47"], 160, 3, 20), 16),
   paper: () => paintedTex("paper", blotches("#f4efe4", ["#e9e1d0", "#fbf8f1", "#e2d8c4"], 300, 2, 16, 0.35), 15),
 };
 
@@ -136,4 +137,26 @@ export class WatercolorPost {
     renderer.setRenderTarget(this.rt); renderer.render(scene, camera);
     renderer.setRenderTarget(null); renderer.render(this.qScene, this.qCam);
   }
+}
+
+// ---------- Trä- och brädstruktur på objekt (attributet "mat": 0 = slät, 1 = trä) ----------
+// Texturen läggs i världskoordinater från tre håll, så bryggor, golv och väggar får plankor utan UV-koordinater.
+export function patchWood(m: THREE.Material): void {
+  const tex = TEX.planks();
+  (m as THREE.MeshLambertMaterial).onBeforeCompile = sh => {
+    sh.uniforms.tPlanks = { value: tex };
+    sh.vertexShader = sh.vertexShader
+      .replace("#include <common>", "#include <common>\nattribute float mat;\nvarying float vMat;\nvarying vec3 vWP2;\nvarying vec3 vWN2;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvMat = mat;\nvec4 wpI = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\nwpI = instanceMatrix * wpI;\n#endif\nvWP2 = (modelMatrix * wpI).xyz;\nvWN2 = normalize(mat3(modelMatrix) * objectNormal);");
+    sh.fragmentShader = sh.fragmentShader
+      .replace("#include <common>", "#include <common>\nuniform sampler2D tPlanks;\nvarying float vMat;\nvarying vec3 vWP2;\nvarying vec3 vWN2;")
+      .replace("#include <color_fragment>", `#include <color_fragment>
+        if (vMat > 0.01) {
+          vec3 n = abs(normalize(vWN2));
+          float sc = 0.45;
+          vec3 t = n.y > 0.6 ? texture2D(tPlanks, vWP2.xz * sc).rgb : (n.x > n.z ? texture2D(tPlanks, vec2(vWP2.z, vWP2.y) * sc).rgb : texture2D(tPlanks, vec2(vWP2.x, vWP2.y) * sc).rgb);
+          float l = dot(t, vec3(0.299, 0.587, 0.114));
+          diffuseColor.rgb *= mix(1.0, clamp(l / 0.2, 0.55, 1.45), vMat * 0.85);
+        }`);
+  };
 }

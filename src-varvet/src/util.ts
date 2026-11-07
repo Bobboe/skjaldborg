@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { patchWood } from "./paint";
 
 // ================= Brus =================
 function makeNoise(seed){const p=new Uint8Array(512);const r=mulberry(seed);const a=[...Array(256).keys()];for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}for(let i=0;i<512;i++)p[i]=a[i&255];
@@ -13,12 +14,13 @@ const fbm=(x,y,o=4)=>{let a=0,f=1,s=.5;for(let i=0;i<o;i++){a+=s*N1(x*f,y*f);f*=
 const clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,sstep=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t)};
 
 // ================= Hjälp: slå ihop geometrier med färg =================
-function colored(geo,color){const g=geo.index?geo.toNonIndexed():geo;const c=new THREE.Color(color),n=g.attributes.position.count,a=new Float32Array(n*3);for(let i=0;i<n;i++){a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b}g.setAttribute("color",new THREE.BufferAttribute(a,3));g.deleteAttribute("uv");return g}
-function merge(list){let n=0;for(const g of list)n+=g.attributes.position.count;const P=new Float32Array(n*3),Nn=new Float32Array(n*3),C=new Float32Array(n*3);let o=0;
-  for(const g of list){P.set(g.attributes.position.array,o*3);Nn.set(g.attributes.normal.array,o*3);C.set(g.attributes.color.array,o*3);o+=g.attributes.position.count}
-  const r=new THREE.BufferGeometry();r.setAttribute("position",new THREE.BufferAttribute(P,3));r.setAttribute("normal",new THREE.BufferAttribute(Nn,3));r.setAttribute("color",new THREE.BufferAttribute(C,3));r.computeBoundingSphere();return r}
+const WOOD={"#9a7a55":1,"#a47c52":1,"#8f6a45":1,"#c49a66":1,"#b88b58":1,"#6b5137":.8,"#5e4630":.8,"#7a5136":.6,"#8a6646":.7,"#9a7552":.7,"#b8392b":.55,"#6e1f17":.55,"#e9e4d8":.35,"#f4f1ea":.35};
+function colored(geo,color,mat){const g=geo.index?geo.toNonIndexed():geo;const c=new THREE.Color(color),n=g.attributes.position.count,a=new Float32Array(n*3);for(let i=0;i<n;i++){a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b}g.setAttribute("color",new THREE.BufferAttribute(a,3));g.setAttribute("mat",new THREE.BufferAttribute(new Float32Array(n).fill(mat!=null?mat:(WOOD[String(color).toLowerCase()]||0)),1));g.deleteAttribute("uv");return g}
+function merge(list){let n=0;for(const g of list)n+=g.attributes.position.count;const P=new Float32Array(n*3),Nn=new Float32Array(n*3),C=new Float32Array(n*3),Mt=new Float32Array(n);let o=0;
+  for(const g of list){P.set(g.attributes.position.array,o*3);Nn.set(g.attributes.normal.array,o*3);C.set(g.attributes.color.array,o*3);if(g.attributes.mat)Mt.set(g.attributes.mat.array,o);o+=g.attributes.position.count}
+  const r=new THREE.BufferGeometry();r.setAttribute("position",new THREE.BufferAttribute(P,3));r.setAttribute("normal",new THREE.BufferAttribute(Nn,3));r.setAttribute("color",new THREE.BufferAttribute(C,3));r.setAttribute("mat",new THREE.BufferAttribute(Mt,1));r.computeBoundingSphere();return r}
 const tr=(g,x,y,z,ry=0,s=1)=>{g.scale(s,s,s);if(ry)g.rotateY(ry);g.translate(x,y,z);return g};
-const VC=new THREE.MeshLambertMaterial({vertexColors:true}),VCD=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+const VC=new THREE.MeshLambertMaterial({vertexColors:true}),VCD=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});patchWood(VC);patchWood(VCD);
 
 const $=id=>document.getElementById(id);
 
