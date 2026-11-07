@@ -76,6 +76,7 @@ export const SVEN: CharDef = {
 export const PLAYER_MAN: CharDef = {
   file: "spelare_man.glb", height: 1.78,
   anims: { idle: "Idle_11", walk: "Walking", run: "Running", talk: "Listening_Gesture", pick: "Female_Bend_Over_Pick_Up_Inspect", jump: "Regular_Jump",
+    sit: "Chair_Sit_Idle_M",
     work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
 };
 
