@@ -8,7 +8,7 @@ export interface CharDef {
   height?: number;                 // önskad höjd i meter (skalar modellen)
   anims: Record<string, string>;   // våra namn → klippnamn i filen
 }
-interface Live { mixer: THREE.AnimationMixer; actions: Record<string, THREE.AnimationAction>; cur: string }
+interface Live { mixer: THREE.AnimationMixer; actions: Record<string, THREE.AnimationAction>; cur: string; lock?: number }
 
 const loader = new GLTFLoader();
 const LIVE = new Map<THREE.Object3D, Live>();
@@ -56,11 +56,25 @@ export function play(holder: THREE.Object3D, key: string, fade = 0.35): void {
   if (prev) prev.fadeOut(fade);
   L.cur = key;
 }
+/** Sätter uppspelningshastigheten för en animation (t.ex. gång efter faktisk fart). */
+export function setSpeed(holder: THREE.Object3D, key: string, k: number): void { const a = LIVE.get(holder)?.actions[key]; if (a) a.timeScale = k; }
+/** Spelar en animation en gång och återgår sedan till `back`. */
+export function once(holder: THREE.Object3D, key: string, back = "idle", ms = 1400): void {
+  const L = LIVE.get(holder); if (!L || !L.actions[key]) return;
+  play(holder, key, 0.2); L.lock = performance.now() + ms; setTimeout(() => { if (L.cur === key) play(holder, back, 0.3); }, ms);
+}
+export const locked = (holder: THREE.Object3D): boolean => (LIVE.get(holder)?.lock || 0) > performance.now();
 export const current = (holder: THREE.Object3D): string => LIVE.get(holder)?.cur || "";
 export function charactersTick(dt: number): void { for (const L of LIVE.values()) L.mixer.update(dt); }
 
 export const SVEN: CharDef = {
   file: "sven.glb", height: 1.8,
   anims: { idle: "Idle_11", talk: "Stand_and_Chat", walk: "Walking", run: "Running", pick: "Female_Bend_Over_Pick_Up_Inspect",
+    work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
+};
+
+export const PLAYER_MAN: CharDef = {
+  file: "spelare_man.glb", height: 1.78,
+  anims: { idle: "Idle_11", walk: "Walking", run: "Running", talk: "Listening_Gesture", pick: "Female_Bend_Over_Pick_Up_Inspect", jump: "Regular_Jump",
     work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
 };

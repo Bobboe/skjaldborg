@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { once } from "./characters";
 import { camS } from "./input";
 import { HG } from "./terrain";
 import { colored } from "./util";
@@ -10,7 +11,7 @@ import { BOATM, DLG, GAMEON, dlgNext, endGame, jobState, nearI } from "./jobs";
 import { running } from "./menu";
 import { acc } from "./main";
 import { COLL } from "./nature";
-import { player } from "./player";
+import { player, P } from "./player";
 import { SEG, WS, YARD, heightTex, sampleGrid } from "./terrain";
 import { groundAt, onJetty } from "./update";
 import { $, merge, mulberry, tr } from "./util";
@@ -133,7 +134,7 @@ function nodesTick(dt,t){let ch=false;for(const n of NODES)if(n.gone>0){n.gone-=
   nearNode=null;let bd=2.4;for(const n of NODES){if(n.gone>0)continue;const d=Math.hypot(n.x-player.pos.x,n.z-player.pos.z);if(d<bd){bd=d;nearNode=n}}
   const mk=nodeIM.marker;mk.visible=!!nearNode&&!buildMode;if(nearNode){mk.position.set(nearNode.x,nearNode.y+1.6+Math.sin(t*3)*.12,nearNode.z);mk.rotation.y=t*2}
   const b=$("bAct");$("bBuild").style.display=BOATM.on||DLG?"none":"block";if(DLG){b.style.display="none";return}if(buildMode){b.style.display="block";b.textContent="Placera"}else if(typeof nearI!=="undefined"&&nearI){b.style.display="block";b.textContent=nearI.label}else if(BOATM.on){b.style.display="none"}else if(nearNode){b.style.display="block";b.textContent=nearNode.type==="log"?"Plocka virke":"Plocka skrot"}else b.style.display="none"}
-function gather(){if(!nearNode)return;const n=nearNode;if(n.type==="log"){ST.virke+=2;ST.picked+=2;pop("+2 virke")}else{ST.skrot+=1;pop("+1 skrot")}n.gone=120;refreshNodes();updHud();objCheck();save();SFX("pick")}
+function gather(){if(!nearNode)return;const n=nearNode;once(P,'pick','idle',1600);if(n.type==="log"){ST.virke+=2;ST.picked+=2;pop("+2 virke")}else{ST.skrot+=1;pop("+1 skrot")}n.gone=120;refreshNodes();updHud();objCheck();save();SFX("pick")}
 
 // --- uppdrag ---
 const OBJ=[{txt:"Plocka 10 virke",ok:()=>ST.picked>=10},{txt:"Lägg 4 golv",ok:()=>cnt("floor")>=4},{txt:"Bygg 6 väggar (en med dörr)",ok:()=>cnt("wall")>=6&&ST.pieces.some(p=>p.t==="dorr")},{txt:"Lägg tak över bygget",ok:()=>cnt("roof")>=2}];

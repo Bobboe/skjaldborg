@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { play, setSpeed, locked } from "./characters";
 import { isPhoneOpen } from "./life";
 import { camS } from "./input";
 import { player } from "./player";
@@ -32,7 +33,8 @@ function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.
   const g=groundAt(player.pos.x,player.pos.z);player.pos.y+=(g-player.pos.y)*Math.min(1,dt*18);
   player.walk+=dt*player.speed*2.1;const sw=Math.sin(player.walk)*Math.min(1,player.speed/3)*.75;
   limb.la.rotation.x=sw;limb.ra.rotation.x=-sw;limb.ll.rotation.x=-sw;limb.rl.rotation.x=sw;
-  P.position.copy(player.pos);P.position.y+=Math.abs(Math.cos(player.walk))*.06*Math.min(1,player.speed/3);P.rotation.y=player.yaw;}
+  if(P.userData.realModel&&!locked(P)){if(player.speed>4.6){play(P,'run');setSpeed(P,'run',player.speed/5.2)}else if(player.speed>.2){play(P,'walk');setSpeed(P,'walk',Math.max(.6,player.speed/1.6))}else play(P,DLG?'talk':'idle')}
+  P.position.copy(player.pos);if(!P.userData.realModel)P.position.y+=Math.abs(Math.cos(player.walk))*.06*Math.min(1,player.speed/3);P.rotation.y=player.yaw;}
   // kamera
   camS.yaw+=(camS.tYaw-camS.yaw)*Math.min(1,dt*10);camS.pitch+=(camS.tPitch-camS.pitch)*Math.min(1,dt*10);
   const tgt=tmp.set(player.pos.x,player.pos.y+1.5,player.pos.z);let d=camS.dist;
