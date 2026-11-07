@@ -192,7 +192,7 @@ async function viewProfile(){const S=skjStats();const sv=S.save||{};
    ${SKJ_CH.map(([k,n],i)=>(i%4===0?`<tr class="yr"><td colspan="3">${YEARS[i/4]}</td></tr>`:"")+`<tr><td>${i+1}. ${esc(n)}</td><td>${S.stars[k]?starStr(S.stars[k]):'<span style="color:var(--dim)">–</span>'}</td>${user?`<td class="n">${best[k]?best[k].score.toLocaleString("sv"):"–"}</td>`:""}</tr>`).join("")}
    </tbody></table></div>
   ${vbProfile(bestVB)}`}
-const VBN={emil:"Emil",eric:"Eric",hydraul:"Hydraulikern",kingove:"King-Ove",lager:"Lagerchefen",butik:"Butikssäljaren",svets:"Svetsaren",montor:"Montören",admin:"Admin",falt:"Fältteknikern",larling:"Lärlingen",el:"Elektrikern",truck:"Truckföraren",chef:"Chefen"};
+const VBN={tobias:"Tobias",emil:"Emil",eric:"Eric",hydraul:"Hydraulikern",kingove:"King-Ove",lager:"Lagerchefen",butik:"Butikssäljaren",svets:"Svetsaren",montor:"Montören",admin:"Admin",falt:"Fältteknikern",larling:"Lärlingen",el:"Elektrikern",truck:"Truckföraren",chef:"Chefen"};
 function vbProfile(best){const V=vbStats();const ch=Object.entries(V.chars||{}).sort((a,b)=>b[1].p-a[1].p);
   return`<div class="sec"><div class="sechd"><div style="width:44px;height:44px;border-radius:11px;background:#ffc21a;display:grid;place-items:center;color:#1a1200;font:800 20px Inter">VB</div><div><h2>Verkstadsbråket</h2><small>Fighting · EBO-personal</small></div><div class="sp"></div><a class="btn sm" href="/verkstadsbraket/">Spela</a></div>
    <div class="stats"><div class="stat"><small>Matcher</small><b>${V.matches||0}</b></div><div class="stat"><small>Vinster mot datorn</small><b>${V.wins||0}</b></div><div class="stat"><small>2-spelarmatcher</small><b>${V.vs||0}</b></div>
