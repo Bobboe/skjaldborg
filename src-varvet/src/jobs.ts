@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { attachCharacter, play, SVEN } from "./characters";
 import { INTERACT_PROVIDERS } from "./hooks";
 import { pop } from "./build";
 import { camS } from "./input";
@@ -29,7 +30,7 @@ const NPC={};const MARK=new THREE.Mesh(new THREE.ConeGeometry(.22,.5,4),new THRE
 const TGT=new THREE.Mesh(new THREE.TorusGeometry(1.3,.12,6,28),new THREE.MeshBasicMaterial({color:"#ffc21a"}));TGT.rotation.x=Math.PI/2;TGT.visible=false;scene.add(TGT);
 let NJ=null;// Grannöns brygga
 function jobsWorldInit(){
-  NPC.sven=makePerson({shirt:"#3f6e4a",pants:"#2b3a52",hat:"#1f2a44",beard:"#d9d4cc",skin:"#efc2a0"});NPC.sven.position.set(12.2,1.45,62);NPC.sven.rotation.y=Math.PI*.15;
+  NPC.sven=makePerson({shirt:"#3f6e4a",pants:"#2b3a52",hat:"#1f2a44",beard:"#d9d4cc",skin:"#efc2a0"});NPC.sven.position.set(13.6,Math.max(1.45,groundAt(13.6,62)),62);NPC.sven.rotation.y=Math.PI*.15;attachCharacter(NPC.sven,SVEN);
   // Grannöns brygga: från stranden ut mot Varvsön
   const I=ISLANDS[1];let dx=-.74,dz=.67,x=I.x,z=I.z;for(let s=0;s<120;s++){x+=dx;z+=dz;if(sampleGrid(x,z)<-.4)break}
   const ex=x+dx*9,ez=z+dz*9,ang=Math.atan2(dx,dz);NJ={x0:x-dx*2,z0:z-dz*2,x1:ex,z1:ez,ang,boatX:ex+dz*3.2,boatZ:ez-dx*3.2};
@@ -66,7 +67,7 @@ function interactables(){const L=[];for(const f of INTERACT_PROVIDERS)f(L);const
 function interTick(t){nearI=null;if(buildMode||BOATM.on||GAMEON)return;let bd=99;for(const it of interactables()){const d=Math.hypot(it.x-player.pos.x,it.z-player.pos.z);if(d<it.r&&d<bd){bd=d;nearI=it}}
   const J=jobState();let mp=null;if(J&&!ST.jobOn){mp=npcPos(J.from).clone();mp.y+=2.6}else if(J&&ST.jobOn&&J.game!=="drive"){const q=J.target();mp=new THREE.Vector3(q.x,groundAt(q.x,q.z)+2.6,q.z)}else if(J&&ST.jobOn){mp=bobBoat.position.clone();mp.y+=2.4}
   MARK.visible=!!mp;if(mp){MARK.position.copy(mp);MARK.position.y+=Math.sin(t*3)*.15;MARK.rotation.y=t*2}
-  for(const id in NPC){const n=NPC[id];n.children[0].scale.y=1+Math.sin(t*2+id.length)*.015;const d=Math.hypot(n.position.x-player.pos.x,n.position.z-player.pos.z);if(d<6){const a=Math.atan2(player.pos.x-n.position.x,player.pos.z-n.position.z);n.rotation.y+=Math.atan2(Math.sin(a-n.rotation.y),Math.cos(a-n.rotation.y))*.08}}}
+  for(const id in NPC){const n=NPC[id];if(n.userData.realModel)play(n,DLG&&DLG.who===(id==='sven'?'Sven':'Majken')?'talk':'idle');else n.children[0].scale.y=1+Math.sin(t*2+id.length)*.015;const d=Math.hypot(n.position.x-player.pos.x,n.position.z-player.pos.z);if(d<6){const a=Math.atan2(player.pos.x-n.position.x,player.pos.z-n.position.z);n.rotation.y+=Math.atan2(Math.sin(a-n.rotation.y),Math.cos(a-n.rotation.y))*.08}}}
 // --- dialog ---
 let DLG=null;
 function closeDlg(){$("dlg").style.display="none";DLG=null}
