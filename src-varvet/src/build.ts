@@ -19,7 +19,7 @@ import { water } from "./water";
 import { BOXES } from "./yard";
 
 // ================= Resurser & byggande =================
-const ST={virke:4,skrot:0,picked:0,pieces:[],obj:0,digs:[],kr:0,job:0,jobOn:0,life:null};// sparat tillstånd
+const ST={char:null,pname:"",virke:4,skrot:0,picked:0,pieces:[],obj:0,digs:[],kr:0,job:0,jobOn:0,life:null};// sparat tillstånd
 const DBOX=[];// kollisioner från byggda väggar
 const CELL=2,WALLH=2.6;
 const PIECES={
@@ -149,8 +149,8 @@ let popT=0;function pop(t,ms=1400){const el=$("pop");el.textContent=t;el.style.o
 let AC=null;function SFX(k){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
   const f={pick:[520,780,.12],place:[180,120,.16],rip:[140,70,.18],no:[200,160,.12],done:[523,1046,.35],tick:[70,55,.05]}[k];o.type=k==="place"||k==="rip"?"square":"triangle";o.frequency.setValueAtTime(f[0],t);o.frequency.exponentialRampToValueAtTime(f[1],t+f[2]);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+f[2]+.05);o.start(t);o.stop(t+f[2]+.06)}catch(e){}}
 // sparning
-function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,digs:ST.digs,kr:ST.kr,job:ST.job,jobOn:ST.jobOn,life:ST.life,rykte:ST.rykte||0,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[],digs:d.digs||[],kr:d.kr||0,job:d.job||0,jobOn:d.jobOn||0,life:d.life||null,rykte:d.rykte||0});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
+function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,digs:ST.digs,kr:ST.kr,job:ST.job,jobOn:ST.jobOn,life:ST.life,char:ST.char,pname:ST.pname,rykte:ST.rykte||0,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[],digs:d.digs||[],kr:d.kr||0,job:d.job||0,jobOn:d.jobOn||0,life:d.life||null,char:d.char||null,pname:d.pname||"",rykte:d.rykte||0});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
 function act(){if(buildMode)place();else if(nearI)nearI.fn();else gather()}
 function setBuild(on){if(on&&(BOATM.on||GAMEON))return;buildMode=on;if(on)$("hint").style.opacity=0;$("bar").style.display=on?"flex":"none";$("bBuild").innerHTML=on?"Klar":`${ICO("verktyg","icob")}Bygg`;$("bBuild").classList.toggle("acc",on);$("bWhy").style.display=on?"block":"none";if(on)camS.tPitch=Math.max(camS.tPitch,.55);updHud()}
 function uiInit(){const bar=$("bar");bar.innerHTML=ORDER.map(t=>`<button class="pc" data-t="${t}"><i>${{golv:"▭",vagg:"▮",fonster:"▣",dorr:"⌂",tak:"◭",jamna:"⛏"}[t]}</i>${PIECES[t].name}<small>${costTxt(PIECES[t].cost).replace(/virke/g,ICO("virke","icos")).replace(/skrot/g,ICO("skrot","icos"))}</small></button>`).join("")+`<button class="pc" id="bRot"><i>↻</i>Vrid</button><button class="pc" id="bRip"><i>✕</i>Riv</button>`;

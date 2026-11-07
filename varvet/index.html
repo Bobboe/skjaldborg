@@ -35,6 +35,8 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .seg button.on{background:var(--acc);color:#111}
 .lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-top:12px}
 #settings{display:none}
+.pickc{flex:1;background:transparent;border:2px solid var(--line);border-radius:14px;padding:6px;color:var(--txt);font:600 14px system-ui;display:flex;flex-direction:column;align-items:center;gap:4px}.pickc img{width:100%;max-width:120px;aspect-ratio:1;border-radius:10px;object-fit:cover}.pickc.on{border-color:var(--acc);background:rgba(255,194,26,.12)}
+#pname{width:100%;margin:6px 0 12px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#14171b;color:var(--txt);font:15px system-ui;text-align:center}
 #clock{top:calc(max(16px,calc(env(safe-area-inset-top) + 6px)) + 20px);left:50%;transform:translateX(-50%);font:600 12px system-ui;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7);white-space:nowrap}
 #clock.late{color:#ffd27a}
 #phone{position:fixed;inset:0;z-index:14;display:none;align-items:center;justify-content:center;background:rgba(10,12,14,.45)}
@@ -72,7 +74,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #bWhy{left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 66px);font:700 13px system-ui;text-shadow:0 1px 4px rgba(0,0,0,.8);display:none}
 #loading{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:var(--bg);font:600 15px system-ui;color:var(--mut)}
 </style>
-  <script type="module" crossorigin src="/varvet/assets/index-fJpC4IR9.js"></script>
+  <script type="module" crossorigin src="/varvet/assets/index-DEFv3GNN.js"></script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -99,6 +101,11 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
   <div class="card" id="mainCard">
     <h1>VAR<span>VET</span></h1>
     <p>Du har ärvt ett förfallet båtvarv på en ö i Bohuslän.<br>Demo – steg 1: utforska ön.</p>
+    <div id="pick" style="display:none">
+      <div class="lbl">Välj din figur</div>
+      <div class="row" id="pickRow"><button class="pickc" data-c="kvinna"><img src="/varvet/ui/por_spelare_kvinna.png" alt=""><span>Kvinna</span></button><button class="pickc" data-c="man"><img src="/varvet/ui/por_spelare_man.png" alt=""><span>Man</span></button></div>
+      <input id="pname" maxlength="16" placeholder="Ditt namn" autocomplete="off">
+    </div>
     <button class="btn acc" id="bPlay" style="width:100%;padding:14px;font-size:16px">Spela</button>
     <div class="row"><button class="btn" id="bSet2" style="flex:1">Inställningar</button></div>
   </div>

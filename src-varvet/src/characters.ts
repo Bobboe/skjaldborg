@@ -78,3 +78,10 @@ export const PLAYER_MAN: CharDef = {
   anims: { idle: "Idle_11", walk: "Walking", run: "Running", talk: "Listening_Gesture", pick: "Female_Bend_Over_Pick_Up_Inspect", jump: "Regular_Jump",
     work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
 };
+
+export const PLAYER_WOMAN: CharDef = {
+  file: "spelare_kvinna.glb", height: 1.7,
+  anims: { idle: "Idle_15", walk: "Walking_Woman", run: "Running", talk: "Talk_with_Left_Hand_on_Hip", pick: "Female_Bend_Over_Pick_Up_Inspect", jump: "Regular_Jump",
+    sit: "Chair_Sit_Idle_F", work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
+};
+export const PLAYER_DEFS: Record<string, CharDef> = { man: PLAYER_MAN, kvinna: PLAYER_WOMAN };

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
+import { attachCharacter, PLAYER_DEFS } from "./characters";
 import { charactersTick } from "./characters";
 import { lifeInit, lifeTick, crateTick, timeOf } from "./life";
 import { renderFrame } from "./engine";
@@ -32,7 +33,7 @@ function frame(now){requestAnimationFrame(frame);const minDt=1000/SET.fps-1.5;co
   renderFrame();perfTick(dt,performance.now()-t0);if(running){qualityTick(el/1000);telemetryFrame(el/1000,{...qualityState(),q:SET.q,goal:SET.fps})}}
 
 // ================= Start =================
-function boot(){setTER(buildTerrain());buildWater();buildYard();buildNature(Q);load();jobsWorldInit();initBuild();uiInit();lifeInit();player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();telemetryInit(renderer.getContext(),"webgl2");$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
+function boot(){setTER(buildTerrain());buildWater();buildYard();buildNature(Q);load();jobsWorldInit();initBuild();uiInit();lifeInit();if(ST.char)attachCharacter(P,PLAYER_DEFS[ST.char]);player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();telemetryInit(renderer.getContext(),"webgl2");$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
 window.VARVET={P,life:()=>timeOf(),player,camS,input,SET,renderer,scene,update,act,dlgNext,BOATM,JOBS,startGame,endGame,jobState,get nearI(){return nearI},get GAMEON(){return GAMEON},get NJ(){return NJ},bobBoat:()=>bobBoat,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
 setTimeout(boot,30);
 

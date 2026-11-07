@@ -17,7 +17,7 @@ const limb={};
   const mk=(name,len,rad,col,x,y)=>{const piv=new THREE.Group();piv.position.set(x,y,0);const m=new THREE.Mesh(new THREE.CapsuleGeometry(rad,len,3,8),M(col));m.position.y=-len/2-rad*.5;piv.add(m);P.add(piv);limb[name]=piv};
   mk("la",.42,.11,shirt,-.46,1.42);mk("ra",.42,.11,shirt,.46,1.42);mk("ll",.5,.14,pants,-.17,.72);mk("rl",.5,.14,pants,.17,.72);
   P.traverse(o=>{if(o.isMesh)o.castShadow=true})}
-attachCharacter(P,PLAYER_MAN);
+
 
 
 export { P, limb, player };

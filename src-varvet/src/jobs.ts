@@ -134,7 +134,7 @@ function boatDrive(dt,mx,mz){const thr=-mz,st=mx;BOATM.v+=(thr*11-BOATM.v)*Math.
   const bow=(x,z)=>free(x+Math.sin(BOATM.yaw)*2.8,z+Math.cos(BOATM.yaw)*2.8);
   const stuck=!free(bobBoat.position.x,bobBoat.position.z);if((free(nx,nz)&&bow(nx,nz))||(stuck&&sampleGrid(nx,nz)<=sampleGrid(bobBoat.position.x,bobBoat.position.z))){bobBoat.position.x=nx;bobBoat.position.z=nz}else{BOATM.v*=-.3}
   bobBoat.rotation.y=BOATM.yaw;bobBoat.rotation.x=-clamp(BOATM.v/11,0,1)*.08;
-  player.pos.set(bobBoat.position.x,bobBoat.position.y+.1,bobBoat.position.z);player.yaw=BOATM.yaw;P.position.set(bobBoat.position.x-Math.sin(BOATM.yaw)*2,bobBoat.position.y-.45,bobBoat.position.z-Math.cos(BOATM.yaw)*2);P.rotation.y=BOATM.yaw;
+  player.pos.set(bobBoat.position.x,bobBoat.position.y+.1,bobBoat.position.z);player.yaw=BOATM.yaw;P.position.set(bobBoat.position.x-Math.sin(BOATM.yaw)*2,bobBoat.position.y-(P.userData.realModel?.62:.45),bobBoat.position.z-Math.cos(BOATM.yaw)*2);P.rotation.y=BOATM.yaw;
   // kameran bakom båten
   camS.tYaw+=Math.atan2(Math.sin(BOATM.yaw-camS.tYaw),Math.cos(BOATM.yaw-camS.tYaw))*Math.min(1,dt*1.5);
   if(Math.random()<Math.abs(BOATM.v)*.02)SFX("tick");
