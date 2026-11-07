@@ -93,12 +93,21 @@ export function boatFx(boat: THREE.Object3D, dt: number, t: number, driving: boo
   engine(driving, v);
 }
 
-// Sittplats i båtens eget koordinatsystem (meter): akterspegelns toft vid motorn
-export const SEAT = { x: 0, y: -0.15, z: -1.6, yaw: 0 };
-const _v = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
-/** Placerar spelaren på sittplatsen och låter den följa båtens gung och krängning. */
+// Sittplats i båtens eget koordinatsystem (meter): ovansidan av aktertoften, mätt i motorbåtens modell.
+// Figuren flyttas så att höftbenet hamnar här, oavsett hur respektive sittanimation är gjord.
+export const SEAT = { x: 0, y: 0.25, z: -1.6, yaw: 0 };
+const _v = new THREE.Vector3(), _h = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
+let hips: THREE.Object3D | null = null, hipsOwner: THREE.Object3D | null = null;
+function findHips(p: THREE.Object3D): THREE.Object3D | null {
+  if (hipsOwner === p && hips && hips.parent) return hips;
+  hips = null; hipsOwner = p; p.traverse(o => { if (!hips && /hips$/i.test(o.name)) hips = o; }); return hips;
+}
+/** Placerar spelaren på toften och låter den följa båtens gung och krängning. */
 export function seatPlayer(p: THREE.Object3D, boat: THREE.Object3D): void {
   boat.updateMatrixWorld(true);
-  _v.set(SEAT.x, SEAT.y, SEAT.z).applyMatrix4(boat.matrixWorld); p.position.copy(_v);
+  _v.set(SEAT.x, SEAT.y, SEAT.z).applyMatrix4(boat.matrixWorld);
   boat.getWorldQuaternion(_q); _q2.setFromAxisAngle(new THREE.Vector3(0, 1, 0), SEAT.yaw); p.quaternion.copy(_q).multiply(_q2);
+  p.position.copy(_v);
+  const h = p.userData.realModel ? findHips(p) : null;
+  if (h) { p.updateMatrixWorld(true); h.getWorldPosition(_h); p.position.add(_v.sub(_h)); }
 }
