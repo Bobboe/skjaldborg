@@ -329,53 +329,32 @@
   "read": "Sist, men du kom i mål. Det är mer än Fiskar-Olle klarade 2019."
  },
  {
+  "key": "majken_9sl6nc",
+  "spk": "majken",
+  "who": "Majken",
+  "text": "Andra plats! Inte illa för första gången.",
+  "read": "Andra plats! Inte illa för första gången."
+ },
+ {
+  "key": "majken_1w0ff6o",
+  "spk": "majken",
+  "who": "Majken",
+  "text": "Tredje plats! Inte illa för första gången.",
+  "read": "Tredje plats! Inte illa för första gången."
+ },
+ {
+  "key": "majken_1oghky",
+  "spk": "majken",
+  "who": "Majken",
+  "text": "Här är prispengarna. Och folk pratar om dig nu.",
+  "read": "Här är prispengarna. Och folk pratar om dig nu."
+ },
+ {
   "key": "majken_u1ovb3",
   "spk": "majken",
   "who": "Majken",
   "text": "Förresten – din morfar lämnade en gång en bok här för att binda om. Den här sidan låg kvar. Jag tycker att du ska ha den.",
   "read": "Förresten – din morfar lämnade en gång en bok här för att binda om. Den här sidan låg kvar. Jag tycker att du ska ha den."
- },
- {
-  "key": "majken_xe8cgb",
-  "spk": "majken",
-  "who": "Majken",
-  "text": "Du kom 2:a! Inte illa för första gången.",
-  "read": "Du kom 2:a! Inte illa för första gången."
- },
- {
-  "key": "majken_1267rws",
-  "spk": "majken",
-  "who": "Majken",
-  "text": "Du kom 3:a! Inte illa för första gången.",
-  "read": "Du kom 3:a! Inte illa för första gången."
- },
- {
-  "key": "majken_1y9hblh",
-  "spk": "majken",
-  "who": "Majken",
-  "text": "Här är 2000 kronor. Och folk pratar om dig nu.",
-  "read": "Här är 2000 kronor. Och folk pratar om dig nu."
- },
- {
-  "key": "majken_gg3jg4",
-  "spk": "majken",
-  "who": "Majken",
-  "text": "Här är 1000 kronor. Och folk pratar om dig nu.",
-  "read": "Här är 1000 kronor. Och folk pratar om dig nu."
- },
- {
-  "key": "majken_p58mdk",
-  "spk": "majken",
-  "who": "Majken",
-  "text": "Här är 500 kronor. Och folk pratar om dig nu.",
-  "read": "Här är 500 kronor. Och folk pratar om dig nu."
- },
- {
-  "key": "majken_x61k6d",
-  "spk": "majken",
-  "who": "Majken",
-  "text": "Här är 200 kronor. Och folk pratar om dig nu.",
-  "read": "Här är 200 kronor. Och folk pratar om dig nu."
  },
  {
   "key": "karin_zwly9n",
