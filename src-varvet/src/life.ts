@@ -129,7 +129,8 @@ function light(dt) {
   // vatten följer ljuset och vinden
   if (water) { const wu = water.material.uniforms; if (!waterBase) waterBase = { deep: wu.deep.value.clone(), shallow: wu.shallow.value.clone() };
     const lk = .35 + .65 * dayK; wu.deep.value.copy(waterBase.deep).multiplyScalar(lk * (1 - wxCur.cloud * .25)); wu.shallow.value.copy(waterBase.shallow).multiplyScalar(lk * (1 - wxCur.cloud * .2));
-    if (wu.amp) wu.amp.value = wxCur.wind; }
+    if (wu.amp) wu.amp.value = wxCur.wind;
+    if (wu.sunDir) { wu.sunDir.value.copy(sun.position).sub(p).normalize(); wu.sunCol.value.copy(sun.color).multiplyScalar(dayK > 0 ? Math.min(1.2, sun.intensity * .55) * (1 - wxCur.cloud * .7) : .35); } }
 }
 
 // ---------- Regn och snö ----------

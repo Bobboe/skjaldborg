@@ -30,7 +30,7 @@ let Q=QUAL[SET.q];function applyQuality(){Q=QUAL[SET.q];const dpr=Math.min(devic
   if(Q.shadow){sun.shadow.mapSize.set(Q.smap,Q.smap);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
   scene.traverse(o=>{if(o.material&&o.material.needsUpdate!==undefined)o.material.needsUpdate=true});resize();qualityInit({renderer,maxDpr:Q.dpr,shadowsAllowed:!!Q.shadow,setShadows:setShadows},SET.fps)}
 function setShadows(on){if(renderer.shadowMap.enabled===on&&sun.castShadow===on)return;renderer.shadowMap.enabled=on;sun.castShadow=on;scene.traverse(o=>{if(o.material)o.material.needsUpdate=true})}
-function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.fov=innerWidth<innerHeight?68:55;camera.updateProjectionMatrix()}
+function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.fov=innerWidth<innerHeight?68:55;camera.userData.baseFov=camera.fov;camera.updateProjectionMatrix()}
 addEventListener("resize",resize);
 // målad efterbehandling (av på Låg)
 const post=new WatercolorPost();

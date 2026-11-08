@@ -130,7 +130,7 @@ function propInit(){const c=gcv(),W=c.width,H=c.height,x=c.getContext("2d"),k=GA
 // --- båtkörning ---
 const BOATM={on:false,v:0,yaw:0,boat:null,free:false,target:null,dockItem:null,forceHome:null,race:null};
 function boatStart(){BOATM.on=true;BOATM.v=0;BOATM.boat=bobBoat;BOATM.free=false;BOATM.target={x:NJ.boatX,z:NJ.boatZ,r:4.5,ring:true,onArrive:boatArrive};BOATM.yaw=bobBoat.rotation.y;P.visible=true;$("hint").style.opacity=1;$("hint").textContent="Vänster tumme: gasa och styr · Kör till den gula ringen vid Grannön";TGT.visible=true;TGT.position.set(NJ.boatX,.35,NJ.boatZ);pop("Kör till Majkens brygga!",2200)}
-function boatDrive(dt,mx,mz){const B=BOATM.boat||bobBoat;const thr=-mz,st=mx;BOATM.steer=st;const vmax=BOATM.vmax||11;BOATM.v+=(thr*vmax-BOATM.v)*Math.min(1,dt*(thr?0.9:.5));if(BOATM.lock){BOATM.v*=Math.max(0,1-dt*3)}BOATM.yaw-=st*dt*1.3*clamp(Math.abs(BOATM.v)/4,.25,1)*Math.sign(BOATM.v||1);
+function boatDrive(dt,mx,mz){const B=BOATM.boat||bobBoat;const thr=-mz;BOATM.steer=(BOATM.steer||0)+(mx-(BOATM.steer||0))*Math.min(1,dt*4.5);const st=BOATM.steer;const vmax=BOATM.vmax||11;BOATM.v+=(thr*vmax-BOATM.v)*Math.min(1,dt*(thr?0.9:.5));if(BOATM.lock){BOATM.v*=Math.max(0,1-dt*3)}BOATM.yaw-=st*dt*1.3*clamp(Math.abs(BOATM.v)/4,.25,1)*Math.sign(BOATM.v||1);
   const nx=B.position.x+Math.sin(BOATM.yaw)*BOATM.v*dt,nz=B.position.z+Math.cos(BOATM.yaw)*BOATM.v*dt;
   const free=(x,z)=>sampleGrid(x,z)<-.3&&!(Math.abs(x-14)<2&&z>57&&z<92)&&!jettyAt(x,z,.5)&&Math.abs(x)<WS/2-10&&Math.abs(z)<WS/2-10;
   const bow=(x,z)=>free(x+Math.sin(BOATM.yaw)*2.8,z+Math.cos(BOATM.yaw)*2.8);

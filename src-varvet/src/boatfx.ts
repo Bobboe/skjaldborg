@@ -56,7 +56,9 @@ export function boatFloat(boat: THREE.Object3D, dt: number, t: number, v: number
   const yTarget = .45 + (hb + hs + hl + hr) / 4;
   boat.position.y += (yTarget - boat.position.y) * Math.min(1, dt * 6);
   const k = Math.min(1, Math.abs(v) / 11);
-  const pitch = Math.atan2(hs - hb, 4.8) - k * .1 - (driving ? Math.sin(t * 9) * .004 * k : 0);
+  const slam = Math.max(0, Math.sin(t * 2.6 + x * .15 + z * .11)) ** 4 * .045 * k * amp;
+  boat.position.y += slam * .25;
+  const pitch = Math.atan2(hs - hb, 4.8) - k * .1 - slam - (driving ? Math.sin(t * 9) * .004 * k : 0);
   const u = boat.userData; u.roll = (u.roll || 0) + ((-steer * k * .16) - (u.roll || 0)) * Math.min(1, dt * 3);
   boat.rotation.set(pitch, yaw, Math.atan2(hl - hr, 1.8) + u.roll, "YXZ");
 }

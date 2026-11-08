@@ -177,3 +177,24 @@ export function patchWood(m: THREE.Material): void {
         }`);
   };
 }
+
+// ---------- Vind i växtligheten: toppen av träd och gräs vajar, mer när det blåser ----------
+export const WIND = { t: { value: 0 }, w: { value: 1 } };
+export function swayMat(base: number, k: number): THREE.MeshLambertMaterial {
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true }); patchWood(m);
+  const prev = m.onBeforeCompile;
+  m.onBeforeCompile = (sh, r) => {
+    sh.uniforms.uWT = WIND.t; sh.uniforms.uWW = WIND.w;
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uWT, uWW;")
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+{ float hh = max(0.0, transformed.y - ${base.toFixed(2)}); vec3 ip = vec3(0.0);
+#ifdef USE_INSTANCING
+ip = instanceMatrix[3].xyz;
+#endif
+float ph = uWT * 1.6 + ip.x * 0.21 + ip.z * 0.17; float sw = hh * hh * ${k.toFixed(4)} * uWW;
+transformed.x += sin(ph) * sw + sin(ph * 2.3 + 1.0) * sw * 0.3; transformed.z += cos(ph * 0.8) * sw * 0.7; }`);
+    prev.call(m, sh, r);
+  };
+  m.customProgramCacheKey = () => "sway" + base + "_" + k;
+  return m;
+}

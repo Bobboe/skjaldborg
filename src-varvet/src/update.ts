@@ -38,7 +38,7 @@ function update(dt){let mx=input.mx,mz=input.mz;const k=input.keys;if(k.KeyW||k.
   P.position.copy(player.pos);if(!P.userData.realModel)P.position.y+=Math.abs(Math.cos(player.walk))*.06*Math.min(1,player.speed/3);P.rotation.y=player.yaw;}
   // kamera
   camS.yaw+=(camS.tYaw-camS.yaw)*Math.min(1,dt*10);camS.pitch+=(camS.tPitch-camS.pitch)*Math.min(1,dt*10);
-  const tgt=tmp.set(player.pos.x,player.pos.y+1.5,player.pos.z);let d=camS.dist;
+  const tgt=tmp.set(player.pos.x,player.pos.y+1.5,player.pos.z);camS.boatD=(camS.boatD||0)+(((BOATM.on?1.6+Math.abs(BOATM.v)*.3:0))-(camS.boatD||0))*Math.min(1,dt*1.5);let d=camS.dist+camS.boatD;
   const cx=()=>tgt.x-Math.sin(camS.yaw)*Math.cos(camS.pitch)*d,cz=()=>tgt.z-Math.cos(camS.yaw)*Math.cos(camS.pitch)*d,cy=()=>tgt.y+Math.sin(camS.pitch)*d;
   for(let i=0;i<6;i++){const gy=Math.max(sampleGrid(cx(),cz()),0)+.6;if(cy()>gy)break;d*=.82}
   {const D0=d;for(let s=1;s<=12;s++){const f=s/12;d=D0*f;const x=cx(),z=cz(),y=cy();let hit=false;for(const b of DBOX)if(x>b.x0-.35&&x<b.x1+.35&&z>b.z0-.35&&z<b.z1+.35&&y<b.y1+1.3&&y>b.y0-.5){hit=true;break}

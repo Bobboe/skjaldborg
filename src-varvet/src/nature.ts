@@ -6,6 +6,8 @@ import { cnt } from "./build";
 import { scene } from "./engine";
 import { H, WS, YARD } from "./terrain";
 import { N2, fbm, merge, mulberry, tr } from "./util";
+import { swayMat } from "./paint";
+const PINE_M = swayMat(2.0, .0045), BIRCH_M = swayMat(2.6, .006), GRASS_M = swayMat(0, .3);
 
 // ================= Natur: tallar, björkar, klippor (instansierade) =================
 const COLL=[];// cirkelkollisioner {x,z,r}
@@ -32,15 +34,15 @@ function buildNature(q){const rnd=mulberry(42);
   const birches=place(Math.round(70*q.trees),(x,z,h)=>h>1.6&&h<7&&slope(x,z)<.4);
   for(const p of birches)COLL.push({x:p.x,z:p.z,r:.35,y6:p.h+5.5});
   const rocks=place(140,(x,z,h)=>h>-.8&&h<9);
-  const mk=(geo,list,scaleF,cast)=>{const m=new THREE.InstancedMesh(geo,VC,list.length);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
+  const mk=(geo,list,scaleF,cast,mat=VC)=>{const m=new THREE.InstancedMesh(geo,mat,list.length);const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),T=new THREE.Vector3(),E=new THREE.Euler();
     list.forEach((p,i)=>{const s=scaleF();E.set(0,rnd()*6.28,0);Q.setFromEuler(E);S.set(s,s*(.85+rnd()*.3),s);T.set(p.x,p.h-.15,p.z);M.compose(T,Q,S);m.setMatrixAt(i,M)});m.castShadow=cast;m.receiveShadow=true;scene.add(m);return m};
-  mk(pine,pines,()=>.8+rnd()*.7,true);mk(birch,birches,()=>.8+rnd()*.5,true);
+  mk(pine,pines,()=>.8+rnd()*.7,true,PINE_M);mk(birch,birches,()=>.8+rnd()*.5,true,BIRCH_M);
   const rm=mk(rockG,rocks,()=>.6+rnd()*1.8,true);
   rocks.forEach(p=>COLL.push({x:p.x,z:p.z,r:.7}));
   // gräsruggar: små platta kluster
   const grass=merge([colored(tr(new THREE.ConeGeometry(.12,.5,4),0,.25,0),"#6da64e"),colored(tr(new THREE.ConeGeometry(.1,.4,4),.15,.2,.08),"#7bb558"),colored(tr(new THREE.ConeGeometry(.1,.45,4),-.12,.22,-.1),"#5e9a45")]);
   const gl=place(Math.round(700*q.trees),(x,z,h)=>h>1.2&&slope(x,z)<.35);COLL.length-=0;
-  const gm=new THREE.InstancedMesh(grass,VC,gl.length);const M=new THREE.Matrix4();gl.forEach((p,i)=>{M.makeRotationY(rnd()*6);M.setPosition(p.x,p.h,p.z);gm.setMatrixAt(i,M)});scene.add(gm)}
+  const gm=new THREE.InstancedMesh(grass,GRASS_M,gl.length);const M=new THREE.Matrix4();gl.forEach((p,i)=>{M.makeRotationY(rnd()*6);M.setPosition(p.x,p.h,p.z);gm.setMatrixAt(i,M)});scene.add(gm)}
 
 
 export { COLL, buildNature };

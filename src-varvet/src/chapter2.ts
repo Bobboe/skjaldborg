@@ -15,6 +15,7 @@ import { groundAt } from "./update";
 import { weather } from "./life";
 import { $, VC, colored, merge, tr } from "./util";
 import { sawGame, nailGame, plankGame, paintGame } from "./craft";
+import { splash } from "./sound";
 
 // ---------- Tillstånd (ligger i ST.story.c2 så att det sparas med storyn) ----------
 export const C2 = () => { const s = ST.story; if (!s.c2) s.c2 = { stage: 0, launched: false, dock: "varvet", name: "", staff: null, q: [] }; return s.c2; };
@@ -72,7 +73,7 @@ export function dockAt(d, boat = myBoat) {
 function dockItem() {
   if (!BOATM.free) return null; const b = BOATM.boat;
   for (const d of Object.values(DOCKS)) if (Math.hypot(b.position.x - d.bx, b.position.z - d.bz) < 10 && Math.abs(BOATM.v) < 5)
-    return { x: d.bx, z: d.bz, r: 99, label: "Lägg till · " + d.name, fn: () => { SFX("place"); dockAt(d); pop("Förtöjd vid " + d.name, 1600); } };
+    return { x: d.bx, z: d.bz, r: 99, label: "Lägg till · " + d.name, fn: () => { SFX("place"); splash(.05); dockAt(d); pop("Förtöjd vid " + d.name, 1600); } };
   return null;
 }
 
