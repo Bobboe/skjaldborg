@@ -58,16 +58,17 @@ export const TEX = {
 };
 
 // ---------- Terrängmaterial: blandar fyra målade texturer efter attributet "splat" ----------
+export const TERRAIN_DETAIL = { value: 1 };
 export function terrainMaterial(): THREE.MeshLambertMaterial {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true });
-  const u = { tGrass: { value: TEX.grass() }, tRock: { value: TEX.granite() }, tSand: { value: TEX.sand() }, tDirt: { value: TEX.dirt() }, uScale: { value: 0.11 } };
+  const u = { tGrass: { value: TEX.grass() }, tRock: { value: TEX.granite() }, tSand: { value: TEX.sand() }, tDirt: { value: TEX.dirt() }, uScale: { value: 0.11 }, uDetail: TERRAIN_DETAIL };
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader
       .replace("#include <common>", "#include <common>\nattribute vec4 splat;\nvarying vec4 vSplat;\nvarying vec3 vWP;\nvarying vec3 vWN;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvSplat = splat;\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvWN = normalize(mat3(modelMatrix) * objectNormal);");
     sh.fragmentShader = sh.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform sampler2D tGrass, tRock, tSand, tDirt;\nuniform float uScale;\nvarying vec4 vSplat;\nvarying vec3 vWP;\nvarying vec3 vWN;")
+      .replace("#include <common>", "#include <common>\nuniform sampler2D tGrass, tRock, tSand, tDirt;\nuniform float uScale, uDetail;\nvarying vec4 vSplat;\nvarying vec3 vWP;\nvarying vec3 vWN;")
       .replace("#include <color_fragment>", `#include <color_fragment>
         vec2 uv = vWP.xz * uScale;
         vec3 n = abs(normalize(vWN));
@@ -76,6 +77,13 @@ export function terrainMaterial(): THREE.MeshLambertMaterial {
         vec3 rock = mix(rockSide, rockXZ, smoothstep(0.55, 0.85, n.y));
         vec4 w = vSplat / max(1e-3, vSplat.x + vSplat.y + vSplat.z + vSplat.w);
         vec3 tex = texture2D(tGrass, uv).rgb * w.x + rock * w.y + texture2D(tSand, uv * 1.3).rgb * w.z + texture2D(tDirt, uv * 1.6).rgb * w.w;
+        // detaljlager: samma texturer i högre frekvens ger skärpa nära kameran utan att ändra färgen
+        if (uDetail > 0.5) {
+          vec2 du = uv * 4.7 + vec2(0.37, 0.61);
+          vec3 dt = texture2D(tGrass, du).rgb * w.x + texture2D(tRock, du * 0.8).rgb * w.y + texture2D(tSand, du).rgb * w.z + texture2D(tDirt, du).rgb * w.w;
+          float l = dot(dt, vec3(0.299, 0.587, 0.114)), lb = dot(tex, vec3(0.299, 0.587, 0.114));
+          tex *= clamp(1.0 + (l - lb) * 1.1, 0.7, 1.3);
+        }
         diffuseColor.rgb = tex * vColor;`);
   };
   return m;
@@ -85,7 +93,7 @@ export function terrainMaterial(): THREE.MeshLambertMaterial {
 const POST_VS = "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}";
 const POST_FS = `
 uniform sampler2D tScene; uniform sampler2D tDepth; uniform sampler2D tPaper;
-uniform vec2 uRes; uniform float uNear, uFar, uStrength;
+uniform vec2 uRes; uniform float uNear, uFar, uStrength, uClean;
 varying vec2 vUv;
 float lin(float d){ float z = d * 2.0 - 1.0; return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear)); }
 float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
@@ -106,6 +114,19 @@ void main(){
   vec3 paper = texture2D(tPaper, vUv * uRes / 512.0).rgb;
   float grain = luma(paper);
   vec3 col = c;
+  if (uClean > 0.5) {
+    // skarp stil: skärpa (oskarp mask), lätt kontrast och mättnad, svag kontur, ingen papperseffekt
+    vec3 blur = (cl + cr + cu + cd) * 0.25;
+    col = c + (c - blur) * 0.35;
+    col = mix(vec3(luma(col)), col, 1.03);
+    col = (col - 0.5) * 1.03 + 0.5;
+    col = mix(col, col * vec3(0.55, 0.5, 0.48), edge * 0.22);
+    vec2 v0 = vUv - 0.5; col *= 1.0 - dot(v0, v0) * 0.18;
+    gl_FragColor = vec4(max(col, 0.0), 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+    return;
+  }
   col = mix(vec3(luma(col)), col, 1.08);                       // lite mer mättnad
   col *= 1.0 - lap * 0.9 * uStrength;                           // mörkare pigmentkant
   col = mix(col, col * vec3(0.42, 0.34, 0.30), edge * 0.55 * uStrength); // varm, mjuk kontur
@@ -120,6 +141,7 @@ void main(){
 export class WatercolorPost {
   enabled = true;
   strength = 1;
+  clean = true;
   private rt: THREE.WebGLRenderTarget;
   private quad: THREE.Mesh;
   private qScene = new THREE.Scene();
@@ -129,7 +151,7 @@ export class WatercolorPost {
     this.rt = new THREE.WebGLRenderTarget(4, 4, { depthTexture: new THREE.DepthTexture(4, 4), samples: 4, type: THREE.HalfFloatType });
     this.mat = new THREE.ShaderMaterial({
       vertexShader: POST_VS, fragmentShader: POST_FS, depthTest: false, depthWrite: false,
-      uniforms: { tScene: { value: this.rt.texture }, tDepth: { value: this.rt.depthTexture }, tPaper: { value: TEX.paper() }, uRes: { value: new THREE.Vector2(4, 4) }, uNear: { value: 0.3 }, uFar: { value: 900 }, uStrength: { value: 1 } },
+      uniforms: { tScene: { value: this.rt.texture }, tDepth: { value: this.rt.depthTexture }, tPaper: { value: TEX.paper() }, uRes: { value: new THREE.Vector2(4, 4) }, uNear: { value: 0.3 }, uFar: { value: 900 }, uStrength: { value: 1 }, uClean: { value: 1 } },
     });
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat); this.quad.frustumCulled = false; this.qScene.add(this.quad);
   }
@@ -137,7 +159,7 @@ export class WatercolorPost {
     if (!this.enabled) { renderer.setRenderTarget(null); renderer.render(scene, camera); return; }
     const s = renderer.getDrawingBufferSize(new THREE.Vector2());
     if (s.x !== this.rt.width || s.y !== this.rt.height) { this.rt.setSize(s.x, s.y); (this.mat.uniforms.uRes.value as THREE.Vector2).copy(s); }
-    this.mat.uniforms.uNear.value = camera.near; this.mat.uniforms.uFar.value = camera.far; this.mat.uniforms.uStrength.value = this.strength;
+    this.mat.uniforms.uNear.value = camera.near; this.mat.uniforms.uFar.value = camera.far; this.mat.uniforms.uStrength.value = this.strength; this.mat.uniforms.uClean.value = this.clean ? 1 : 0;
     renderer.setRenderTarget(this.rt); renderer.render(scene, camera);
     renderer.setRenderTarget(null); renderer.render(this.qScene, this.qCam);
   }

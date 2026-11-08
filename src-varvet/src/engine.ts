@@ -1,6 +1,6 @@
 // @ts-nocheck
 import * as THREE from "three";
-import { WatercolorPost } from "./paint";
+import { WatercolorPost, TERRAIN_DETAIL } from "./paint";
 import { qualityInit, qualityState } from "./quality";
 import { QUAL, SET } from "./settings";
 import { $, clamp } from "./util";
@@ -34,7 +34,7 @@ function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=i
 addEventListener("resize",resize);
 // målad efterbehandling (av på Låg)
 const post=new WatercolorPost();
-function renderFrame(){post.enabled=SET.q>=1;post.render(renderer,scene,camera)}
+function renderFrame(){post.enabled=SET.q>=1;post.clean=SET.look===1;TERRAIN_DETAIL.value=SET.look===1?1:0;post.render(renderer,scene,camera)}
 const perfEl=document.getElementById("perf");let fT=0,fN=0,fAcc=0,fpsShow=0,msShow=0,cpuAcc=0;
 function perfTick(dt,cpu){fN++;fAcc+=dt;cpuAcc+=cpu;if(fAcc>=.5){fpsShow=fN/fAcc;msShow=cpuAcc/fN;fN=0;fAcc=0;cpuAcc=0;
   if(SET.perf){const i=renderer.info;perfEl.textContent=`FPS   ${fpsShow.toFixed(0)} / ${SET.fps}\nCPU   ${msShow.toFixed(1)} ms\nAnrop ${i.render.calls}\nTrian ${(i.render.triangles/1000).toFixed(0)}k\nDPR   ${renderer.getPixelRatio().toFixed(2)}\nAuto  ${Math.round(qualityState().scale*100)}% ${qualityState().shadows?"skugg":"utan skugg"}\nKval  ${["Låg","Medel","Hög"][SET.q]}`}}}

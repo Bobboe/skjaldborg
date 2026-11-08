@@ -4,6 +4,7 @@ import { storyInit, storyTick } from "./story";
 import { boatFx, boatFloat, seatPlayer, SEAT } from "./boatfx";
 import { chapter2Init, chapter2Tick, myBoat, DOCKS, COURSE } from "./chapter2";
 import { BOATS } from "./hooks";
+import { SET } from "./settings";
 import { soundInit, soundTick } from "./sound";
 import { WIND } from "./paint";
 import { sampleGrid } from "./terrain";
@@ -45,7 +46,7 @@ function frame(now){requestAnimationFrame(frame);const minDt=1000/SET.fps-1.5;co
 
 // ================= Start =================
 function boot(){setTER(buildTerrain());buildWater();buildYard();buildNature(Q);load();jobsWorldInit();storyInit();chapter2Init();initBuild();uiInit();lifeInit();if(ST.char)attachCharacter(P,PLAYER_DEFS[ST.char]);player.pos.y=groundAt(player.pos.x,player.pos.z);applyQuality();telemetryInit(renderer.getContext(),"webgl2");$("loading").remove();requestAnimationFrame(frame);window.__ready=true}
-window.VARVET={inter:()=>interactables().map(i=>i.label+"@"+i.x.toFixed(1)+","+i.z.toFixed(1)),myBoat:()=>myBoat,DOCKS,COURSE,sg:sampleGrid,story:()=>ST.story,SEAT,NPC,P,life:()=>timeOf(),player,camS,input,SET,renderer,scene,update,act,dlgNext,BOATM,JOBS,startGame,endGame,jobState,get nearI(){return nearI},get GAMEON(){return GAMEON},get NJ(){return NJ},bobBoat:()=>bobBoat,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
+window.VARVET={SET,inter:()=>interactables().map(i=>i.label+"@"+i.x.toFixed(1)+","+i.z.toFixed(1)),myBoat:()=>myBoat,DOCKS,COURSE,sg:sampleGrid,story:()=>ST.story,SEAT,NPC,P,life:()=>timeOf(),player,camS,input,SET,renderer,scene,update,act,dlgNext,BOATM,JOBS,startGame,endGame,jobState,get nearI(){return nearI},get GAMEON(){return GAMEON},get NJ(){return NJ},bobBoat:()=>bobBoat,ST,setBuild,place,gather,cur,NODES,start:()=>$("bPlay").onclick()};
 setTimeout(boot,30);
 addEventListener("pointerdown",soundInit);addEventListener("keydown",soundInit);
 
