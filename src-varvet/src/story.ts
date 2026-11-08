@@ -303,7 +303,7 @@ function raceEnd(place, R) {
   const prize = [2000, 1000, 500, 200][place - 1], rep = [15, 8, 4, 2][place - 1] * (R.borrow ? 1 : 2);
   ST.kr += prize; ST.rykte = (ST.rykte || 0) + rep; save();
   const head = place === 1 ? (R.borrow ? "Först i mål! Även om det var min båt, så." : `Först i mål – i en båt du byggt själv! Det har ön inte sett sedan Edvin.`)
-    : place === 4 ? "Sist, men du kom i mål. Det är mer än Fiskar-Olle klarade 2019." : (place === 2 ? "Andra plats! Inte illa för första gången." : "Tredje plats! Inte illa för första gången.");
+    : place === 4 ? "Sist, men du kom i mål. Det är mer än Fiskar-Olle klarade 2019." : (place === 2 ? "Du kom andra! Inte illa för första gången." : "Du kom tredje! Inte illa för första gången.");
   pop(`+${prize} kr · +${rep} rykte`, 3000);
   dialog("Majken", [head, "Här är prispengarna. Och folk pratar om dig nu.", "Förresten – din morfar lämnade en gång en bok här för att binda om. Den här sidan låg kvar. Jag tycker att du ska ha den."],
     () => letter("En sida ur Edvins dagbok", PAGE3, () => { setFlag("regatta"); addDiary(`Regattan på Grannön: plats ${place}${R.borrow ? " i Majkens båt" : " med " + boatName()}. Och ännu en sida från morfar – om en man som hette Wahl.`); }));
