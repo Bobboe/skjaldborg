@@ -343,18 +343,39 @@
   "read": "Du kom tredje! Inte illa för första gången."
  },
  {
-  "key": "majken_1oghky",
-  "spk": "majken",
-  "who": "Majken",
-  "text": "Här är prispengarna. Och folk pratar om dig nu.",
-  "read": "Här är prispengarna. Och folk pratar om dig nu."
- },
- {
   "key": "majken_u1ovb3",
   "spk": "majken",
   "who": "Majken",
   "text": "Förresten – din morfar lämnade en gång en bok här för att binda om. Den här sidan låg kvar. Jag tycker att du ska ha den.",
   "read": "Förresten – din morfar lämnade en gång en bok här för att binda om. Den här sidan låg kvar. Jag tycker att du ska ha den."
+ },
+ {
+  "key": "majken_1y9hblh",
+  "spk": "majken",
+  "who": "Majken",
+  "text": "Här är 2000 kronor. Och folk pratar om dig nu.",
+  "read": "Här är 2000 kronor. Och folk pratar om dig nu."
+ },
+ {
+  "key": "majken_gg3jg4",
+  "spk": "majken",
+  "who": "Majken",
+  "text": "Här är 1000 kronor. Och folk pratar om dig nu.",
+  "read": "Här är 1000 kronor. Och folk pratar om dig nu."
+ },
+ {
+  "key": "majken_p58mdk",
+  "spk": "majken",
+  "who": "Majken",
+  "text": "Här är 500 kronor. Och folk pratar om dig nu.",
+  "read": "Här är 500 kronor. Och folk pratar om dig nu."
+ },
+ {
+  "key": "majken_x61k6d",
+  "spk": "majken",
+  "who": "Majken",
+  "text": "Här är 200 kronor. Och folk pratar om dig nu.",
+  "read": "Här är 200 kronor. Och folk pratar om dig nu."
  },
  {
   "key": "karin_zwly9n",
