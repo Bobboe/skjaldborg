@@ -133,3 +133,9 @@ function waterMask(root: THREE.Object3D, y: number): THREE.Mesh {
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, transparent: true, side: THREE.DoubleSide }));
   m.renderOrder = 0.5; m.frustumCulled = false; return m;
 }
+
+export const LEO: CharDef = {
+  file: "leo.glb", height: 1.78,
+  anims: { idle: "Idle_9", talk: "Stand_and_Chat", walk: "Walking", run: "Running", pick: "Female_Bend_Over_Pick_Up_Inspect",
+    work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
+};
