@@ -12,6 +12,7 @@ for f in sys.argv[1:]:
     base = os.path.basename(f); base = re.sub(r"^[0-9a-f]{8}-", "", base); base = os.path.splitext(base)[0]
     parts = base.split("_", 1); spk = norm(parts[0]); txt = norm(parts[1] if len(parts) > 1 else "")
     hits = [l for l in L if l["spk"] == spk and (norm(l["text"]).startswith(txt) or norm(l["read"]).startswith(txt))]
+    if not hits: hits = [l for l in L if l["spk"] == spk and txt in norm(l["text"])]  # mitt i repliken
     if not hits:  # stavfel i filnamnet: närmaste replik med samma början
         sc = sorted(((difflib.SequenceMatcher(None, txt, norm(l["text"])[:len(txt)]).ratio(), l) for l in L if l["spk"] == spk), key=lambda x: -x[0])
         if sc and sc[0][0] > .8 and (len(sc) < 2 or sc[0][0] - sc[1][0] > .1): hits = [sc[0][1]]
