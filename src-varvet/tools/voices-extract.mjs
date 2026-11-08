@@ -65,6 +65,9 @@ const readOf = t => MANUAL[t] || t.replace(/,\s*\{namn\}(?=[,.…!?])/g, "").rep
 const list = [...out.values()].map(L => ({ ...L, read: readOf(L.text) }));
 const order = ["sven", "majken", "karin", "leo", "ake", "ingrid", "edvin"];
 list.sort((a, b) => order.indexOf(a.spk) - order.indexOf(b.spk));
+fs.mkdirSync("public/voice", { recursive: true });
+fs.copyFileSync("tools/voices-config.json", "public/voice/config.json");
+fs.writeFileSync("public/voice/lines.json", JSON.stringify(list.map(({ key, spk, text, read }) => ({ key, spk, text, read }))));
 fs.writeFileSync("tools/voices-lines.json", JSON.stringify(list.map(({ key, spk, who, text, read }) => ({ key, spk, who, text, read })), null, 1));
 const csv = "nyckel;person;text i spelet;text att läsa in\n" + list.map(L => [L.key, L.spk, L.text, L.read].map(x => '"' + x.replace(/"/g, '""').replace(/\n/g, " ") + '"').join(";")).join("\n");
 fs.writeFileSync("tools/voices.csv", "﻿" + csv);

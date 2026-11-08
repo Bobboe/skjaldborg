@@ -1,0 +1,13 @@
+{
+ "model": "eleven_multilingual_v2",
+ "format": "mp3_44100_64",
+ "voices": {
+  "sven":   { "id": "", "desc": "Äldre svensk man, omkring 75 år, varm och lite hes röst, långsamt och eftertänksamt tal med bohuslänsk ton och torr humor.", "stability": 0.45, "similarity": 0.8, "style": 0.25, "speed": 0.95 },
+  "majken": { "id": "", "desc": "Äldre svensk kvinna, omkring 70 år, glad och pratglad, livlig och varm röst med lätt västkustdialekt.", "stability": 0.4, "similarity": 0.8, "style": 0.35, "speed": 1.0 },
+  "karin":  { "id": "", "desc": "Svensk kvinna, 55 år, trött men varm röst, återhållen och lite sval, västkustton.", "stability": 0.55, "similarity": 0.8, "style": 0.2, "speed": 0.97 },
+  "leo":    { "id": "", "desc": "Svensk kille, 19 år, ivrig och snabbpratande, ljus röst, skrattar gärna.", "stability": 0.35, "similarity": 0.75, "style": 0.45, "speed": 1.08 },
+  "ake":    { "id": "", "desc": "Svensk man, 66 år, djup och lugn röst, fåordig, långsamt tempo, bohuslänsk ton.", "stability": 0.6, "similarity": 0.8, "style": 0.15, "speed": 0.92 },
+  "ingrid": { "id": "", "desc": "Svensk kvinna, 72 år, skarp och torr röst, lite raspig, bestämd och kort i tonen.", "stability": 0.5, "similarity": 0.8, "style": 0.3, "speed": 0.98 },
+  "edvin":  { "id": "", "desc": "Äldre svensk man, omkring 70 år, allvarlig och mjuk berättarröst som läser högt ur sin egen dagbok, lugnt tempo.", "stability": 0.6, "similarity": 0.8, "style": 0.2, "speed": 0.9 }
+ }
+}

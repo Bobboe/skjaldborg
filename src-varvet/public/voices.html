@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0f12">
+<meta name="robots" content="noindex">
+<title>Varvet – röster</title>
+<style>
+:root{--bg:#0d0f12;--panel:#16191e;--line:#2a2e35;--txt:#e9e6df;--mut:#9aa0a8;--acc:#ffc21a;--ok:#4cc38a;--bad:#ff6b5b}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom))}
+h1{font-size:24px;margin:6px 0 2px}h1 span{color:var(--acc)}
+.sub{color:var(--mut);font-size:14px;margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.card h2{font-size:16px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.step{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--acc);color:#111;font-weight:800;font-size:13px;align-items:center;justify-content:center;margin-right:8px;flex:none}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 4px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0f1115;color:var(--txt);font-size:16px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+button{appearance:none;border:1px solid var(--line);background:#20242b;color:var(--txt);border-radius:10px;padding:12px 14px;font:600 15px system-ui;cursor:pointer;min-height:46px}
+button.acc{background:var(--acc);border-color:var(--acc);color:#111}
+button.ghost{background:none}
+button:disabled{opacity:.45}
+.small{font-size:13px;color:var(--mut)}
+.desc{font-size:14px;background:#0f1115;border:1px dashed var(--line);border-radius:10px;padding:10px;margin:6px 0}
+.pill{font:700 12px system-ui;padding:3px 8px;border-radius:99px;background:#2a2e35;color:var(--mut);white-space:nowrap}
+.pill.ok{background:rgba(76,195,138,.18);color:var(--ok)}
+.bar{height:8px;background:#0f1115;border-radius:99px;overflow:hidden;margin:10px 0 4px}.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+#dock{position:fixed;left:0;right:0;bottom:0;background:rgba(13,15,18,.94);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));backdrop-filter:blur(8px)}
+#dock .in{max-width:640px;margin:0 auto}
+#msg{font-size:14px;color:var(--mut);min-height:20px;margin-bottom:6px}
+#msg.err{color:var(--bad)}
+details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:8px}
+.line{font-size:14px;padding:8px 0;border-top:1px solid var(--line);display:flex;gap:8px;align-items:flex-start}
+.line span{flex:1}.line button{min-height:36px;padding:6px 10px;font-size:13px;flex:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>Varvet · <span>röster</span></h1>
+  <p class="sub">Läs in alla repliker med ElevenLabs direkt i telefonen och ladda ner dem som en zip.</p>
+
+  <div class="card">
+    <h2><span><span class="step">1</span>API-nyckel</span></h2>
+    <input id="key" type="password" autocomplete="off" placeholder="Klistra in din ElevenLabs-nyckel">
+    <p class="small">Sparas bara i den här webbläsaren och skickas bara till ElevenLabs. Skapa en nyckel under <b>Profile → API keys</b> i ElevenLabs.</p>
+    <button class="acc" id="bLoad" style="width:100%">Hämta mina röster</button>
+  </div>
+
+  <div class="card">
+    <h2><span><span class="step">2</span>Välj röst per person</span></h2>
+    <p class="small">Saknas en passande röst: skapa den i ElevenLabs med <b>Voice Design</b> och klistra in beskrivningen nedan, spara rösten och tryck <b>Hämta mina röster</b> igen.</p>
+    <div id="people"></div>
+  </div>
+
+  <div class="card">
+    <h2><span><span class="step">3</span>Läs in och ladda ner</span></h2>
+    <p class="small" id="sum"></p>
+    <div class="bar"><i id="prog"></i></div>
+    <div class="row" style="margin-top:8px"><button class="acc" id="bGen">Läs in alla</button><button id="bZip">Ladda ner zip</button></div>
+    <p class="small">Inlästa filer sparas i webbläsaren, så det går att avbryta och fortsätta senare. Skicka zip-filen till Claude när den är klar.</p>
+    <details><summary>Rensa sparade filer</summary><button class="ghost" id="bClear" style="margin-top:8px;width:100%">Ta bort alla inlästa filer</button></details>
+  </div>
+</main>
+<div id="dock"><div class="in"><div id="msg">Laddar repliker …</div></div></div>
+
+<script>
+const API = "https://api.elevenlabs.io/v1";
+const NAMES = { sven: "Sven", majken: "Majken", karin: "Karin", leo: "Leo", ake: "Åke", ingrid: "Ingrid", edvin: "Edvin" };
+const $ = id => document.getElementById(id);
+const store = { get(k, d) { try { const v = localStorage.getItem("vv_" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("vv_" + k, JSON.stringify(v)); } catch (e) {} } };
+let LINES = [], CFG = {}, VOICES = [], pick = store.get("pick", {}), busy = false, stop = false;
+const msg = (t, err) => { $("msg").textContent = t; $("msg").className = err ? "err" : ""; };
+
+// ---------- IndexedDB för färdiga ljudfiler ----------
+let dbP = null;
+const db = () => dbP || (dbP = new Promise((res, rej) => { const r = indexedDB.open("varvet-voices", 1); r.onupgradeneeded = () => r.result.createObjectStore("mp3"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
+const tx = async (mode, fn) => { const d = await db(); return new Promise((res, rej) => { const t = d.transaction("mp3", mode), s = t.objectStore("mp3"), out = fn(s); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
+const putMp3 = (k, buf) => tx("readwrite", s => s.put(buf, k));
+const getMp3 = k => tx("readonly", s => s.get(k));
+const allKeys = () => tx("readonly", s => s.getAllKeys());
+const clearAll = () => tx("readwrite", s => s.clear());
+let DONE = new Set();
+
+// ---------- ElevenLabs ----------
+async function api(path, opt = {}) {
+  const key = $("key").value.trim(); if (!key) throw new Error("Klistra in API-nyckeln först.");
+  const r = await fetch(API + path, { ...opt, headers: { "xi-api-key": key, ...(opt.headers || {}) } });
+  if (!r.ok) { const t = await r.text(); const e = new Error(r.status === 401 ? "Nyckeln godtas inte (401)." : `Fel ${r.status}: ${t.slice(0, 160)}`); e.status = r.status; throw e; }
+  return r;
+}
+async function tts(line) {
+  const v = CFG.voices[line.spk], id = pick[line.spk];
+  const r = await api(`/text-to-speech/${id}?output_format=${CFG.format || "mp3_44100_64"}`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "audio/mpeg" },
+    body: JSON.stringify({ text: line.read, model_id: CFG.model || "eleven_multilingual_v2", voice_settings: { stability: v.stability, similarity_boost: v.similarity, style: v.style, use_speaker_boost: true, speed: v.speed } }) });
+  return r.arrayBuffer();
+}
+let player = null;
+const play = src => { if (player) player.pause(); player = new Audio(src); player.play().catch(() => {}); };
+
+// ---------- UI ----------
+function renderPeople() {
+  const box = $("people"); box.innerHTML = "";
+  for (const spk of Object.keys(NAMES)) {
+    const n = LINES.filter(l => l.spk === spk), done = n.filter(l => DONE.has(l.key)).length, v = CFG.voices[spk];
+    const el = document.createElement("div"); el.className = "card"; el.style.margin = "10px 0 0"; el.style.background = "#121418";
+    el.innerHTML = `<h2><span>${NAMES[spk]}</span><span class="pill ${done === n.length ? "ok" : ""}">${done}/${n.length} klara</span></h2>
+      <div class="desc">${v.desc}</div>
+      <div class="row"><button class="ghost" data-a="copy">Kopiera beskrivning</button></div>
+      <label>Röst</label>
+      <select data-a="sel"><option value="">– välj röst –</option>${VOICES.map(x => `<option value="${x.voice_id}" ${pick[spk] === x.voice_id ? "selected" : ""}>${x.name}${x.labels && x.labels.accent ? " · " + x.labels.accent : ""}</option>`).join("")}</select>
+      <div class="row" style="margin-top:8px"><button data-a="sample">▶ Röstprov</button><button data-a="test">Provläs en replik</button></div>
+      <details><summary>Repliker (${n.length})</summary>${n.map(l => `<div class="line"><span>${l.read.replace(/\n+/g, " ")}</span>${DONE.has(l.key) ? `<button data-k="${l.key}">▶</button>` : ""}</div>`).join("")}
+        <button class="ghost" data-a="redo" style="width:100%;margin-top:8px">Läs in ${NAMES[spk]} på nytt</button></details>`;
+    el.querySelector('[data-a="copy"]').onclick = async e => { try { await navigator.clipboard.writeText(v.desc); e.target.textContent = "Kopierad ✓"; } catch (_) { msg("Kunde inte kopiera – markera texten och kopiera manuellt."); } };
+    el.querySelector('[data-a="sel"]').onchange = e => { pick[spk] = e.target.value; store.set("pick", pick); summary(); };
+    el.querySelector('[data-a="sample"]').onclick = () => { const x = VOICES.find(x => x.voice_id === pick[spk]); if (!x) return msg("Välj en röst först."); if (x.preview_url) play(x.preview_url); else msg("Rösten har inget prov – använd Provläs."); };
+    el.querySelector('[data-a="test"]').onclick = async e => {
+      if (!pick[spk]) return msg("Välj en röst först."); const l = n[0]; e.target.disabled = true; msg(`Provläser ${NAMES[spk]} …`);
+      try { const b = await tts(l); play(URL.createObjectURL(new Blob([b], { type: "audio/mpeg" }))); msg(`${NAMES[spk]}: ”${l.read.slice(0, 60)}…”`); } catch (err) { msg(err.message, 1); } e.target.disabled = false;
+    };
+    el.querySelector('[data-a="redo"]').onclick = () => generate(spk, true);
+    el.querySelectorAll("[data-k]").forEach(b => b.onclick = async () => { const buf = await getMp3(b.dataset.k); if (buf) play(URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }))); });
+    box.appendChild(el);
+  }
+}
+function summary() {
+  const left = LINES.filter(l => !DONE.has(l.key)), noVoice = [...new Set(left.filter(l => !pick[l.spk]).map(l => NAMES[l.spk]))];
+  $("sum").textContent = `${DONE.size} av ${LINES.length} repliker inlästa · ${left.reduce((a, l) => a + l.read.length, 0)} tecken kvar` + (noVoice.length ? ` · saknar röst: ${noVoice.join(", ")}` : "");
+  $("prog").style.width = (DONE.size / Math.max(1, LINES.length) * 100) + "%";
+}
+async function generate(only, redo) {
+  if (busy) { stop = true; return; }
+  const todo = LINES.filter(l => (!only || l.spk === only) && pick[l.spk] && (redo || !DONE.has(l.key)));
+  if (!todo.length) return msg(LINES.some(l => !pick[l.spk]) ? "Välj röster för alla personer först." : "Allt är redan inläst – ladda ner zip-filen.");
+  busy = true; stop = false; $("bGen").textContent = "Pausa"; let n = 0;
+  for (const l of todo) {
+    if (stop) break;
+    for (let tryN = 0; tryN < 4; tryN++) {
+      try { const buf = await tts(l); await putMp3(l.key, buf); DONE.add(l.key); n++; msg(`${n}/${todo.length} · ${NAMES[l.spk]}: ${l.read.slice(0, 48).replace(/\n/g, " ")}…`); summary(); break; }
+      catch (e) { if (e.status === 429 || e.status >= 500) { msg("Väntar på ElevenLabs …"); await new Promise(r => setTimeout(r, 3000 * (tryN + 1))); continue; } msg(e.message, 1); stop = true; break; }
+    }
+  }
+  busy = false; $("bGen").textContent = "Läs in alla"; renderPeople(); summary();
+  if (!stop) msg(DONE.size === LINES.length ? "Klart! Tryck Ladda ner zip och skicka filen till Claude." : `Klart med ${n} repliker.`);
+}
+
+// ---------- zip (okomprimerad, mp3 komprimeras ändå inte) ----------
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u => { let c = 0xffffffff; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+function zip(files) {
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = new Uint8Array(f.data), crc = crc32(data), h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true);
+    parts.push(h.buffer, name, data);
+    const c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    cen.push(c.buffer, name); off += 30 + name.length + data.length;
+  }
+  const cenSize = cen.reduce((a, b) => a + (b.byteLength || b.length), 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cenSize, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, e.buffer], { type: "application/zip" });
+}
+async function download() {
+  const keys = await allKeys(); if (!keys.length) return msg("Inga inlästa filer ännu.");
+  msg("Packar zip …"); const files = []; for (const k of keys) files.push({ name: k + ".mp3", data: await getMp3(k) });
+  const blob = zip(files), name = `varvet-roster-${files.length}st.zip`, file = new File([blob], name, { type: "application/zip" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); msg(`Delad: ${name}`); return; } catch (e) { if (e.name === "AbortError") return msg("Avbrutet."); } }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  msg(`Sparad: ${name} (${(blob.size / 1048576).toFixed(1)} MB)`);
+}
+
+// ---------- start ----------
+$("key").value = store.get("key", "");
+$("key").onchange = () => store.set("key", $("key").value.trim());
+$("bLoad").onclick = async () => {
+  store.set("key", $("key").value.trim()); msg("Hämtar röster …");
+  try { const r = await api("/voices"); VOICES = (await r.json()).voices || []; VOICES.sort((a, b) => a.name.localeCompare(b.name)); renderPeople(); msg(`${VOICES.length} röster hämtade. Välj en per person.`); }
+  catch (e) { msg(e.message === "Failed to fetch" ? "Kunde inte nå ElevenLabs – kontrollera nätet." : e.message, 1); }
+};
+$("bGen").onclick = () => generate();
+$("bZip").onclick = download;
+$("bClear").onclick = async () => { if (busy) return; await clearAll(); DONE = new Set(); renderPeople(); summary(); msg("Alla inlästa filer borttagna."); };
+(async () => {
+  try {
+    [LINES, CFG] = await Promise.all([fetch("voice/lines.json").then(r => r.json()), fetch("voice/config.json").then(r => r.json())]);
+    try { DONE = new Set(await allKeys()); } catch (e) { DONE = new Set(); }
+    const valid = new Set(LINES.map(l => l.key)); DONE = new Set([...DONE].filter(k => valid.has(k)));
+    renderPeople(); summary(); msg($("key").value ? "Tryck Hämta mina röster för att fortsätta." : "Börja med att klistra in din API-nyckel.");
+    if ($("key").value) $("bLoad").click();
+  } catch (e) { msg("Kunde inte ladda replikerna.", 1); }
+})();
+</script>
+</body>
+</html>
