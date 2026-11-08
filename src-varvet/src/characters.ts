@@ -149,3 +149,9 @@ export const KARIN: CharDef = {
   file: "karin.glb", height: 1.68,
   anims: { idle: "Idle_7", talk: "Talk_with_Left_Hand_on_Hip", walk: "Walking", run: "Running", sit: "Chair_Sit_Idle_F", pick: "Female_Bend_Over_Pick_Up_Inspect" },
 };
+
+export const AKE: CharDef = {
+  file: "ake.glb", height: 1.74,
+  anims: { idle: "Idle_11", talk: "Talk_Passionately", walk: "Walking", run: "Running", pick: "Female_Bend_Over_Pick_Up_Inspect",
+    work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
+};

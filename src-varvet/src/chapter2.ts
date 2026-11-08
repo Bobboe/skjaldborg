@@ -2,7 +2,7 @@
 // Kapitel 2 "Hantverket": egen båt (bygge i fyra steg, sjösättning, fri körning mellan bryggor),
 // personal (Leo eller Åke), Fyrskäret med Fyr-Ingrid, Karins besök och regattan vid Grannön.
 import * as THREE from "three";
-import { attachProp, attachCharacter, LEO, INGRID, KARIN } from "./characters";
+import { attachProp, attachCharacter, LEO, INGRID, KARIN, AKE } from "./characters";
 import { boatGeo, BOXES, bobBoat } from "./yard";
 import { scene } from "./engine";
 import { ST, save, pop, SFX, updHud } from "./build";
@@ -128,7 +128,7 @@ export function launch(onDone) {
 // ---------- Personal ----------
 function staffNpc(id) {
   if (NPC.staff) { scene.remove(NPC.staff); delete NPC.staff; }
-  const s = STAFF[id]; const n = makePerson(s.look); n.position.set(-9.6, groundAt(-9.6, 39.6), 39.6); n.rotation.y = .6; n.userData.name = s.name; NPC.staff = n; if (id === "leo") attachCharacter(n, LEO);
+  const s = STAFF[id]; const n = makePerson(s.look); n.position.set(-9.6, groundAt(-9.6, 39.6), 39.6); n.rotation.y = .6; n.userData.name = s.name; NPC.staff = n; attachCharacter(n, id === "leo" ? LEO : AKE);
 }
 /** Leo dyker upp vid varvet innan man bestämt sig. */
 export function leoArrive() { if (!C2().staff) staffNpc("leo"); }
