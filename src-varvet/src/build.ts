@@ -143,7 +143,7 @@ const cnt=k=>ST.pieces.filter(p=>PIECES[p.t].kind===k).length;
 function objCheck(){while(ST.obj<OBJ.length&&OBJ[ST.obj].ok()){ST.obj++;if(ST.obj<OBJ.length)pop("Klart! Nästa: "+OBJ[ST.obj].txt,2600);else pop("Första bygget står klart! 🎉",3500);SFX("done")}renderObj()}
 function renderObj(){const el=$("obj");const J=typeof jobState==="function"?jobState():null;const so=storyObjective();
   const build=ST.obj<OBJ.length?OBJ.map((o,i)=>`<div class="${i<ST.obj?"done":i===ST.obj?"now":""}">${i<ST.obj?"✓":i===ST.obj?"›":"·"} ${o.txt}</div>`).join(""):"";
-  let h=so?`<b>Kapitel 1 · Arvet</b><div class="now">› ${so.text}</div>`+(so.list?build:""):(build?`<b>Första bygget</b>${build}`:"");
+  let h=so?`<b>${so.chapter}</b><div class="now">› ${so.text}</div>`+(so.list?build:""):(build?`<b>Första bygget</b>${build}`:"");
   if(J&&ST.jobOn)h+=`<b style="display:block;margin-top:6px">Jobb</b><div class="now">› ${J.title}</div><div>${J.where}</div>`;
   el.innerHTML=h;el.style.display=h?"block":"none"}
 const UI=import.meta.env.BASE_URL+"ui/";const ICO=(k,c="ico")=>`<img class="${c}" src="${UI}it_${k}.png" alt="">`;
@@ -154,14 +154,14 @@ let popT=0;function pop(t,ms=1400){const el=$("pop");el.textContent=t;el.style.o
 let AC=null;function SFX(k){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
   const f={pick:[520,780,.12],place:[180,120,.16],rip:[140,70,.18],no:[200,160,.12],done:[523,1046,.35],tick:[70,55,.05]}[k];o.type=k==="place"||k==="rip"?"square":"triangle";o.frequency.setValueAtTime(f[0],t);o.frequency.exponentialRampToValueAtTime(f[1],t+f[2]);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+f[2]+.05);o.start(t);o.stop(t+f[2]+.06)}catch(e){}}
 // sparning
-function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,digs:ST.digs,kr:ST.kr,job:ST.job,jobOn:ST.jobOn,life:ST.life,char:ST.char,pname:ST.pname,rykte:ST.rykte||0,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[],digs:d.digs||[],kr:d.kr||0,job:d.job||0,jobOn:d.jobOn||0,life:d.life||null,char:d.char||null,pname:d.pname||"",rykte:d.rykte||0});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
+function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,digs:ST.digs,kr:ST.kr,job:ST.job,jobOn:ST.jobOn,life:ST.life,char:ST.char,pname:ST.pname,rykte:ST.rykte||0,story:ST.story||null,px:player.pos.x,pz:player.pos.z}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("varvet_save")||"null");if(!d)return;Object.assign(ST,{virke:d.virke,skrot:d.skrot,picked:d.picked||0,obj:d.obj||0,pieces:d.pieces||[],digs:d.digs||[],kr:d.kr||0,job:d.job||0,jobOn:d.jobOn||0,life:d.life||null,char:d.char||null,pname:d.pname||"",rykte:d.rykte||0,story:d.story||null});if(d.px!=null){player.pos.x=d.px;player.pos.z=d.pz}}catch(e){}}
 function act(){if(buildMode)place();else if(nearI)nearI.fn();else gather()}
 function setBuild(on){if(on&&(BOATM.on||GAMEON))return;buildMode=on;if(on)$("hint").style.opacity=0;$("bar").style.display=on?"flex":"none";$("bBuild").innerHTML=on?"Klar":`${ICO("verktyg","icob")}Bygg`;$("bBuild").classList.toggle("acc",on);$("bWhy").style.display=on?"block":"none";if(on)camS.tPitch=Math.max(camS.tPitch,.55);updHud()}
 function uiInit(){const bar=$("bar");bar.innerHTML=ORDER.map(t=>`<button class="pc" data-t="${t}"><i>${{golv:"▭",vagg:"▮",fonster:"▣",dorr:"⌂",tak:"◭",jamna:"⛏"}[t]}</i>${PIECES[t].name}<small>${costTxt(PIECES[t].cost).replace(/virke/g,ICO("virke","icos")).replace(/skrot/g,ICO("skrot","icos"))}</small></button>`).join("")+`<button class="pc" id="bRot"><i>↻</i>Vrid</button><button class="pc" id="bRip"><i>✕</i>Riv</button>`;
   bar.querySelectorAll(".pc[data-t]").forEach(b=>b.onclick=()=>{cur.t=b.dataset.t;cur.r=0;updHud()});$("bRot").onclick=()=>{cur.r=(cur.r+1)%4};$("bRip").onclick=demolish;
   $("bBuild").onclick=()=>setBuild(!buildMode);$("dlgNext").onclick=()=>dlgNext(true);$("dlgNo").onclick=closeDlg;$("gX").onclick=()=>endGame(false);$("bAct").onclick=act;
-  addEventListener("keydown",e=>{if(!running)return;if(e.code==="KeyB")setBuild(!buildMode);if(e.code==="KeyR")cur.r=(cur.r+1)%4;if(e.code==="KeyX"&&buildMode)demolish();if(e.code==="Space"||e.code==="KeyF"){e.preventDefault();if(DLG)dlgNext();else act()}
+  addEventListener("keydown",e=>{if(!running||window.__modal||(e.target&&e.target.tagName==="INPUT"))return;if(e.code==="KeyB")setBuild(!buildMode);if(e.code==="KeyR")cur.r=(cur.r+1)%4;if(e.code==="KeyX"&&buildMode)demolish();if(e.code==="Space"||e.code==="KeyF"){e.preventDefault();if(DLG)dlgNext();else act()}
     if(buildMode&&/^Digit[1-5]$/.test(e.code)){cur.t=ORDER[+e.code.slice(5)-1];updHud()}});
   renderObj()}
 setInterval(()=>{if(running)save()},5000);

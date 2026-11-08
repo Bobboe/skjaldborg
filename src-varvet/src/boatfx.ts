@@ -46,21 +46,28 @@ function engine(on: boolean, speed: number): void {
   } catch { /* ljud ej tillgängligt */ }
 }
 
-let lastX = NaN, lastZ = NaN, roll = 0;
-/** Anropas varje bildruta. `driving` = spelaren kör, `v` = fart, `steer` = −1..1. */
-export function boatFx(boat: THREE.Object3D, dt: number, t: number, driving: boolean, v: number, steer: number, yaw: number): void {
-  if (!wake) init();
+let lastX = NaN, lastZ = NaN, lastBoat: THREE.Object3D | null = null;
+/** Flyt utan kölvatten: höjd, stampning och krängning efter vågorna. Används av alla båtar. */
+export function boatFloat(boat: THREE.Object3D, dt: number, t: number, v: number, steer: number, yaw: number, driving = false): void {
   const amp = water ? ((water.material as THREE.ShaderMaterial).uniforms.amp?.value ?? 1) : 1;
   const x = boat.position.x, z = boat.position.z;
-  // flyt: medelhöjd under båten och lutning mellan för/akter och sidorna
   const fx = Math.sin(yaw) * 2.4, fz = Math.cos(yaw) * 2.4, sx = Math.cos(yaw) * .9, sz = -Math.sin(yaw) * .9;
   const hb = waveAt(x + fx, z + fz, t, amp), hs = waveAt(x - fx, z - fz, t, amp), hl = waveAt(x - sx, z - sz, t, amp), hr = waveAt(x + sx, z + sz, t, amp);
   const yTarget = .45 + (hb + hs + hl + hr) / 4;
   boat.position.y += (yTarget - boat.position.y) * Math.min(1, dt * 6);
   const k = Math.min(1, Math.abs(v) / 11);
   const pitch = Math.atan2(hs - hb, 4.8) - k * .1 - (driving ? Math.sin(t * 9) * .004 * k : 0);
-  roll += ((-steer * k * .16) - roll) * Math.min(1, dt * 3);
-  boat.rotation.set(pitch, yaw, Math.atan2(hl - hr, 1.8) + roll, "YXZ");
+  const u = boat.userData; u.roll = (u.roll || 0) + ((-steer * k * .16) - (u.roll || 0)) * Math.min(1, dt * 3);
+  boat.rotation.set(pitch, yaw, Math.atan2(hl - hr, 1.8) + u.roll, "YXZ");
+}
+/** Anropas varje bildruta för den båt som körs (eller den aktiva vid bryggan). `driving` = spelaren kör, `v` = fart, `steer` = −1..1. */
+export function boatFx(boat: THREE.Object3D, dt: number, t: number, driving: boolean, v: number, steer: number, yaw: number): void {
+  if (!wake) init();
+  const amp = water ? ((water.material as THREE.ShaderMaterial).uniforms.amp?.value ?? 1) : 1;
+  const x = boat.position.x, z = boat.position.z;
+  boatFloat(boat, dt, t, v, steer, yaw, driving);
+  const k = Math.min(1, Math.abs(v) / 11);
+  if (boat !== lastBoat) { lastBoat = boat; lastX = NaN; pts.length = 0; }
   // kölvatten
   if (isNaN(lastX)) { lastX = x; lastZ = z; }
   const moved = Math.hypot(x - lastX, z - lastZ);

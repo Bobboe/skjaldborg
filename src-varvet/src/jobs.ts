@@ -1,7 +1,7 @@
 // @ts-nocheck
 import * as THREE from "three";
 import { attachCharacter, attachProp, play, SVEN, MAJKEN } from "./characters";
-import { INTERACT_PROVIDERS } from "./hooks";
+import { INTERACT_PROVIDERS, JETTIES, jettyAt } from "./hooks";
 import { pop } from "./build";
 import { camS } from "./input";
 import { SFX } from "./build";
@@ -30,14 +30,14 @@ const NPC={};const MARK=new THREE.Mesh(new THREE.ConeGeometry(.22,.5,4),new THRE
 const TGT=new THREE.Mesh(new THREE.TorusGeometry(1.3,.12,6,28),new THREE.MeshBasicMaterial({color:"#ffc21a"}));TGT.rotation.x=Math.PI/2;TGT.visible=false;scene.add(TGT);
 let NJ=null;// Grannöns brygga
 function jobsWorldInit(){
-  NPC.sven=makePerson({shirt:"#3f6e4a",pants:"#2b3a52",hat:"#1f2a44",beard:"#d9d4cc",skin:"#efc2a0"});NPC.sven.position.set(13.6,Math.max(1.45,groundAt(13.6,62)),62);NPC.sven.rotation.y=Math.PI*.15;attachCharacter(NPC.sven,SVEN);
+  NPC.sven=makePerson({shirt:"#3f6e4a",pants:"#2b3a52",hat:"#1f2a44",beard:"#d9d4cc",skin:"#efc2a0"});NPC.sven.position.set(13.6,Math.max(1.45,groundAt(13.6,62)),62);NPC.sven.rotation.y=Math.PI*.15;NPC.sven.userData.name="Sven";attachCharacter(NPC.sven,SVEN);
   // Grannöns brygga: från stranden ut mot Varvsön
   const I=ISLANDS[1];let dx=-.74,dz=.67,x=I.x,z=I.z;for(let s=0;s<120;s++){x+=dx;z+=dz;if(sampleGrid(x,z)<-.4)break}
   const ex=x+dx*9,ez=z+dz*9,ang=Math.atan2(dx,dz);NJ={x0:x-dx*2,z0:z-dz*2,x1:ex,z1:ez,ang,boatX:ex+dz*3.2,boatZ:ez-dx*3.2};
   const parts=[];const len=Math.hypot(ex-NJ.x0,ez-NJ.z0);const g=new THREE.BoxGeometry(2.6,.28,len);g.rotateY(ang);g.translate((NJ.x0+ex)/2,1.2,(NJ.z0+ez)/2);parts.push(colored(g,"#9a7a55"));
   for(let t=1;t<len;t+=3)for(const s of[-1.1,1.1]){const px=NJ.x0+dx*t+dz*s,pz=NJ.z0+dz*t-dx*s;parts.push(colored(tr(new THREE.CylinderGeometry(.15,.15,5,6),px,-1.2,pz),"#5e4630"))}
-  const m=new THREE.Mesh(merge(parts),VC);m.castShadow=true;scene.add(m);
-  NPC.majken=makePerson({shirt:"#c0392b",pants:"#2b2f36",hair:"#c9c2b8",skin:"#f2cdb0"});NPC.majken.position.set(ex-dx*1.5,1.35,ez-dz*1.5);NPC.majken.rotation.y=ang+Math.PI;NPC.majken.position.y=Math.max(1.34,groundAt(NPC.majken.position.x,NPC.majken.position.z));attachCharacter(NPC.majken,MAJKEN);
+  const m=new THREE.Mesh(merge(parts),VC);m.castShadow=true;scene.add(m);JETTIES.push({x0:NJ.x0-dx*3,z0:NJ.z0-dz*3,x1:ex,z1:ez,w:1.25,h:1.34});
+  NPC.majken=makePerson({shirt:"#c0392b",pants:"#2b2f36",hair:"#c9c2b8",skin:"#f2cdb0"});NPC.majken.position.set(ex-dx*1.5,1.35,ez-dz*1.5);NPC.majken.rotation.y=ang+Math.PI;NPC.majken.userData.name="Majken";NPC.majken.position.y=Math.max(1.34,groundAt(NPC.majken.position.x,NPC.majken.position.z));attachCharacter(NPC.majken,MAJKEN);
   // utombordsmotor på motorbåten
   const mo=new THREE.Group();const a=new THREE.Mesh(new THREE.BoxGeometry(.45,.55,.5),new THREE.MeshLambertMaterial({color:"#1d1f24"}));a.position.y=.55;mo.add(a);
   const sh=new THREE.Mesh(new THREE.BoxGeometry(.12,.8,.14),new THREE.MeshLambertMaterial({color:"#2b2f36"}));sh.position.y=-.05;mo.add(sh);mo.position.set(0,.1,-3.05);bobBoat.add(mo);attachProp(bobBoat,"motorbat.glb",{fit:5.8,rotY:Math.PI/2,y:.05,hideChildren:true,liner:.975,waterMask:-.12});
@@ -64,16 +64,18 @@ function interactables(){const L=[];for(const f of INTERACT_PROVIDERS)f(L);const
   else if(J&&ST.jobOn){const t=J.target();L.push({x:t.x,z:t.z,r:t.r,label:t.label,fn:()=>startGame(J)})}
   if(!J||ST.jobOn){const p=npcPos("sven");L.push({x:p.x,z:p.z,r:2.2,label:"Prata med Sven",fn:()=>dialog("Sven",[J?(ST.jobOn?"Du har ett jobb på gång: "+J.title.toLowerCase()+". "+J.where+".":""):"Inga fler jobb från mig just nu. Men ryktet sprider sig – snart står folk i kö."],null)})}
   return L}
-function interTick(t){nearI=null;if(buildMode||BOATM.on||GAMEON)return;let bd=99;for(const it of interactables()){const d=Math.hypot(it.x-player.pos.x,it.z-player.pos.z);if(d<it.r&&d<bd){bd=d;nearI=it}}
+function interTick(t){nearI=null;if(BOATM.on&&BOATM.dockItem&&!GAMEON&&!DLG){nearI=BOATM.dockItem()}if(buildMode||BOATM.on||GAMEON)return;let bd=99;for(const it of interactables()){const d=Math.hypot(it.x-player.pos.x,it.z-player.pos.z);if(d<it.r&&d<bd){bd=d;nearI=it}}
   const J=jobState();let mp=null;if(J&&!ST.jobOn){mp=npcPos(J.from).clone();mp.y+=2.6}else if(J&&ST.jobOn&&J.game!=="drive"){const q=J.target();mp=new THREE.Vector3(q.x,groundAt(q.x,q.z)+2.6,q.z)}else if(J&&ST.jobOn){mp=bobBoat.position.clone();mp.y+=2.4}
   MARK.visible=!!mp;if(mp){MARK.position.copy(mp);MARK.position.y+=Math.sin(t*3)*.15;MARK.rotation.y=t*2}
-  for(const id in NPC){const n=NPC[id];if(n.userData.realModel)play(n,DLG&&DLG.who===(id==='sven'?'Sven':'Majken')?'talk':'idle');else n.children[0].scale.y=1+Math.sin(t*2+id.length)*.015;const d=Math.hypot(n.position.x-player.pos.x,n.position.z-player.pos.z);if(d<6){const a=Math.atan2(player.pos.x-n.position.x,player.pos.z-n.position.z);n.rotation.y+=Math.atan2(Math.sin(a-n.rotation.y),Math.cos(a-n.rotation.y))*.08}}}
+  for(const id in NPC){const n=NPC[id];if(n.userData.realModel)play(n,DLG&&DLG.who.split(/[ ·(]/)[0]===n.userData.name?'talk':'idle');else if(n.visible)n.children[0].scale.y=1+Math.sin(t*2+id.length)*.015;if(!n.visible)continue;const d=Math.hypot(n.position.x-player.pos.x,n.position.z-player.pos.z);if(d<6){const a=Math.atan2(player.pos.x-n.position.x,player.pos.z-n.position.z);n.rotation.y+=Math.atan2(Math.sin(a-n.rotation.y),Math.cos(a-n.rotation.y))*.08}}}
 // --- dialog ---
 let DLG=null;
-function closeDlg(){$("dlg").style.display="none";DLG=null}
+function closeDlg(){const d=DLG;$("dlg").style.display="none";DLG=null;if(d&&d.onNo)d.onNo()}
+/** Dialog som slutar med två val. */
+function choice(who,lines,yes,no,onYes,onNo){dialog(who,lines,onYes,true);DLG.yes=yes;DLG.no=no;DLG.onNo=onNo;dlgShow()}
 function dialog(who,lines,onEnd,accept){DLG={who,lines:lines.filter(Boolean),i:0,onEnd,accept};$("dlg").style.display="block";dlgShow()}
 const POR=n=>import.meta.env.BASE_URL+"ui/por_"+n.split(/[ (·]/)[0].toLowerCase().replace(/å|ä/g,"a").replace(/ö/g,"o")+".png";
-function dlgShow(){const d=DLG;$("dlgWho").textContent=d.who;const pi=$("dlgPor");if(pi.dataset.n!==d.who){pi.dataset.n=d.who;pi.style.display="none";pi.onload=()=>pi.style.display="block";pi.onerror=()=>pi.style.display="none";pi.src=POR(d.who)}$("dlgTxt").textContent=d.lines[d.i];const last=d.i>=d.lines.length-1;$("dlgNext").textContent=last?(d.accept?"Ta jobbet":"OK"):"Fortsätt";$("dlgNo").style.display=last&&d.accept?"inline-block":"none"}
+function dlgShow(){const d=DLG;$("dlgWho").textContent=d.who;const pi=$("dlgPor");if(pi.dataset.n!==d.who){pi.dataset.n=d.who;pi.style.display="none";pi.onload=()=>pi.style.display="block";pi.onerror=()=>pi.style.display="none";pi.src=POR(d.who)}$("dlgTxt").textContent=d.lines[d.i];const last=d.i>=d.lines.length-1;$("dlgNext").textContent=last?(d.accept?(d.yes||"Ta jobbet"):"OK"):"Fortsätt";$("dlgNo").textContent=d.no||"Inte nu";$("dlgNo").style.display=last&&d.accept?"inline-block":"none"}
 function dlgNext(ok=true){const d=DLG;if(!d)return;if(d.i<d.lines.length-1){d.i++;dlgShow();return}$("dlg").style.display="none";DLG=null;if(ok&&d.onEnd)d.onEnd()}
 function talk(J){dialog(J.from==="sven"?"Sven":"Majken",J.offer,()=>{ST.jobOn=1;pop("Nytt jobb: "+J.title,2200);renderObj();save();SFX("done")},true)}
 function jobDone(){const J=jobState();ST.kr+=J.reward;ST.rykte=(ST.rykte||0)+5;ST.job++;ST.jobOn=0;updHud();renderObj();save();SFX("done");pop(`+${J.reward} kr`,2000)}
@@ -83,8 +85,8 @@ let GAMEON=null;
 const gcv=()=>$("gcv");
 function startGame(J){if(J.game==="drive"){boatStart();return}GAMEON={J,t:0};$("game").style.display="flex";input.mx=input.mz=0;
   const c=gcv(),r=c.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);c.width=r.width*dpr;c.height=r.height*dpr;GAMEON.dpr=dpr;
-  if(J.game==="sand")sandInit();else propInit();requestAnimationFrame(gameLoop)}
-function endGame(ok){const G=GAMEON;GAMEON=null;$("game").style.display="none";if(!ok)return;const J=G.J;dialog(J.from==="sven"?"Sven":"Majken",[J.done],jobDone)}
+  if(J.init)J.init();else if(J.game==="sand")sandInit();else propInit();requestAnimationFrame(gameLoop)}
+function endGame(ok){const G=GAMEON;if(!G)return;GAMEON=null;$("game").style.display="none";if(!ok)return;const J=G.J;if(J.onDone){J.onDone(G.q);return}dialog(J.from==="sven"?"Sven":"Majken",[J.done],jobDone)}
 function gameLoop(){if(!GAMEON)return;requestAnimationFrame(gameLoop);GAMEON.draw()}
 function gPt(e){const c=gcv(),r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*GAMEON.dpr,y:(e.clientY-r.top)*GAMEON.dpr}}
 // Slipa skrov: dra fingret över påväxten tills skrovet är rent
@@ -126,23 +128,24 @@ function propInit(){const c=gcv(),W=c.width,H=c.height,x=c.getContext("2d"),k=GA
     if(S.st===1){x.strokeStyle="rgba(255,194,26,.6)";x.setLineDash([8*k,8*k]);x.beginPath();x.arc(cx,cy,200*k,0,7);x.stroke();x.setLineDash([])}}}
 
 // --- båtkörning ---
-const BOATM={on:false,v:0,yaw:0};
-function boatStart(){BOATM.on=true;BOATM.v=0;BOATM.yaw=bobBoat.rotation.y;P.visible=true;$("hint").style.opacity=1;$("hint").textContent="Vänster tumme: gasa och styr · Kör till den gula ringen vid Grannön";TGT.visible=true;TGT.position.set(NJ.boatX,.35,NJ.boatZ);pop("Kör till Majkens brygga!",2200)}
-function boatDrive(dt,mx,mz){const thr=-mz,st=mx;BOATM.steer=st;BOATM.v+=(thr*11-BOATM.v)*Math.min(1,dt*(thr?0.9:.5));BOATM.yaw-=st*dt*1.3*clamp(Math.abs(BOATM.v)/4,.25,1)*Math.sign(BOATM.v||1);
-  const nx=bobBoat.position.x+Math.sin(BOATM.yaw)*BOATM.v*dt,nz=bobBoat.position.z+Math.cos(BOATM.yaw)*BOATM.v*dt;
-  const free=(x,z)=>sampleGrid(x,z)<-.3&&!(Math.abs(x-14)<2&&z>57&&z<92)&&Math.abs(x)<WS/2-10&&Math.abs(z)<WS/2-10;
+const BOATM={on:false,v:0,yaw:0,boat:null,free:false,target:null,dockItem:null,forceHome:null,race:null};
+function boatStart(){BOATM.on=true;BOATM.v=0;BOATM.boat=bobBoat;BOATM.free=false;BOATM.target={x:NJ.boatX,z:NJ.boatZ,r:4.5,ring:true,onArrive:boatArrive};BOATM.yaw=bobBoat.rotation.y;P.visible=true;$("hint").style.opacity=1;$("hint").textContent="Vänster tumme: gasa och styr · Kör till den gula ringen vid Grannön";TGT.visible=true;TGT.position.set(NJ.boatX,.35,NJ.boatZ);pop("Kör till Majkens brygga!",2200)}
+function boatDrive(dt,mx,mz){const B=BOATM.boat||bobBoat;const thr=-mz,st=mx;BOATM.steer=st;const vmax=BOATM.vmax||11;BOATM.v+=(thr*vmax-BOATM.v)*Math.min(1,dt*(thr?0.9:.5));if(BOATM.lock){BOATM.v*=Math.max(0,1-dt*3)}BOATM.yaw-=st*dt*1.3*clamp(Math.abs(BOATM.v)/4,.25,1)*Math.sign(BOATM.v||1);
+  const nx=B.position.x+Math.sin(BOATM.yaw)*BOATM.v*dt,nz=B.position.z+Math.cos(BOATM.yaw)*BOATM.v*dt;
+  const free=(x,z)=>sampleGrid(x,z)<-.3&&!(Math.abs(x-14)<2&&z>57&&z<92)&&!jettyAt(x,z,.5)&&Math.abs(x)<WS/2-10&&Math.abs(z)<WS/2-10;
   const bow=(x,z)=>free(x+Math.sin(BOATM.yaw)*2.8,z+Math.cos(BOATM.yaw)*2.8);
-  const stuck=!free(bobBoat.position.x,bobBoat.position.z);if((free(nx,nz)&&bow(nx,nz))||(stuck&&sampleGrid(nx,nz)<=sampleGrid(bobBoat.position.x,bobBoat.position.z))){bobBoat.position.x=nx;bobBoat.position.z=nz}else{BOATM.v*=-.3}
-  
-  player.pos.set(bobBoat.position.x,bobBoat.position.y+.1,bobBoat.position.z);player.yaw=BOATM.yaw;
+  const stuck=!free(B.position.x,B.position.z);if((free(nx,nz)&&bow(nx,nz))||(stuck&&sampleGrid(nx,nz)<=sampleGrid(B.position.x,B.position.z))){B.position.x=nx;B.position.z=nz}else{BOATM.v*=-.3}
+  player.pos.set(B.position.x,B.position.y+.1,B.position.z);player.yaw=BOATM.yaw;
   // kameran bakom båten
   camS.tYaw+=Math.atan2(Math.sin(BOATM.yaw-camS.tYaw),Math.cos(BOATM.yaw-camS.tYaw))*Math.min(1,dt*1.5);
   if(Math.random()<Math.abs(BOATM.v)*.02)SFX("tick");
-  {const dx=NJ.boatX-bobBoat.position.x,dz=NJ.boatZ-bobBoat.position.z;const a=Math.atan2(dx,dz)-camS.yaw;$("compass").style.display="flex";$("cArrow").style.transform=`rotate(${-a*180/Math.PI-90}deg)`;$("cDist").textContent=Math.round(Math.hypot(dx,dz))+" m"}
-  if(Math.hypot(bobBoat.position.x-NJ.boatX,bobBoat.position.z-NJ.boatZ)<4.5&&Math.abs(BOATM.v)<7.5){boatArrive()}}
-function boatArrive(){BOATM.on=false;$("compass").style.display="none";BOATM.v=0;TGT.visible=false;bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.set(0,NJ.ang,0);bobBoat.userData.yaw=NJ.ang;$("hint").style.opacity=0;
+  const T=BOATM.target;
+  if(T){const dx=T.x-B.position.x,dz=T.z-B.position.z;const a=Math.atan2(dx,dz)-camS.yaw;$("compass").style.display="flex";$("cArrow").style.transform=`rotate(${-a*180/Math.PI-90}deg)`;$("cDist").textContent=(T.label?T.label+" · ":"")+Math.round(Math.hypot(dx,dz))+" m";
+    TGT.visible=!!T.ring;if(T.ring)TGT.position.set(T.x,.35,T.z);
+    if(T.onArrive&&Math.hypot(dx,dz)<T.r&&Math.abs(BOATM.v)<(T.vmax||7.5))T.onArrive()}else{$("compass").style.display="none";TGT.visible=false}}
+function boatArrive(){BOATM.on=false;BOATM.target=null;$("compass").style.display="none";BOATM.v=0;TGT.visible=false;bobBoat.position.set(NJ.boatX,.5,NJ.boatZ);bobBoat.rotation.set(0,NJ.ang,0);bobBoat.userData.yaw=NJ.ang;$("hint").style.opacity=0;
   dialog("Majken",["Åh, där är hon! Tack ska du ha, den är ju fin som snus.","Sven sa att du skulle ha 800 kronor. Hoppa in i min eka så skjutsar jag dig hem."],()=>{jobDone();fade(()=>{player.pos.set(14,1.45,70);player.yaw=Math.PI;camS.tYaw=camS.yaw=Math.PI;dialog("Sven",["Där är du ju! Majken ringde redan och skröt om båten. Bra jobbat."],null)})})}
 function fade(mid){const f=$("fade");f.style.opacity=1;setTimeout(()=>{mid();setTimeout(()=>f.style.opacity=0,300)},500)}
 
 
-export { BOATM, DLG, GAMEON, JOBS, MARK, NJ, NPC, TGT, boatArrive, boatDrive, boatStart, closeDlg, dialog, dlgNext, dlgShow, endGame, fade, gPt, gameLoop, gcv, interTick, interactables, jobDone, jobState, jobsWorldInit, makePerson, nearI, npcPos, propInit, sandInit, startGame, talk };
+export { choice, BOATM, DLG, GAMEON, JOBS, MARK, NJ, NPC, TGT, boatArrive, boatDrive, boatStart, closeDlg, dialog, dlgNext, dlgShow, endGame, fade, gPt, gameLoop, gcv, interTick, interactables, jobDone, jobState, jobsWorldInit, makePerson, nearI, npcPos, propInit, sandInit, startGame, talk };

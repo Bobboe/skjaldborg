@@ -10,7 +10,7 @@ import { player } from "./player";
 import { camS } from "./input";
 import { fade, DLG, GAMEON, BOATM } from "./jobs";
 import { $ } from "./util";
-import { INTERACT_PROVIDERS } from "./hooks";
+import { INTERACT_PROVIDERS, DAY_HOOKS } from "./hooks";
 
 // ---------- Konstanter ----------
 export const DAY_START = 6 * 60, DAY_END = 22 * 60, MIDNIGHT = 24 * 60;
@@ -38,6 +38,7 @@ let L = null;
 const rnd = () => Math.random();
 function rollWx(day) { const s = Math.floor(day / SEASON_LEN) % 4, p = WX_P[s]; let r = rnd(), i = 0; for (; i < p.length - 1; i++) { r -= p[i]; if (r < 0) break } return Object.keys(WX)[i]; }
 function fresh() { return { day: 0, min: DAY_START, wx: "sol", fc: [rollWx(1), rollWx(2), rollWx(3)], price: { virke: 1, skrot: 1 }, prev: { virke: 1, skrot: 1 }, orders: { virke: 0, skrot: 0 }, delivery: null, warned: false }; }
+export function setDay(d, min = 8 * 60) { L.day = d; L.min = min; L.warned = false; L.fc = [rollWx(d + 1), rollWx(d + 2), rollWx(d + 3)]; L.wx = "sol"; applyWeather(true); clockHud(); }
 export function lifeInit() {
   L = ST.life || fresh(); ST.life = L;
   if (!L.fc) L.fc = [rollWx(L.day + 1), rollWx(L.day + 2), rollWx(L.day + 3)];
@@ -72,6 +73,7 @@ let sleeping = false;
 function sleep(passedOut) {
   if (sleeping) return;
   if (BOATM.on && !passedOut) { pop("Lägg till vid en brygga först"); return; }
+  if (BOATM.on && BOATM.forceHome) BOATM.forceHome();
   sleeping = true;
   fade(() => {
     sleeping = false;
@@ -90,6 +92,7 @@ function newDay() {
   for (const k of Object.keys(BASE_PRICE)) { const drift = (rnd() - .5) * .16 + (1 - L.price[k]) * .25; L.price[k] = Math.min(1.35, Math.max(.75, L.price[k] + drift + (s === 3 ? .02 : 0))); }
   if (L.orders.virke || L.orders.skrot) { L.delivery = { ...L.orders }; L.orders = { virke: 0, skrot: 0 }; }
   applyWeather(true);
+  for (const f of DAY_HOOKS) try { f(); } catch (e) { console.warn(e); }
 }
 export function price(k) { return Math.round(BASE_PRICE[k] * L.price[k]); }
 
