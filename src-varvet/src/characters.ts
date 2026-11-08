@@ -144,3 +144,8 @@ export const INGRID: CharDef = {
   file: "ingrid.glb", height: 1.64,
   anims: { idle: "Idle_4", talk: "Talk_with_Left_Hand_on_Hip", walk: "Walking", run: "Running", sit: "Chair_Sit_Idle_F", pick: "Female_Bend_Over_Pick_Up_Inspect" },
 };
+
+export const KARIN: CharDef = {
+  file: "karin.glb", height: 1.68,
+  anims: { idle: "Idle_7", talk: "Talk_with_Left_Hand_on_Hip", walk: "Walking", run: "Running", sit: "Chair_Sit_Idle_F", pick: "Female_Bend_Over_Pick_Up_Inspect" },
+};
