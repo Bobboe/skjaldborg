@@ -6,6 +6,7 @@ import { sampleGrid, YARD } from "./terrain";
 import { onJetty } from "./update";
 import { BOATM } from "./jobs";
 import { timeOf, weather } from "./life";
+import { SET } from "./settings";
 
 let ac = null, master = null, noise = null, waves = null, wind = null, rain = null, windF = null;
 let T = 0, gullT = 6, hornT = 4, lastStep = 0, shoreK = 0;
@@ -25,13 +26,14 @@ function loop(filterType, freq, q = .7) {
 export function soundInit() {
   if (ac) { if (ac.state === "suspended") ac.resume(); return; }
   try {
-    ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = .9; master.connect(ac.destination);
+    ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); SOUND.on = !!SET.snd; master.gain.value = SOUND.on ? .9 : 0; master.connect(ac.destination);
     noise = noiseBuf();
     waves = loop("lowpass", 520); wind = loop("bandpass", 650, .6); windF = wind.f; rain = loop("highpass", 2600);
     document.addEventListener("visibilitychange", () => { if (!ac) return; document.hidden ? ac.suspend() : ac.resume(); });
   } catch (e) { ac = null; }
 }
 const set = (g, v, tc = .4) => g.gain.setTargetAtTime(SOUND.on ? v : 0, ac.currentTime, tc);
+export function soundApply() { SOUND.on = !!SET.snd; if (master && ac) master.gain.setTargetAtTime(SOUND.on ? .9 : 0, ac.currentTime, .1); }
 
 // ---------- korta ljud ----------
 function burst({ type = "bandpass", freq = 1000, q = 1, dur = .08, gain = .08, pan = 0, at = 0 }) {

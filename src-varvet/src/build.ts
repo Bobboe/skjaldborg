@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { SET as _SET } from "./settings";
 import * as THREE from "three";
 import { storyObjective } from "./story";
 import { once } from "./characters";
@@ -151,7 +152,7 @@ function updHud(){$("res").innerHTML=`<span>${ICO("virke")}${ST.virke}</span><sp
   document.querySelectorAll("#bar .pc[data-t]").forEach(b=>{const P=PIECES[b.dataset.t];const can=Object.entries(P.cost).every(([r,n])=>ST[r]>=n);b.classList.toggle("on",b.dataset.t===cur.t);b.classList.toggle("dim",!can)})}
 let popT=0;function pop(t,ms=1400){const el=$("pop");el.textContent=t;el.style.opacity=1;clearTimeout(popT);popT=setTimeout(()=>el.style.opacity=0,ms)}
 // enkla ljud
-let AC=null;function SFX(k){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+let AC=null;function SFX(k){if(!_SET.snd)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
   const f={pick:[520,780,.12],place:[180,120,.16],rip:[140,70,.18],no:[200,160,.12],done:[523,1046,.35],tick:[70,55,.05]}[k];o.type=k==="place"||k==="rip"?"square":"triangle";o.frequency.setValueAtTime(f[0],t);o.frequency.exponentialRampToValueAtTime(f[1],t+f[2]);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+f[2]+.05);o.start(t);o.stop(t+f[2]+.06)}catch(e){}}
 // sparning
 function save(){try{localStorage.setItem("varvet_save",JSON.stringify({v:1,virke:ST.virke,skrot:ST.skrot,picked:ST.picked,obj:ST.obj,pieces:ST.pieces,digs:ST.digs,kr:ST.kr,job:ST.job,jobOn:ST.jobOn,life:ST.life,char:ST.char,pname:ST.pname,rykte:ST.rykte||0,story:ST.story||null,px:player.pos.x,pz:player.pos.z}))}catch(e){}}

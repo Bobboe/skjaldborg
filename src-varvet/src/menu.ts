@@ -10,10 +10,13 @@ import { perfEl } from "./engine";
 import { player } from "./player";
 import { SET, saveSet } from "./settings";
 import { $ } from "./util";
+import { soundApply } from "./sound";
+import { voiceStop } from "./voice";
 
 // ================= Meny =================
 function segInit(id,key,cb){const el=$(id);const upd=()=>el.querySelectorAll("button").forEach(b=>b.classList.toggle("on",+b.dataset.v===SET[key]));el.querySelectorAll("button").forEach(b=>b.onclick=()=>{SET[key]=+b.dataset.v;saveSet();upd();cb&&cb()});upd()}
 segInit("sQ","q",applyQuality);segInit("sF","fps",()=>qualitySetGoal(SET.fps));segInit("sP","perf",()=>perfEl.style.display=SET.perf?"block":"none");
+segInit("sS","snd",soundApply);segInit("sV","voice",voiceStop);
 perfEl.style.display=SET.perf?"block":"none";
 const openSet=()=>{$("menu").style.display="flex";$("mainCard").style.display="none";$("settings").style.display="block"};
 $("bSet").onclick=openSet;$("bSet2").onclick=openSet;

@@ -2,6 +2,7 @@
 import * as THREE from "three";
 import { attachCharacter, attachProp, play, SVEN, MAJKEN } from "./characters";
 import { INTERACT_PROVIDERS, JETTIES, jettyAt } from "./hooks";
+import { voicePlay, voiceStop } from "./voice";
 import { pop } from "./build";
 import { camS } from "./input";
 import { SFX } from "./build";
@@ -70,12 +71,12 @@ function interTick(t){nearI=null;if(BOATM.on&&BOATM.dockItem&&!GAMEON&&!DLG){nea
   for(const id in NPC){const n=NPC[id];if(n.userData.realModel)play(n,DLG&&DLG.who.split(/[ ·(]/)[0]===n.userData.name?'talk':'idle');else if(n.visible)n.children[0].scale.y=1+Math.sin(t*2+id.length)*.015;if(!n.visible)continue;const d=Math.hypot(n.position.x-player.pos.x,n.position.z-player.pos.z);if(d<6){const a=Math.atan2(player.pos.x-n.position.x,player.pos.z-n.position.z);n.rotation.y+=Math.atan2(Math.sin(a-n.rotation.y),Math.cos(a-n.rotation.y))*.08}}}
 // --- dialog ---
 let DLG=null;
-function closeDlg(){const d=DLG;$("dlg").style.display="none";DLG=null;if(d&&d.onNo)d.onNo()}
+function closeDlg(){const d=DLG;$("dlg").style.display="none";DLG=null;voiceStop();if(d&&d.onNo)d.onNo()}
 /** Dialog som slutar med två val. */
 function choice(who,lines,yes,no,onYes,onNo){dialog(who,lines,onYes,true);DLG.yes=yes;DLG.no=no;DLG.onNo=onNo;dlgShow()}
 function dialog(who,lines,onEnd,accept){DLG={who,lines:lines.filter(Boolean),i:0,onEnd,accept};$("dlg").style.display="block";dlgShow()}
 const POR=n=>import.meta.env.BASE_URL+"ui/por_"+n.split(/[ (·]/)[0].toLowerCase().replace(/å|ä/g,"a").replace(/ö/g,"o")+".png";
-function dlgShow(){const d=DLG;$("dlgWho").textContent=d.who;const pi=$("dlgPor");if(pi.dataset.n!==d.who){pi.dataset.n=d.who;pi.style.display="none";pi.onload=()=>pi.style.display="block";pi.onerror=()=>pi.style.display="none";pi.src=POR(d.who)}$("dlgTxt").textContent=d.lines[d.i];const last=d.i>=d.lines.length-1;$("dlgNext").textContent=last?(d.accept?(d.yes||"Ta jobbet"):"OK"):"Fortsätt";$("dlgNo").textContent=d.no||"Inte nu";$("dlgNo").style.display=last&&d.accept?"inline-block":"none"}
+function dlgShow(){const d=DLG;$("dlgWho").textContent=d.who;const pi=$("dlgPor");if(pi.dataset.n!==d.who){pi.dataset.n=d.who;pi.style.display="none";pi.onload=()=>pi.style.display="block";pi.onerror=()=>pi.style.display="none";pi.src=POR(d.who)}$("dlgTxt").textContent=d.lines[d.i];voicePlay(d.who,d.lines[d.i]);const last=d.i>=d.lines.length-1;$("dlgNext").textContent=last?(d.accept?(d.yes||"Ta jobbet"):"OK"):"Fortsätt";$("dlgNo").textContent=d.no||"Inte nu";$("dlgNo").style.display=last&&d.accept?"inline-block":"none"}
 function dlgNext(ok=true){const d=DLG;if(!d)return;if(d.i<d.lines.length-1){d.i++;dlgShow();return}$("dlg").style.display="none";DLG=null;if(ok&&d.onEnd)d.onEnd()}
 function talk(J){dialog(J.from==="sven"?"Sven":"Majken",J.offer,()=>{ST.jobOn=1;pop("Nytt jobb: "+J.title,2200);renderObj();save();SFX("done")},true)}
 function jobDone(){const J=jobState();ST.kr+=J.reward;ST.rykte=(ST.rykte||0)+5;ST.job++;ST.jobOn=0;updHud();renderObj();save();SFX("done");pop(`+${J.reward} kr`,2000)}

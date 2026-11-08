@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { scene } from "./engine";
 import { water } from "./water";
+import { SET } from "./settings";
 
 const waveAt = (x: number, z: number, t: number, amp: number): number =>
   (Math.sin(x * .08 + t * 1.1) * .18 + Math.sin(z * .11 - t * .9) * .14 + Math.sin((x + z) * .21 + t * 1.7) * .06) * amp;
@@ -33,6 +34,7 @@ function init(): void {
 let ac: AudioContext | null = null, osc: OscillatorNode | null = null, osc2: OscillatorNode | null = null, gain: GainNode | null = null, filt: BiquadFilterNode | null = null;
 function engine(on: boolean, speed: number): void {
   try {
+    if (!SET.snd) on = false;
     if (!on) { if (gain && ac) gain.gain.setTargetAtTime(0, ac.currentTime, .15); return; }
     if (!ac) {
       ac = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();

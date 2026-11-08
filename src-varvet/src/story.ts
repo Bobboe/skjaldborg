@@ -13,6 +13,7 @@ import { groundAt } from "./update";
 import { VC, colored, merge, tr } from "./util";
 import { INTERACT_PROVIDERS } from "./hooks";
 import { $ } from "./util";
+import { voicePlay, voiceStop } from "./voice";
 
 const NAME = () => (ST.pname || "").trim() || (ST.char === "man" ? "grabben" : "jäntan");
 const CHEST = { x: 6.6, z: 41.4 };
@@ -130,7 +131,8 @@ export function storyTick(dt) {
 // ---------- Brev, samtal, kista, kväll ----------
 function letter(title, body, onClose) {
   $("letTitle").textContent = title; $("letBody").textContent = body; $("letter").style.display = "flex";
-  $("letOk").onclick = () => { $("letter").style.display = "none"; onClose && onClose(); };
+  if (/Edvin/.test(title)) voicePlay("Edvin", body);
+  $("letOk").onclick = () => { voiceStop(); $("letter").style.display = "none"; onClose && onClose(); };
 }
 function arrive() {
   fade(() => {
