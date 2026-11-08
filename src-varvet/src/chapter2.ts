@@ -2,7 +2,7 @@
 // Kapitel 2 "Hantverket": egen båt (bygge i fyra steg, sjösättning, fri körning mellan bryggor),
 // personal (Leo eller Åke), Fyrskäret med Fyr-Ingrid, Karins besök och regattan vid Grannön.
 import * as THREE from "three";
-import { attachProp, attachCharacter, LEO } from "./characters";
+import { attachProp, attachCharacter, LEO, INGRID } from "./characters";
 import { boatGeo, BOXES, bobBoat } from "./yard";
 import { scene } from "./engine";
 import { ST, save, pop, SFX, updHud } from "./build";
@@ -148,7 +148,7 @@ function payday() {
 // ---------- Personer på öarna ----------
 function peopleInit() {
   const f = DOCKS.fyr.land; NPC.ingrid = makePerson({ shirt: "#2f5d8a", pants: "#2b2f36", hair: "#e8e4dc", skin: "#f0c9ab" });
-  NPC.ingrid.position.set(f.x, groundAt(f.x, f.z), f.z); NPC.ingrid.userData.name = "Ingrid";
+  NPC.ingrid.position.set(f.x, groundAt(f.x, f.z), f.z); NPC.ingrid.userData.name = "Ingrid"; attachCharacter(NPC.ingrid, INGRID);
   NPC.karin = makePerson({ shirt: "#6b6f76", pants: "#2b3a52", hair: "#c9b48f", skin: "#f2cdb0" });
   NPC.karin.position.set(14, 1.45, 87); NPC.karin.rotation.y = Math.PI; NPC.karin.userData.name = "Karin"; NPC.karin.visible = false;
   // lykta på fyren som blinkar

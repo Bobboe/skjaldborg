@@ -139,3 +139,8 @@ export const LEO: CharDef = {
   anims: { idle: "Idle_9", talk: "Stand_and_Chat", walk: "Walking", run: "Running", pick: "Female_Bend_Over_Pick_Up_Inspect",
     work: "_01a1b7c1_4e5f_70d8_8a3b_cb3eefccb99a", hammer: "_01a1b7c3_a88d_7729_a2f3_067451260fca" },
 };
+
+export const INGRID: CharDef = {
+  file: "ingrid.glb", height: 1.64,
+  anims: { idle: "Idle_4", talk: "Talk_with_Left_Hand_on_Hip", walk: "Walking", run: "Running", sit: "Chair_Sit_Idle_F", pick: "Female_Bend_Over_Pick_Up_Inspect" },
+};

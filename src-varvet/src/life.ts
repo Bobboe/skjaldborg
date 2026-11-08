@@ -51,7 +51,7 @@ export function lifeInit() {
 }
 export const timeOf = () => L;
 export function season() { return Math.floor(L.day / SEASON_LEN) % 4; }
-export function weather() { return WX[L.wx]; }
+export function weather() { return L ? WX[L.wx] : WX.sol; }
 const ICON = k => `<img class="wxi" src="${import.meta.env.BASE_URL}ui/wx_${k}.png" alt="${WX[k].name}">`;
 const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
 export function dateText(d = L.day) { return `${WEEK[d % 7]} · ${SEASONS[Math.floor(d / SEASON_LEN) % 4]} dag ${d % SEASON_LEN + 1}, år ${Math.floor(d / (SEASON_LEN * 4)) + 1}`; }
